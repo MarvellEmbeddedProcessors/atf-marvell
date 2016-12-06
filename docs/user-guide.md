@@ -545,6 +545,7 @@ map is explained in the [Firmware Design].
 #### ARM FVP platform specific build options
 
 *   `FVP_USE_GIC_DRIVER`   : Selects the GIC driver to be built. Options:
+    -    `FVP_GIC600`      : The GIC600 implementation of GICv3 is selected
     -    `FVP_GICV2`       : The GICv2 only driver is selected
     -    `FVP_GICV3`       : The GICv3 only driver is selected (default option)
     -    `FVP_GICV3_LEGACY`: The Legacy GICv3 driver is selected (deprecated)
