@@ -73,6 +73,10 @@
 #define I2C_STATUS_LOST_ARB_GENERAL_CALL	0x78
 #define	I2C_STATUS_IDLE				0xF8
 
+#define I2C_UNSTUCK_TRIGGER			0x1
+#define I2C_UNSTUCK_ONGOING			0x2
+#define I2C_UNSTUCK_ERROR			0x4
+
 #define	EPERM		1	/* Operation not permitted */
 #define	EAGAIN		11	/* Try again */
 #define	ETIMEDOUT	110	/* Connection timed out */
@@ -88,6 +92,8 @@ struct  marvell_i2c_regs {
 	uint32_t xtnd_slave_addr;
 	uint32_t reserved[2];
 	uint32_t soft_reset;
+	uint8_t  reserved2[0xa0 - 0x20];
+	uint32_t unstuck;
 };
 
 static struct marvell_i2c_regs *base;
@@ -416,6 +422,27 @@ static int marvell_i2c_target_offset_set(uint8_t chip, uint32_t addr, int alen)
 	return marvell_i2c_data_transmit(off_block, off_size);
 }
 
+static int marvell_i2c_unstuck(int ret)
+{
+	uint32_t v;
+
+	if (ret != -ETIMEDOUT)
+		return ret;
+	INFO("Trying to \"unstuck i2c\"... ");
+	i2c_init(base);
+	mmio_write_32((uintptr_t)&base->unstuck, I2C_UNSTUCK_TRIGGER);
+	do {
+		v = mmio_read_32((uintptr_t)&base->unstuck);
+	} while (v & I2C_UNSTUCK_ONGOING);
+	if (v & I2C_UNSTUCK_ERROR) {
+		INFO("failed - soft reset i2c\n");
+	} else {
+		INFO("ok\n");
+		i2c_init(base);
+		ret = -EAGAIN;
+	}
+	return ret;
+}
 /* ------------------------------------------------------------------------ */
 /* API Functions                                                            */
 /* ------------------------------------------------------------------------ */
@@ -482,8 +509,10 @@ int i2c_read(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 		counter++;
 
 		ret = marvell_i2c_start_bit_set();
-		if (ret)
+		if (ret) {
+			ret = marvell_i2c_unstuck(ret);
 			continue;
+		}
 
 		/* if EEPROM device */
 		if (alen != 0) {
@@ -548,8 +577,10 @@ int i2c_write(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 		counter++;
 
 		ret = marvell_i2c_start_bit_set();
-		if (ret)
+		if (ret) {
+			ret = marvell_i2c_unstuck(ret);
 			continue;
+		}
 
 		ret = marvell_i2c_address_set(chip, I2C_CMD_WRITE);
 		if (ret)
