@@ -51,7 +51,7 @@ struct dram_config dram_cfg;
  */
 int update_dram_info(struct dram_config *cfg)
 {
-	NOTICE("Gathering DRAM information\n");
+	INFO("Gathering DRAM information\n");
 	return 0;
 }
 
