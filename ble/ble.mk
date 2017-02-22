@@ -35,6 +35,7 @@ BLE_LIBS		= 	$(MV_DDR_LIB)
 PLAT_MARVELL		=	plat/marvell
 
 BLE_SOURCES		+= 	ble/ble_main.c				\
+				ble/ble_mem.S				\
 				drivers/delay_timer/delay_timer.c	\
 				$(PLAT_MARVELL)/common/plat_delay_timer.c
 
