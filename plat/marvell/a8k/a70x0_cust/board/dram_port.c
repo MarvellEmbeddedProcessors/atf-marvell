@@ -107,7 +107,7 @@ int update_dram_info(struct dram_config *cfg)
 {
 	struct mv_ddr_topology_map *tm = mv_ddr_topology_map_get();
 
-	NOTICE("Gathering DRAM information\n");
+	INFO("Gathering DRAM information\n");
 
 	if (tm->cfg_src == MV_DDR_CFG_SPD) {
 		/* configure mpps for i2c functionality */
