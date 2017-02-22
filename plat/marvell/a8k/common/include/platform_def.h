@@ -192,11 +192,9 @@
 /* System timer related constants */
 #define PLAT_MARVELL_NSTIMER_FRAME_ID		1
 
-/*
- * Mailbox base address
- * (note the lower memory space are reserved for BLE data)
- */
-#define PLAT_MARVELL_MAILBOX_BASE	(MARVELL_TRUSTED_SRAM_BASE + 0x400)
-#define PLAT_MARVELL_MAILBOX_SIZE	0x100
+/* Mailbox base address (note the lower memory space are reserved for BLE data) */
+#define PLAT_MARVELL_MAILBOX_BASE		(MARVELL_TRUSTED_SRAM_BASE + 0x400)
+#define PLAT_MARVELL_MAILBOX_SIZE		0x100
+#define PLAT_MARVELL_MAILBOX_MAGIC_NUM		0x6D72766C	/* mrvl */
 
 #endif /* __PLATFORM_DEF_H__ */
