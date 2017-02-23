@@ -503,6 +503,19 @@ void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 }
 
 /*******************************************************************************
+ * This handler is called by the PSCI implementation during the `SYSTEM_SUSPEND`
+ * call to get the `power_state` parameter. This allows the platform to encode
+ * the appropriate State-ID field within the `power_state` parameter which can
+ * be utilized in `pwr_domain_suspend()` to suspend to system affinity level.
+ ******************************************************************************/
+void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
+{
+	/* lower affinities use PLAT_MAX_OFF_STATE */
+	for (int i = MPIDR_AFFLVL0; i <= PLAT_MAX_PWR_LVL; i++)
+		req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
+}
+
+/*******************************************************************************
  * A8K handlers to shutdown/reboot the system
  ******************************************************************************/
 static void __dead2 a8k_system_off(void)
@@ -532,6 +545,7 @@ const plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.pwr_domain_off = a8k_pwr_domain_off,
 	.pwr_domain_suspend = a8k_pwr_domain_suspend,
 	.pwr_domain_on_finish = a8k_pwr_domain_on_finish,
+	.get_sys_suspend_power_state = a8k_get_sys_suspend_power_state,
 	.pwr_domain_suspend_finish = a8k_pwr_domain_suspend_finish,
 	.system_off = a8k_system_off,
 	.system_reset = a8k_system_reset,
