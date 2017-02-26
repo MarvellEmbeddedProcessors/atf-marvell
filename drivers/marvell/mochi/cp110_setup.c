@@ -32,6 +32,7 @@
 ***************************************************************************
 */
 
+#include <plat_marvell.h>
 #include <plat_def.h>
 #include <amb_adec.h>
 #include <iob.h>
@@ -504,5 +505,13 @@ void cp110_init(int cp_index)
 /* Do the minimal setup required to configure the CP in BLE */
 void cp110_ble_init(int cp_index)
 {
+#if PCI_EP_SUPPORT
 	amb_bridge_init(cp_index);
+
+	/* Configure PCIe clock */
+	cp110_pcie_clk_cfg(cp_index);
+
+	/* Configure PCIe endpoint */
+	ble_plat_pcie_ep_setup();
+#endif
 }
