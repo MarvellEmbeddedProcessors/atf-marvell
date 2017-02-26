@@ -78,6 +78,7 @@
 #define MVEBU_COMPHY_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x441000)
 #define MVEBU_HPIPE_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x120000)
 #define MVEBU_CP_DFX_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x400200)
+#define MVEBU_CP_MSS_DPSHSR_REG(x)	(MVEBU_CP_REGS_BASE(x) + 0x280040)
 
 /*******************************************************************************
  * MVEBU memory map related constants

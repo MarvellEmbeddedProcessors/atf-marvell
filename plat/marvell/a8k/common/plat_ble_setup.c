@@ -379,13 +379,8 @@ int ble_plat_setup(int *skip)
 		return 0;
 	}
 
-#if PCI_EP_SUPPORT
-	/* Do basic CP-110 setups */
+	/* Do required CP-110 setups for BLE stage */
 	cp110_ble_init(0);
-
-	/* Enable PCIe in end point mode */
-	ble_plat_pcie_ep_setup();
-#endif
 
 	/* Setup AVS */
 	ble_plat_avs_config();
