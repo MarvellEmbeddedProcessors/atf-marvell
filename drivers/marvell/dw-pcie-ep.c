@@ -58,6 +58,9 @@
 
 #define PCIE_GEN3_EQU_CTRL		0x8A8
 #define GEN3_EQU_EVAL_2MS_DISABLE	(1 << 5)
+#define GEN3_EQ_PSET_REQ_VEC_MASK	0xffff00
+#define GEN3_EQ_PSET_REQ_VEC_OFFSET	8
+
 
 #define PCIE_ARCACHE_TRC		0x8050
 #define PCIE_AWCACHE_TRC		0x8054
@@ -83,6 +86,22 @@
 #define DW_OUTBOUND_ATU_SIZE		0x100000000ull
 #define DW_OUTBOUND_ATU_TARGET		0x0
 
+#define PCIE_MSIX_CAP_ID_NEXT_CTRL_REG		0xb0
+#define PCIE_MSIX_CAP_NEXT_OFFSET_MASK		0xff00
+
+#define PCIE_SPCIE_CAP_HEADER_REG		0x158
+#define PCIE_SPCIE_NEXT_OFFSET_MASK		0xfff00000
+#define PCIE_SPCIE_NEXT_OFFSET_OFFSET		20
+
+#define PCIE_TPH_EXT_CAP_HDR_REG		0x1b8
+#define PCIE_TPH_REQ_NEXT_PTR_MASK		0xfff00000
+#define PCIE_TPH_REQ_NEXT_PTR_OFFSET		20
+
+#define PCIE_LINK_FLUSH_CONTROL_OFF_REG		0x8cc
+#define PCIE_AUTO_FLUSH_EN_MASK			0x1
+
+#define PCIE_REQ_RESET				0x8058
+#define PCIE_LINK_REQ_RST_MASK			0x2
 
 void dw_pcie_configure(uintptr_t regs_base, uint32_t cap_speed)
 {
@@ -101,7 +120,61 @@ void dw_pcie_configure(uintptr_t regs_base, uint32_t cap_speed)
 
 	reg = mmio_read_32(regs_base + PCIE_GEN3_EQU_CTRL);
 	reg |= GEN3_EQU_EVAL_2MS_DISABLE;
+	/*
+	 * According to the electrical measurmentrs, the best preset that our
+	 * receiver can handle is preset4, so we are changing the vector of
+	 * presets to evaluate during the link equalization training to preset4.
+	 */
+	reg &= ~GEN3_EQ_PSET_REQ_VEC_MASK;
+	reg |= 0x10 << GEN3_EQ_PSET_REQ_VEC_OFFSET;
 	mmio_write_32(regs_base + PCIE_GEN3_EQU_CTRL, reg);
+
+	/*
+	 * There is an issue in CPN110 that does not allow to
+	 * enable/disable the link and perform "hot reset" unless
+	 * the auto flush is disabled. So in order to enable the option
+	 * to perform hot reset and link disable/enable we need to set
+	 * auto flush to disable.
+	 */
+	reg = mmio_read_32(regs_base + PCIE_LINK_FLUSH_CONTROL_OFF_REG);
+	reg &= ~PCIE_AUTO_FLUSH_EN_MASK;
+	mmio_write_32(regs_base + PCIE_LINK_FLUSH_CONTROL_OFF_REG, reg);
+
+	/*
+	 * When the port is configured as Endpoint,
+	 * the hot reset and link disable/enable must
+	 * penetrate and reset the MAC configurations and thus
+	 * need to unmask the reset.
+	 */
+	reg = mmio_read_32(regs_base + PCIE_REQ_RESET);
+	reg &= ~PCIE_LINK_REQ_RST_MASK;
+	mmio_write_32(regs_base + PCIE_REQ_RESET, reg);
+
+	/*
+	 * Remove VPD capability from the capability list,
+	 * since we don't support it.
+	 */
+	reg = mmio_read_32(regs_base + PCIE_MSIX_CAP_ID_NEXT_CTRL_REG);
+	reg &= ~PCIE_MSIX_CAP_NEXT_OFFSET_MASK;
+	mmio_write_32(regs_base + PCIE_MSIX_CAP_ID_NEXT_CTRL_REG, reg);
+
+	/*
+	 * The below two configurations are intended to remove SRIOV capability
+	 * from the capability list, since we don't support it.
+	 * The capability list is a linked list where each capability points
+	 * to the next capability, so in the SRIOV capability need to set the previous
+	 * capability to point to the next capability and this way
+	 * the SRIOV capability will be skipped.
+	 */
+	reg = mmio_read_32(regs_base + PCIE_TPH_EXT_CAP_HDR_REG);
+	reg &= ~PCIE_TPH_REQ_NEXT_PTR_MASK;
+	reg |= 0x24c << PCIE_TPH_REQ_NEXT_PTR_OFFSET;
+	mmio_write_32(regs_base + PCIE_TPH_EXT_CAP_HDR_REG, reg);
+
+	reg = mmio_read_32(regs_base + PCIE_SPCIE_CAP_HEADER_REG);
+	reg &= ~PCIE_SPCIE_NEXT_OFFSET_MASK;
+	reg |= 0x1b8 << PCIE_SPCIE_NEXT_OFFSET_OFFSET;
+	mmio_write_32(regs_base + PCIE_SPCIE_CAP_HEADER_REG, reg);
 }
 
 int dw_pcie_link_up(uintptr_t regs_base, uint32_t cap_speed, int is_end_point)
