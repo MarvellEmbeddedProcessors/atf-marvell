@@ -126,6 +126,8 @@ void marvell_bl1_setup_mpps(void);
 #endif
 
 const mmap_region_t *plat_marvell_get_mmap(void);
+void ble_prepare_exit(void);
+void exit_bootrom(uintptr_t);
 
 int plat_marvell_early_cpu_powerdown(void);
 #endif /* __PLAT_MARVELL_H__ */
