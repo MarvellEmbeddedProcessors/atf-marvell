@@ -32,11 +32,14 @@
 ***************************************************************************
 */
 
+#include <arch_helpers.h>
 #include <debug.h>
 #include <console.h>
+#include <mmio.h>
 #include <platform_def.h>
 #include <plat_marvell.h>
 #include <plat_private.h>
+#include <marvell_pm.h>
 #include <string.h>
 
 #define BR_FLAG_SILENT		0x1
@@ -52,13 +55,17 @@ void mailbox_clean(void)
 int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
 {
 	int skip = 0;
+	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+
 	/*
 	 * In some situations, like boot from UART, bootrom will
 	 * request to avoid printing to console. in that case don't
 	 * initialize the console and prints will be ignored
 	 */
 	if ((bootrom_flags & BR_FLAG_SILENT) == 0)
-		console_init(PLAT_MARVELL_BOOT_UART_BASE, PLAT_MARVELL_BOOT_UART_CLK_IN_HZ, MARVELL_CONSOLE_BAUDRATE);
+		console_init(PLAT_MARVELL_BOOT_UART_BASE,
+			     PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
+			     MARVELL_CONSOLE_BAUDRATE);
 
 	NOTICE("Starting binary extension\n");
 
@@ -69,7 +76,6 @@ int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
 	NOTICE("Skip DRAM setup in PALLADIUM mode\n");
 #else
 	ble_plat_setup(&skip);
-
 #endif
 	/* if there's skip image request, bootrom will load from the image
 	 * saved on the next address of the flash
@@ -77,8 +83,36 @@ int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
 	if (skip)
 		return SKIP_IMAGE_CODE;
 
-	/* clean mailbox from garbage data */
-	mailbox_clean();
+	/*
+	 * Check if the mailbox magic number is stored at index MBOX_IDX_MAGIC
+	 * and the suspend to RAM magic number at index MBOX_IDX_SUSPEND_MAGIC.
+	 * If the above is true, this is the recovery from suspend to RAM state.
+	 * In such case the mailbox should remain intact, since it stores the
+	 * warm boot jump address to be used by the ATF in BL31.
+	 * Othervise the mailbox should be cleaned from a garbage data.
+	 */
+	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||
+	    mailbox[MBOX_IDX_SUSPEND_MAGIC] != MVEBU_MAILBOX_SUSPEND_STATE) {
+		NOTICE("Cold boot\n");
+		mailbox_clean();
+	} else {
+		void (*bootrom_exit)(void) =
+			(void (*)(void))mailbox[MBOX_IDX_ROM_EXIT_ADDR];
+
+		INFO("Recovery...\n");
+		/*
+		 * If this is recovery from suspend, two things has to be done:
+		 * 1. Define the DRAM region as executable memory for preparing
+		 *    jump to ATF
+		 * 2. Instead of returning control to the BootROM, invalidate
+		 *    and flush caches, and continue execution at address stored
+		 *    in the mailbox.
+		 * This should be done until the BootROM have a native support
+		 * for the system restore flow.
+		 */
+		ble_prepare_exit();
+		bootrom_exit();
+	}
 
 	return 0;
 }

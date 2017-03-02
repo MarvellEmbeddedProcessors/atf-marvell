@@ -36,6 +36,7 @@
 #include <plat_private.h>
 #include <apn806_setup.h>
 #include <cp110_setup.h>
+#include <marvell_pm.h>
 #include <mmio.h>
 #include <mci.h>
 #include <debug.h>
@@ -76,6 +77,8 @@ void marvell_bl31_mss_init(void)
 /* This function overruns the same function in marvell_bl31_setup.c */
 void bl31_plat_arch_setup(void)
 {
+	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+
 	/* initiliaze the timer for mdelay/udelay functionality */
 	plat_delay_timer_init();
 
@@ -87,7 +90,9 @@ void bl31_plat_arch_setup(void)
 	 * this will cause an hang in init_rfu
 	 * (after setting the IO windows GCR values).
 	 */
-	marvell_bl31_plat_arch_setup();
+	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||
+	    mailbox[MBOX_IDX_SUSPEND_MAGIC] != MVEBU_MAILBOX_SUSPEND_STATE)
+		marvell_bl31_plat_arch_setup();
 
 	/* configure cp110 for CP0*/
 	cp110_init(0);
@@ -100,5 +105,7 @@ void bl31_plat_arch_setup(void)
 	marvell_bl31_mpp_init();
 
 	/* initialize IPC between MSS and ATF */
-	marvell_bl31_mss_init();
+	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||
+	    mailbox[MBOX_IDX_SUSPEND_MAGIC] != MVEBU_MAILBOX_SUSPEND_STATE)
+		marvell_bl31_mss_init();
 }

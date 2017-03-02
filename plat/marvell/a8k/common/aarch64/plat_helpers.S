@@ -33,13 +33,31 @@
  */
 
 #include <asm_macros.S>
+#include <arm_def.h>
 #include <platform_def.h>
 #include <marvell_pm.h>
+
+#define CCU_WIN_CR(x)		(MVEBU_CCU_BASE + (0x10 * x))
+#define	CCU_SRAM_WIN_CR		CCU_WIN_CR(1)
+
+#define	LLC_CR			(MVEBU_LLC_BASE + 0x100)
+#define LLC_TC0_LOCK		(MVEBU_LLC_BASE + 0x920)
+#define	LLC_MNT_IW		(MVEBU_LLC_BASE + 0x77c)
+#define LLC_WAYS		8
+#define	LLC_WAY_MASK		((1 << LLC_WAYS) - 1)
 
 	.globl	plat_secondary_cold_boot_setup
 	.globl	plat_get_my_entrypoint
 	.globl	plat_is_my_cpu_primary
 	.globl  plat_reset_handler
+	.globl disable_mmu_dcache
+	.globl invalidate_dcache_all
+	.globl invalidate_tlb_all
+	.globl platform_unmap_sram
+	.globl disable_sram
+	.globl disable_icache
+	.globl invalidate_icache_all
+	.globl exit_bootrom
 
 	/* -----------------------------------------------------
 	 * void plat_secondary_cold_boot_setup (void);
@@ -136,3 +154,217 @@ func plat_reset_handler
 
         ret
 endfunc plat_reset_handler
+
+/*
+ ***************************************************************************
+ * PM helpers
+ ***************************************************************************
+ */
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func disable_mmu_dcache
+	/* Disable icache, dcache, and MMU */
+	mrs	x0, sctlr_el3
+	bic	x0, x0, 0x1		/* M bit - MMU */
+	bic	x0, x0, 0x4		/* C bit - Dcache L1 & L2 */
+	msr	sctlr_el3, x0
+	isb
+	b	mmu_off
+mmu_off:
+	ret
+endfunc disable_mmu_dcache
+
+/*
+ * void dcache_maint_level(level)
+ *
+ * clean and invalidate one level cache.
+ *
+ * x0: cache level
+ * x1: 0 flush & invalidate, 1 invalidate only
+ * x2~x9: clobbered
+ */
+func dcache_maint_level
+	lsl	x12, x0, #1
+	msr	csselr_el1, x12		/* select cache level */
+	isb				/* sync change of cssidr_el1 */
+	mrs	x6, ccsidr_el1		/* read the new cssidr_el1 */
+	and	x2, x6, #7		/* x2 <- log2(cache line size)-4 */
+	add	x2, x2, #4		/* x2 <- log2(cache line size) */
+	mov	x3, #0x3ff
+	and	x3, x3, x6, lsr #3	/* x3 <- max number of #ways */
+	clz	w5, w3			/* bit position of #ways */
+	mov	x4, #0x7fff
+	and	x4, x4, x6, lsr #13	/* x4 <- max number of #sets */
+	/* x12 <- cache level << 1 */
+	/* x2 <- line length offset */
+	/* x3 <- number of cache ways - 1 */
+	/* x4 <- number of cache sets - 1 */
+	/* x5 <- bit position of #ways */
+
+loop_set:
+	mov	x6, x3			/* x6 <- working copy of #ways */
+loop_way:
+	lsl	x7, x6, x5
+	orr	x9, x12, x7		/* map way and level to cisw value */
+	lsl	x7, x4, x2
+	orr	x9, x9, x7		/* map set number to cisw value */
+	tbz	w1, #0, 1f
+	dc	isw, x9
+	b	2f
+1:	dc	cisw, x9		/* clean & invalidate by set/way */
+2:	subs	x6, x6, #1		/* decrement the way */
+	b.ge	loop_way
+	subs	x4, x4, #1		/* decrement the set */
+	b.ge	loop_set
+
+	ret
+endfunc dcache_maint_level
+
+/*
+ * void __asm_flush_dcache_all(int invalidate_only)
+ *
+ * x0: 0 flush & invalidate, 1 invalidate only
+ *
+ * clean and invalidate all data cache by SET/WAY.
+ */
+func dcache_maint_all
+	mov	x1, x0
+	dsb	sy
+	mrs	x10, clidr_el1		/* read clidr_el1 */
+	lsr	x11, x10, #24
+	and	x11, x11, #0x7		/* x11 <- loc */
+	cbz	x11, finished		/* if loc is 0, exit */
+	mov	x15, x30
+	mov	x0, #0			/* start flush at cache level 0 */
+	/* x0  <- cache level */
+	/* x10 <- clidr_el1 */
+	/* x11 <- loc */
+	/* x15 <- return address */
+
+loop_level:
+	lsl	x12, x0, #1
+	add	x12, x12, x0		/* x0 <- tripled cache level */
+	lsr	x12, x10, x12
+	and	x12, x12, #7		/* x12 <- cache type */
+	cmp	x12, #2
+	b.lt	skip			/* skip if no cache or icache */
+	bl	dcache_maint_level	/* x1 = 0 flush, 1 invalidate */
+skip:
+	add	x0, x0, #1		/* increment cache level */
+	cmp	x11, x0
+	b.gt	loop_level
+
+	mov	x0, #0
+	msr	csselr_el1, x0		/* resotre csselr_el1 */
+	dsb	sy
+	isb
+	mov	x30, x15
+
+finished:
+	ret
+endfunc dcache_maint_all
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func invalidate_dcache_all
+	mov	x16, x30
+	mov	x0, #0xffff
+	bl	dcache_maint_all
+	mov	x30, x16
+	ret
+endfunc invalidate_dcache_all
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func invalidate_tlb_all
+	tlbi	alle3
+	dsb	sy
+	isb
+	ret
+endfunc invalidate_tlb_all
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func platform_unmap_sram
+	/* Just need to clear the enable bit */
+	ldr     x0, =CCU_SRAM_WIN_CR
+	str     wzr, [x0]
+	ret
+endfunc platform_unmap_sram
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func disable_sram
+	/* Disable the line lockings. They must be disabled expictly
+	 * or the OS will have problems using the cache */
+	ldr     x1, =LLC_TC0_LOCK
+	str     wzr, [x1]
+
+	/* Invalidate all ways */
+	ldr	w1, =LLC_WAY_MASK
+	ldr	x0, =LLC_MNT_IW
+	str     w1, [x0]
+
+	/* Finally disable LLC */
+	ldr     x0, =LLC_CR
+	str     wzr, [x0]
+
+	ret
+endfunc disable_sram
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func disable_icache
+	mrs 	x0, sctlr_el3
+	bic	x0, x0, 0x1000	/* I bit - Icache L1 & L2 */
+	msr	sctlr_el3, x0
+	isb
+	ret
+endfunc disable_icache
+
+	/* -----------------------------------------------------
+	 * -----------------------------------------------------
+	 */
+func invalidate_icache_all
+	ic	ialluis
+	isb	sy
+	ret
+endfunc invalidate_icache_all
+
+func exit_bootrom
+	/* Save the system restore address */
+	mov	x28, x0
+
+	/* close the caches and MMU */
+	bl	disable_mmu_dcache
+
+	/*
+	 * There is nothing important in the caches now,
+	 * so invalidate them instead of cleaning.
+	 */
+	bl	invalidate_dcache_all
+	bl	invalidate_tlb_all
+
+	/*
+	 * Clean the memory mapping of SRAM
+	 * the DDR mapping will remain to enable boot image to execute
+	 */
+	bl	platform_unmap_sram
+
+	/* Disable the SRAM */
+	bl	disable_sram
+
+	/* Disable and invalidate icache */
+	bl	disable_icache
+	bl	invalidate_icache_all
+
+	mov	x0, x28
+	br	x0
+endfunc exit_bootrom

@@ -33,10 +33,14 @@
  */
 
 #include <plat_marvell.h>
+#include <platform.h>
+#include <console.h>
 #include <gicv2.h>
 #include <mmio.h>
 #include <debug.h>
 #include <delay_timer.h>
+#include <cache_llc.h>
+#include <marvell_pm.h>
 
 #ifdef SCP_IMAGE
 #include <bakery_lock.h>
@@ -295,6 +299,48 @@ void plat_marvell_system_reset(void)
 	mmio_write_32(MVEBU_RFU_BASE + MVEBU_RFU_GLOBL_SW_RST, 0x0);
 }
 
+/*
+ * This function should be called on restore from
+ * "suspend to RAM" state when the execution flow
+ * has to bypass BootROM image to RAM copy and speed up
+ * the system recovery
+ *
+ */
+static void plat_exit_bootrom(void)
+{
+	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
+}
+
+/*
+ * Send a command to external PMIC to cut off the power rail
+ */
+void plat_marvell_power_suspend_to_ram(void)
+{
+	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+
+	INFO("Suspending to RAM\n");
+
+	/* Prevent interrupts from spuriously waking up this cpu */
+	gicv2_cpuif_disable();
+
+	mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
+	mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
+
+#if PLAT_MARVELL_SHARED_RAM_CACHED
+	flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+			   2 * sizeof(uintptr_t));
+#endif
+
+	isb();
+	/*
+	 * Do not halt here!
+	 * The function must return for allowing the caller function
+	 * psci_power_up_finish() to do the proper context saving and
+	 * to release the CPU lock.
+	*/
+}
+
 /*******************************************************************************
  * A8K handler called to check the validity of the power state
  * parameter.
@@ -401,10 +447,7 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 	/* Prevent interrupts from spuriously waking up this cpu */
 	gicv2_cpuif_disable();
 
-	/*
-	 * pm system synchronization - used to synchronize
-	 * multiple core access to MSS
-	 */
+	/* pm system synchronization - used to synchronize multiple core access to MSS */
 	bakery_lock_get(&pm_sys_lock);
 
 	/* send CPU OFF IPC Message to MSS */
@@ -453,8 +496,8 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND, idx);
 #else
-	INFO("a8k_pwr_domain_suspend is not supported without SCP\n");
-	return;
+	/* Suspend to RAM */
+	plat_marvell_power_suspend_to_ram();
 #endif /* SCP_IMAGE */
 }
 
@@ -497,8 +540,35 @@ void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH, idx);
 #else
-	INFO("a8k_pwr_domain_on_finish is not supported without SCP\n");
-	return;
+	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+
+	/* Only primary CPU requres platform init */
+	if (!plat_my_core_pos()) {
+		/* Initialize the console to provide early debug support */
+		console_init(PLAT_MARVELL_BOOT_UART_BASE,
+			     PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
+			     MARVELL_CONSOLE_BAUDRATE);
+		bl31_plat_arch_setup();
+		marvell_bl31_platform_setup();
+		/*
+		 * Remove suspend to RAM marker from the mailbox
+		 * for treating a regular reset as a cold boot
+		 */
+		mailbox[MBOX_IDX_SUSPEND_MAGIC] = 0;
+		mailbox[MBOX_IDX_ROM_EXIT_ADDR] = 0;
+#if PLAT_MARVELL_SHARED_RAM_CACHED
+		flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+				   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+				   2 * sizeof(uintptr_t));
+#endif
+		return;
+	}
+
+	/* arch specific configuration */
+	psci_arch_init();
+
+	/* Interrupt initialization */
+	gicv2_cpuif_enable();
 #endif /* SCP_IMAGE */
 }
 
