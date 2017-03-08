@@ -86,10 +86,18 @@ Build Instructions
 	- WTP: For Armada37x0 only, use this parameter to point to wtptools source code directory, which
 		could be found as a3700_utils.zip in the release.
 		Usage example: WTP=/path/to/a3700_utils
+	- SPD: To add secure-EL1 payload and the coresponding dispatcher
+		marvell_spd - the SPD for Marvell TEE
+		Usage example:
+			# export BL32=path/to/marvell_tee/tee_tw.bin
+			SPD=marvell_spd
 
 	For example: in order to build the image in debug mode with log level up to 'notice' level run:
 
 		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
+
+	if you want to build the image with Marvell TEE integrated:
+		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip SPD=marvell_spd
 
 	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level,
 	the image has the preset CPU at 1000 MHz, preset DDR3 at 800 MHz, the DDR topology of DDR3 2CS,
