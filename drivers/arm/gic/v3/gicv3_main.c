@@ -34,6 +34,7 @@
 #include <debug.h>
 #include <gicv3.h>
 #include "gicv3_private.h"
+#include <arm_def.h>
 
 const gicv3_driver_data_t *gicv3_driver_data;
 static unsigned int gicv2_compat;
@@ -44,6 +45,28 @@ static unsigned int gicv2_compat;
  */
 #pragma weak gicv3_rdistif_off
 #pragma weak gicv3_rdistif_on
+
+/* Clear all register bits */
+#define GICD_INT_EN_CLR_X32	0xffffffff
+
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+
+/* Global array to save SPI and PPI states */
+struct spi_state {
+	unsigned int spi_enable[DIV_ROUND_UP(PENDING_G1NS_INTID, 32)];
+	unsigned int spi_active[DIV_ROUND_UP(PENDING_G1NS_INTID, 32)];
+	unsigned int spi_conf[DIV_ROUND_UP(PENDING_G1NS_INTID, 16)];
+	unsigned int spi_target[DIV_ROUND_UP(PENDING_G1NS_INTID, 4)];
+};
+
+struct ppi_state {
+	unsigned int ppi_enable;
+	unsigned int ppi_active;
+	unsigned int ppi_conf[DIV_ROUND_UP(32, 16)];
+};
+
+static struct spi_state spi_state;
+static struct ppi_state ppi_state_arr[PLATFORM_CORE_COUNT];
 
 /*******************************************************************************
  * This function initialises the ARM GICv3 driver in EL3 with provided platform
@@ -416,3 +439,134 @@ unsigned int gicv3_get_interrupt_type(unsigned int id,
 	/* Else it is a Group 0 Secure interrupt */
 	return INTR_GROUP0;
 }
+
+/*******************************************************************************
+ * This function saves SPI irq enabling/active states and config.
+ ******************************************************************************/
+void gicv3_irq_save(uintptr_t gicd_base)
+{
+	uint32_t index;
+	uint32_t reg_index;
+	uint32_t num_ints;
+
+	assert(gicd_base);
+
+	/* Get GICD IRQ number */
+	num_ints = gicd_read_typer(gicd_base);
+	num_ints &= TYPER_IT_LINES_NO_MASK;
+	num_ints = (num_ints + 1) << 5;
+
+	/* Save the GICD interrupt configuration */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		spi_state.spi_conf[reg_index] = gicd_read_icfgr(gicd_base, index);
+
+	/* Save the GICD interrupt targets */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		spi_state.spi_target[reg_index] = gicd_read_itargetsr(gicd_base, index);
+
+	/* Save the GICD interrupt enabling states */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		spi_state.spi_enable[reg_index] = gicd_read_isenabler(gicd_base, index);
+
+	/* Save the GICD interrupt active states */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		spi_state.spi_active[reg_index] = gicd_read_isactiver(gicd_base, index);
+
+	flush_dcache_range((uintptr_t)&spi_state, (sizeof(struct spi_state)));
+}
+
+/*******************************************************************************
+ * This function restores SPI irq enabling/active states and config.
+ ******************************************************************************/
+void gicv3_irq_restore(uintptr_t gicd_base)
+{
+	uint32_t index;
+	uint32_t reg_index;
+	uint32_t num_ints;
+
+	assert(gicd_base);
+
+	/* Get GICD IRQ number */
+	num_ints = gicd_read_typer(gicd_base);
+	num_ints &= TYPER_IT_LINES_NO_MASK;
+	num_ints = (num_ints + 1) << 5;
+
+	/* Disable the irq groups before config */
+	gicd_clr_ctlr(gicd_base, CTLR_ENABLE_G0_BIT | CTLR_ENABLE_G1S_BIT | CTLR_ENABLE_G1NS_BIT, RWP_TRUE);
+
+	/* Restore GICD interrupt configuration */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		gicd_write_icfgr(gicd_base, index, spi_state.spi_conf[reg_index]);
+
+	/* Restore GICD interrupt targets */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++)
+		gicd_write_itargetsr(gicd_base, index, spi_state.spi_target[reg_index]);
+
+	/* Restore GICD interrupt enabling states */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++) {
+		gicd_write_icenabler(gicd_base, index, GICD_INT_EN_CLR_X32);
+		gicd_write_isenabler(gicd_base, index, spi_state.spi_enable[reg_index]);
+	}
+
+	/* Restore GICD interrupt active states */
+	for (index = MIN_SPI_ID, reg_index = 0; index < num_ints; index += 32, reg_index++) {
+		gicd_write_icactiver(gicd_base, index, GICD_INT_EN_CLR_X32);
+		gicd_write_isactiver(gicd_base, index, spi_state.spi_active[reg_index]);
+	}
+
+	/* Enable ARE_NS and all groups */
+	gicd_set_ctlr(gicd_base, CTLR_ARE_NS_BIT | CTLR_ENABLE_G0_BIT | CTLR_ENABLE_G1S_BIT | CTLR_ENABLE_G1NS_BIT,
+		      RWP_TRUE);
+}
+
+/*******************************************************************************
+ * This function saves PPI irq enabling/active states and config.
+ ******************************************************************************/
+void gicv3_irq_pcpu_save(uintptr_t gicr_base, uint32_t proc_num)
+{
+	struct ppi_state *ppi_state;
+
+	assert(gicr_base);
+
+	ppi_state = &ppi_state_arr[proc_num];
+
+	/* Save GICR interrupt enabling states */
+	ppi_state->ppi_enable = gicr_read_isenabler0(gicr_base);
+
+	/* Save GICR interrupt active states */
+	ppi_state->ppi_active = gicr_read_isactiver0(gicr_base);
+
+	/* Save GICR interrupt configuration */
+	ppi_state->ppi_conf[0] = gicr_read_icfgr0(gicr_base);
+	ppi_state->ppi_conf[1] = gicr_read_icfgr1(gicr_base);
+
+	flush_dcache_range((uintptr_t)ppi_state, sizeof(struct ppi_state));
+}
+
+/*******************************************************************************
+ * This function restores PPI irq enabling/active states and config.
+ ******************************************************************************/
+void gicv3_irq_pcpu_restore(uintptr_t gicr_base, uint32_t proc_num)
+{
+	struct ppi_state *ppi_state;
+
+	assert(gicr_base);
+
+	ppi_state = &ppi_state_arr[proc_num];
+
+	/* Restore GICR interrupt enabling states */
+	gicr_write_icenabler0(gicr_base, GICD_INT_EN_CLR_X32);
+	gicr_wait_for_pending_write(gicr_base);
+	gicr_write_isenabler0(gicr_base, ppi_state->ppi_enable);
+
+	/* Restore GICR interrupt active states */
+	gicr_write_icactiver0(gicr_base, GICD_INT_EN_CLR_X32);
+	gicr_wait_for_pending_write(gicr_base);
+	gicr_write_isactiver0(gicr_base, ppi_state->ppi_active);
+
+	/* Restore GICR interrupt configuration */
+	gicr_write_icfgr0(gicr_base, ppi_state->ppi_conf[0]);
+	gicr_write_icfgr1(gicr_base, ppi_state->ppi_conf[1]);
+}
+
+

@@ -71,6 +71,7 @@ unsigned int gicd_read_icpendr(uintptr_t base, unsigned int id);
 unsigned int gicd_read_isactiver(uintptr_t base, unsigned int id);
 unsigned int gicd_read_icactiver(uintptr_t base, unsigned int id);
 unsigned int gicd_read_ipriorityr(uintptr_t base, unsigned int id);
+unsigned int gicd_read_itargetsr(uintptr_t base, unsigned int id);
 unsigned int gicd_read_icfgr(uintptr_t base, unsigned int id);
 unsigned int gicd_read_nsacr(uintptr_t base, unsigned int id);
 void gicd_write_igroupr(uintptr_t base, unsigned int id, unsigned int val);
@@ -81,6 +82,7 @@ void gicd_write_icpendr(uintptr_t base, unsigned int id, unsigned int val);
 void gicd_write_isactiver(uintptr_t base, unsigned int id, unsigned int val);
 void gicd_write_icactiver(uintptr_t base, unsigned int id, unsigned int val);
 void gicd_write_ipriorityr(uintptr_t base, unsigned int id, unsigned int val);
+void gicd_write_itargetsr(uintptr_t base, unsigned int id, unsigned int val);
 void gicd_write_icfgr(uintptr_t base, unsigned int id, unsigned int val);
 void gicd_write_nsacr(uintptr_t base, unsigned int id, unsigned int val);
 
