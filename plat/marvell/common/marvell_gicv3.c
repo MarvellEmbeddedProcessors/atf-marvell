@@ -117,7 +117,7 @@ void plat_marvell_gic_driver_init(void)
 }
 
 /******************************************************************************
- * ARM common helper to initialize the GIC. Only invoked by BL31
+ * Marvell common helper to initialize the GIC. Only invoked by BL31
  *****************************************************************************/
 void plat_marvell_gic_init(void)
 {
@@ -127,7 +127,7 @@ void plat_marvell_gic_init(void)
 }
 
 /******************************************************************************
- * ARM common helper to enable the GIC CPU interface
+ * Marvell common helper to enable the GIC CPU interface
  *****************************************************************************/
 void plat_marvell_gic_cpuif_enable(void)
 {
@@ -135,7 +135,7 @@ void plat_marvell_gic_cpuif_enable(void)
 }
 
 /******************************************************************************
- * ARM common helper to disable the GIC CPU interface
+ * Marvell common helper to disable the GIC CPU interface
  *****************************************************************************/
 void plat_marvell_gic_cpuif_disable(void)
 {
@@ -143,9 +143,44 @@ void plat_marvell_gic_cpuif_disable(void)
 }
 
 /******************************************************************************
- * ARM common helper to initialize the per-cpu redistributor interface in GICv3
+ * Marvell common helper to initialize the per-cpu redistributor interface in GICv3
  *****************************************************************************/
 void plat_marvell_gic_pcpu_init(void)
 {
 	gicv3_rdistif_init(plat_my_core_pos());
 }
+
+/******************************************************************************
+ * Marvell common helper to save SPI irq states in GICv3
+ *****************************************************************************/
+void plat_marvell_gic_irq_save(void)
+{
+	gicv3_irq_save((uintptr_t)PLAT_MARVELL_GICD_BASE);
+}
+
+/******************************************************************************
+ * Marvell common helper to restore SPI irq states in GICv3
+ *****************************************************************************/
+void plat_marvell_gic_irq_restore(void)
+{
+	gicv3_irq_restore((uintptr_t)PLAT_MARVELL_GICD_BASE);
+}
+
+/******************************************************************************
+ * Marvell common helper to save per-cpu PPI irq states in GICv3
+ *****************************************************************************/
+void plat_marvell_gic_irq_pcpu_save(void)
+{
+	gicv3_irq_pcpu_save(marvell_gic_data.rdistif_base_addrs[plat_my_core_pos()],
+			    plat_my_core_pos());
+}
+
+/******************************************************************************
+ * Marvell common helper to restore per-cpu PPI irq states in GICv3
+ *****************************************************************************/
+void plat_marvell_gic_irq_pcpu_restore(void)
+{
+	gicv3_irq_pcpu_restore(marvell_gic_data.rdistif_base_addrs[plat_my_core_pos()],
+			       plat_my_core_pos());
+}
+
