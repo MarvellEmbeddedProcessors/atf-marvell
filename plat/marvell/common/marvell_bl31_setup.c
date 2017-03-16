@@ -66,6 +66,7 @@
 #include <assert.h>
 #include <console.h>
 #include <plat_marvell.h>
+#include <plat_private.h>
 #include <platform.h>
 #include <debug.h>
 

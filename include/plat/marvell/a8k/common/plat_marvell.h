@@ -106,12 +106,6 @@ void *plat_get_skip_image_data(void);
 int marvell_io_is_toc_valid(void);
 
 /*
- * Mandatory functions required in Marvell standard platforms
- */
-void plat_marvell_gic_driver_init(void);
-void plat_marvell_gic_init(void);
-
-/*
  * PSCI functionality
  */
 void psci_arch_init(void);
