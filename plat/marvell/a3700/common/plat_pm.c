@@ -34,6 +34,7 @@
 
 #include <arch_helpers.h>
 #include <plat_marvell.h>
+#include <plat_private.h>
 #include <plat_def.h>
 #include <psci.h>
 #include <debug.h>

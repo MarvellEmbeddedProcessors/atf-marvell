@@ -40,4 +40,13 @@
  ******************************************************************************/
 void plat_delay_timer_init(void);
 
+/*
+ * GIC operation, mandatory functions required in Marvell standard platforms
+ */
+void plat_marvell_gic_driver_init(void);
+void plat_marvell_gic_init(void);
+void plat_marvell_gic_cpuif_enable(void);
+void plat_marvell_gic_cpuif_disable(void);
+void plat_marvell_gic_pcpu_init(void);
+
 #endif /* __PLAT_PRIVATE_H__ */
