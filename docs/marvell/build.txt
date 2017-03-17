@@ -74,15 +74,18 @@ Build Instructions
 			Requires full initialization and command sequence
 			- SATA	- SATA device boot
 	- PARTNUM: For Armada37x0 only, the boot partition number, default is 0. To boot from eMMC, the value
-		   should be aligned with the parameter in u-boot with name of CONFIG_SYS_MMC_ENV_PART, whose
-		   value by default is 1.
-		   For detail about CONFIG_SYS_MMC_ENV_PART, please refer to u-boot build instructions.
+		should be aligned with the parameter in u-boot with name of CONFIG_SYS_MMC_ENV_PART, whose
+		value by default is 1.
+		For detail about CONFIG_SYS_MMC_ENV_PART, please refer to u-boot build instructions.
+	- WTMI_IMG: For Armada37x0 only, the path of the wtmi image, it can point to a image which does
+		nothing, a image which supports EFUSE or a customized CM3 firmware image, default is
+		"tools/wtp/wtmi/build/wtmi.bin" which supports EFUSE.
 
 	For example: in order to build the image in debug mode with log level up to 'notice' level run:
 
 		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
 
-	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level run,
+	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level,
 	the image has the preset CPU at 1000 MHz, preset DDR3 at 800 MHz, the DDR topology of DDR3 2CS,
         the image boot from SPI NOR flash partition 0, and the image is non trusted in wtp, the command
         line is as following:
