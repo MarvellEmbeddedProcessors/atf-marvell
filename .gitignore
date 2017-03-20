@@ -17,6 +17,7 @@ tools/cert_create/src/*.o
 tools/cert_create/src/**/*.o
 tools/cert_create/cert_create
 tools/cert_create/cert_create.exe
+tools/doimage/doimage
 
 # Ignore header files copied.
 tools/fiptool/firmware_image_package.h
