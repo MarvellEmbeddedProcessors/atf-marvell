@@ -1,0 +1,56 @@
+Marvell IOB address decoding bindings
+=====================================
+
+The IOB includes a description of the address decoding configuration.
+
+IOB supports up to n (in CP110 n=24) windows for external memory transaction.
+When a transaction passes through the IOB, its address is compared to each of
+the enabled windows. If there is a hit and it passes the security checks, it is
+advanced to the target port.
+
+Mandatory functions:
+	- marvell_get_iob_reg_offs
+		returns the base address of the IOB unit
+	- marvell_get_iob_max_win
+		returns the number of the max IOB windows
+	- marvell_get_iob_memory_map
+		returns the IOB windows configuration and the number of windows
+
+Mandatory structures:
+	iob_memory_map - Array that include the configuration of the windows
+	  every window/entry is a struct which has 5 parameters:
+	  - High base address of the window
+	  - Low base address of the window
+	  - High size of the window
+	  - Low size of the window
+	  - Target-ID of the window
+
+Target ID options:
+	- 0x0 = Internal configuration space
+	- 0x1 = MCI0
+	- 0x2 = PEX1_X1
+	- 0x3 = PEX2_X1
+	- 0x4 = PEX0_X4
+	- 0x5 = NAND flash
+	- 0x6 = RUNIT (NOR/SPI/BootRoom)
+	- 0x7 = MCI1
+
+Note: if the base address is more than 32 bits, it divided into high and low.
+	The same goes for the Size field, if it more that 32 bits, it divided into
+	high and low.
+	Base example:
+		base address: 0x10f0000000 should divided into:
+		base address high: 0x10
+		base address low: 0xf0000000
+	Size example:
+		size: 0x1E00F00000 should divided into:
+		size high: 0x1E
+		size low: 0x00F00000
+
+Example:
+	struct iob_win iob_memory_map[] = {
+		{0x0,	0xf7000000,	0x0,	0x1000000,	PEX1_TID}, /* PEX1_X1 window */
+		{0x0,	0xf8000000,	0x0,	0x1000000,	PEX2_TID}, /* PEX2_X1 window */
+		{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID}, /* PEX0_X4 window */
+		{0x0,	0xf9000000,	0x0,	0x1000000,	NAND_TID}  /* NAND window */
+	};
