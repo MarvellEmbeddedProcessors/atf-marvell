@@ -47,6 +47,8 @@ typedef struct timer_ops {
 	uint32_t clk_div;
 } timer_ops_t;
 
+uint32_t timer_value_get(void);
+uint32_t timer_value_ms_get(void);
 void mdelay(uint32_t msec);
 void udelay(uint32_t usec);
 void timer_init(const timer_ops_t *ops);
