@@ -32,6 +32,7 @@
 #include <debug.h>
 #include <io_driver.h>
 #include <io_storage.h>
+#include <platform_def.h>
 #include <string.h>
 
 /* As we need to be able to keep state for seek, only one file can be open
@@ -185,7 +186,9 @@ static int memmap_block_read(io_entity_t *entity, uintptr_t buffer,
 	file_state_t *fp;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_read != NULL);
 
 	fp = (file_state_t *)entity->info;

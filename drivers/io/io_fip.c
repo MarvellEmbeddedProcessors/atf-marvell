@@ -299,7 +299,9 @@ static int fip_file_read(io_entity_t *entity, uintptr_t buffer, size_t length,
 	uintptr_t backend_handle;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_read != NULL);
 	assert(entity->info != (uintptr_t)NULL);
 
