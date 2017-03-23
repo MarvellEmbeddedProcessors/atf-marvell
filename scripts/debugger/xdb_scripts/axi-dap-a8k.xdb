@@ -1,0 +1,5 @@
+define macro /button /overwrite axi_dap_enable "custom \"lowlevel=on\";TCI APSCAN /SELECT=0 4\n"
+define macro /button /overwrite axi_dap_disable "tci apscan /select=1 4; custom \"lowlevel=off\"\n"
+define macro /button /overwrite axi_dap_read "TCI AP /silent 0x4=@1;TCI AP 0xC\n"
+define macro /button /overwrite axi_dap_write "TCI AP /silent 0x4=@1;TCI AP 0xC=@2\n"
+define macro /button /overwrite axi_dap_read_loop "for @idx =0 to @2 step 4 then TCI AP /silent 0x4=@1+@idx;TCI AP 0xC end"
