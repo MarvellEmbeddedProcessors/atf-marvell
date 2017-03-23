@@ -1,0 +1,60 @@
+if (@strcmp(@BIN_EXT_ELF_PATH,"EMPTY")==0) then
+	SET VALUE @BIN_EXT_ELF_PATH = @queryinputfile("Select BLE elf file", "All Files (*.*)|*.*|ELF Files (*.afx;*.elf)|*.afx;*.elf||");
+	IF @strlen(@BIN_EXT_ELF_PATH) == 0 then
+		!User hit cancel button
+		print "USER ABORT\n"
+		MESSAGE "Update the path of the binary extension, and reload the script"
+		EXIT
+	END
+end
+
+! Set value bin_ext_run = 1 if the user run this script
+set val @bin_ext_run = 1
+
+! Reset the board
+TCI TRESET
+RESTART
+
+IF @flash_empty != 1 THEN
+	! break at start of bin_ext_run
+	SET BREAKPOINT AT (0xFFE1C048) HARD
+ELSE
+	! break at UART error of Bootrom
+	IF @armada_8040_rz != 1 THEN
+		! not Armada-8040-RZ(include AP-806-Z)
+		SET BREAKPOINT AT (0xFFFF0D14) HARD
+		RUN
+		SET BREAKPOINT AT (0xffff23d4) HARD
+	ELSE
+		SET BREAKPOINT AT (0xffff2270) HARD
+		RUN
+		SET BREAKPOINT AT (0xffff3244) HARD
+	END
+END
+
+! Run till the breakpoint
+RUN
+DELETE BREAKPOINT /ALL
+
+
+IF @flash_empty != 1 THEN
+! load BLE elf file (run from 0xFFE1C048)
+LOAD /SEGMENT /DEBUG /GLOBAL OF @BIN_EXT_ELF_PATH
+ELSE
+! load BLE elf file and update the PC to the start of the BLE
+LOAD /SEGMENT /DEBUG /GLOBAL /INIT="" OF @BIN_EXT_ELF_PATH
+END
+
+! Break at the end of bin_ext_run before jumping back top BootROM
+SET BREAKPOINT AT (0xFFE1C08C) HARD
+RUN
+DELETE BREAKPOINT /ALL
+
+! DRAM should be ready now.
+! Jump to BootRom to disable MMU and clean caches
+SET REGISTER X1=0x0
+SET REGISTER PC=0xffff0668
+
+! Before run the BootRom, set breakpoint before jump to image execution
+SET BREAKPOINT AT (0xffff068c) HARD
+RUN

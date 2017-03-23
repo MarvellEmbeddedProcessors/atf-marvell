@@ -1,0 +1,28 @@
+if (@strcmp(@BL_ELF_PATH,"EMPTY")==0) then
+	set value @BL_ELF_PATH  = @queryinputfile("select Bootloader binary file", "all files (*.*)|*.*");
+	if @strlen(BL_ELF_PATH) == 0 then
+		!user hit cancel button
+		print "user abort\n"
+		MESSAGE "Update the path of the Bootloader binary, and reload the script"
+		EXIT
+	end
+end
+
+! if the ATF script is not run, reset the board and stop at 0xffff0000
+IF @atf_run != 1 THEN
+TCI TRESET
+RESTART
+END
+
+DELETE BREAKPOINT /ALL
+! break at U-Boot
+SET BREAKPOINT AT (0x0) HARD
+! Run till the U-boot
+RUN
+
+DELETE BREAKPOINT /ALL
+
+! load U-Boot ELF image
+LOAD /SEGMENT /DEBUG /GLOBAL /INIT="" OF @BL_ELF_PATH
+
+! RUN

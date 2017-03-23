@@ -1,0 +1,53 @@
+if (@strcmp(@ATF_FIB_BIN_PATH,"EMPTY")==0) then
+	set value @ATF_FIB_BIN_PATH = @queryinputfile("select FIB bin file", "all files (*.*)|*.*");
+	if @strlen(@bin_ext_elf_path) == 0 then
+		!user hit cancel button
+		print "user abort\n"
+		MESSAGE "Update the path of the ATF FIB binary, and reload the script"
+		EXIT
+	end
+end
+if (@strcmp(@ATF_BL1_ELF_PATH,"EMPTY")==0) then
+	set value @ATF_BL1_ELF_PATH = @queryinputfile("select BL1 ELF file", "all files (*.*)|*.*|elf files (*.afx;*.elf)|*.afx;*.elf||");
+	if @strlen(@ATF_BL1_ELF_PATH) == 0 then
+		!user hit cancel button
+		print "user abort\n"
+		MESSAGE "Update the path of the BL1 ELF, and reload the script"
+		EXIT
+	end
+end
+
+! Set value atf_run = 1 if the user run this script
+set val @atf_run = 1
+
+! if the bin_ext script is not run, reset the board and stop at 0xffff0000
+IF @bin_ext_run != 1 THEN
+TCI TRESET
+RESTART
+END
+
+DELETE BREAKPOINT /ALL
+! break at bl1
+SET BREAKPOINT AT (0x4100000) HARD
+
+! If the SPL script run, it already run the bootrom code.
+IF @bin_ext_run != 1 THEN
+RUN
+END
+
+! load fip.bin (loaded by BL1 from 0x4120000)
+LOAD /BINARY /ADDRESS=0x4120000 OF @ATF_FIB_BIN_PATH
+
+! load BL1.elf (run from 0x4100000)
+LOAD /SEGMENT /DEBUG /GLOBAL /INIT="" OF @ATF_BL1_ELF_PATH
+
+! break at call to bl2_main function
+SET BREAKPOINT AT (0x4017000) HARD
+
+! break at bl31 function
+SET BREAKPOINT AT (0x4023000) HARD
+
+! break at U-Boot
+SET BREAKPOINT AT (0x0) HARD
+
+RUN
