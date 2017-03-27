@@ -42,47 +42,18 @@
 
 
 /*******************************************************************************
- * mss_pm_ipc_msg_send
- *
- * DESCRIPTION: create and transmit IPC message
- ******************************************************************************
- */
-int mss_pm_ipc_msg_send(unsigned int channel_id,
-			const psci_power_state_t *target_state);
+* mss_pm_ipc_msg_send
+*
+* DESCRIPTION: create and transmit IPC message
+*******************************************************************************/
+int mss_pm_ipc_msg_send(unsigned int channel_id, unsigned int msg_id, const psci_power_state_t *target_state);
 
 /*******************************************************************************
- * mss_pm_ipc_msg_recv
- *
- * DESCRIPTION: wait from reception of IPC message indication,
- *              once received, read the message from IPC channel,
- *              mark IPC channel as Free, and validate reply
- ******************************************************************************
- */
-int mss_pm_ipc_msg_recv(unsigned int channel_id, unsigned int msg_id);
-
-/*******************************************************************************
- * mss_pm_ipc_on_msg_trigger
- *
- * DESCRIPTION: Trigger IPC ON message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_on_msg_trigger(unsigned int cpu_id);
-
-/*******************************************************************************
- * mss_pm_ipc_on_msg_trigger
- *
- * DESCRIPTION: Trigger IPC OFF message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_off_msg_trigger(unsigned int cpu_id);
-
-/*******************************************************************************
- * mss_pm_ipc_on_msg_trigger
- *
- * DESCRIPTION: Trigger IPC SUSPEND message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_suspend_msg_trigger(unsigned int cpu_id);
+* mss_pm_ipc_msg_trigger
+*
+* DESCRIPTION: Trigger IPC message interrupt to MSS
+*******************************************************************************/
+int mss_pm_ipc_msg_trigger(void);
 
 
 #endif /* __MSS_PM_IPC_H */

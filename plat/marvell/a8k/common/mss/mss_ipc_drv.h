@@ -130,39 +130,18 @@ struct mss_pm_ipc_ch {
 int mv_pm_ipc_init(unsigned long ipc_control_addr);
 
 /*******************************************************************************
- * mv_pm_ipc_msg_rx
- *
- * DESCRIPTION: Retrieve message from IPC channel
- ******************************************************************************
- */
-int mv_pm_ipc_msg_rx(unsigned int channel_id, unsigned int direction,
-		     struct mss_pm_ipc_msg *msg);
+* mv_pm_ipc_msg_rx
+*
+* DESCRIPTION: Retrieve message from IPC channel
+*******************************************************************************/
+int mv_pm_ipc_msg_rx(unsigned int channel_id, struct mss_pm_ipc_msg *msg);
 
 /*******************************************************************************
- * mv_pm_ipc_msg_tx
- *
- * DESCRIPTION: Send message via IPC channel
- ******************************************************************************
- */
-int mv_pm_ipc_msg_tx(unsigned int channel_id, unsigned int direction,
+* mv_pm_ipc_msg_tx
+*
+* DESCRIPTION: Send message via IPC channel
+*******************************************************************************/
+int mv_pm_ipc_msg_tx(unsigned int channel_id, unsigned int msg_id,
 			unsigned int cluster_power_state);
-
-/*******************************************************************************
- * mv_pm_ipc_msg_validate
- *
- * DESCRIPTION: Validate IPC channel state
- ******************************************************************************
- */
-int mv_pm_ipc_msg_validate(unsigned int channel_id, unsigned int direction,
-			   unsigned int state);
-
-/*******************************************************************************
- * mv_pm_ipc_msg_update
- *
- * DESCRIPTION: Update IPC channel state
- ******************************************************************************
- */
-int mv_pm_ipc_msg_update(unsigned int channel_id, unsigned int direction,
-			 unsigned int state);
 
 #endif /* __PM_IPC_DRV_H */

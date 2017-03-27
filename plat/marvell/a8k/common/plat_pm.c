@@ -55,11 +55,6 @@
 #ifdef SCP_IMAGE
 /* this lock synchronize AP multiple cores execution with MSS */
 DEFINE_BAKERY_LOCK(pm_sys_lock);
-/*
- * this lock ensures core flow execution
- * "suspend->suspend finish", and "off-> on finish"
- */
-DEFINE_BAKERY_LOCK(pm_core_lock[PLATFORM_CORE_COUNT]);
 #endif
 
 int plat_marvell_cpu_on(u_register_t mpidr)
@@ -158,18 +153,17 @@ int a8k_pwr_domain_on(u_register_t mpidr)
 	 */
 	bakery_lock_get(&pm_sys_lock);
 
-	/* trace message */
-	PM_TRACE((TRACE_PWR_DOMAIN_ON | target), plat_my_core_pos());
+	/* send CPU ON IPC Message to MSS */
+	mss_pm_ipc_msg_send(target, PM_IPC_MSG_CPU_ON, 0);
 
 	/* trigger IPC message to MSS */
-	mss_pm_ipc_on_msg_trigger(target);
-
-	/* verify command execution before continue to ATF generic code */
-	__asm__ volatile("dsb sy");
-	__asm__ volatile("isb");
+	mss_pm_ipc_msg_trigger();
 
 	/* pm system synchronization */
 	bakery_lock_release(&pm_sys_lock);
+
+	/* trace message */
+	PM_TRACE((TRACE_PWR_DOMAIN_ON | target), plat_my_core_pos());
 #else
 	/* proprietary CPU ON exection flow */
 	plat_marvell_cpu_on(mpidr);
@@ -204,31 +198,17 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 	 */
 	bakery_lock_get(&pm_sys_lock);
 
-	/*
-	 * pm core flow synchronization - is used to protect
-	 * core execution flow, lock is
-	 * released in a8k_pwr_domain_on_finish
-	 */
-	bakery_lock_get(&pm_core_lock[idx]);
-
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_OFF, idx);
-
 	/* send CPU OFF IPC Message to MSS */
-	mss_pm_ipc_msg_send(idx, target_state);
+	mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_OFF, target_state);
 
-	/* verify command execution before triggering MSS execution */
-	__asm__ volatile("isb");
-
-	/* Trigger IPC message to MSS */
-	mss_pm_ipc_off_msg_trigger(idx);
-
-	/* verify command execution before return to ATF generic code */
-	__asm__ volatile("dsb sy");
-	__asm__ volatile("isb");
+	/* trigger IPC message to MSS */
+	mss_pm_ipc_msg_trigger();
 
 	/* pm system synchronization */
 	bakery_lock_release(&pm_sys_lock);
+
+	/* trace message */
+	PM_TRACE(TRACE_PWR_DOMAIN_OFF, idx);
 #else
 	INFO("a8k_pwr_domain_off is not supported without SCP\n");
 	return;
@@ -242,42 +222,27 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
 #ifdef SCP_IMAGE
-	unsigned int idx = plat_my_core_pos();
+	unsigned int idx;
 
 	/* Prevent interrupts from spuriously waking up this cpu */
 	gicv2_cpuif_disable();
 
-	/*
-	 * pm system synchronization -used to synchronize
-	 * multiple core access to MSS
-	 */
+	idx = plat_my_core_pos();
+
+	/* pm system synchronization -used to synchronize multiple core access to MSS */
 	bakery_lock_get(&pm_sys_lock);
 
-	/*
-	 * pm core flow synchronization - is used to protect
-	 * core execution flow, lock is
-	 * released in a8k_pwr_domain_suspend_finish
-	 */
-	bakery_lock_get(&pm_core_lock[idx]);
-
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND, idx);
-
 	/* send CPU Suspend IPC Message to MSS */
-	mss_pm_ipc_msg_send(idx, target_state);
+	mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_SUSPEND, target_state);
 
-	/* verify command execution before triggering MSS execution */
-	__asm__ volatile("isb");
-
-	/* Trigger IPC message to MSS */
-	mss_pm_ipc_suspend_msg_trigger(idx);
-
-	/* verify command execution before return to ATF generic code */
-	__asm__ volatile("dsb sy");
-	__asm__ volatile("isb");
+	/* trigger IPC message to MSS */
+	mss_pm_ipc_msg_trigger();
 
 	/* pm system synchronization */
 	bakery_lock_release(&pm_sys_lock);
+
+	/* trace message */
+	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND, idx);
 #else
 	INFO("a8k_pwr_domain_suspend is not supported without SCP\n");
 	return;
@@ -291,10 +256,6 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
  ******************************************************************************/
 void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
-#ifdef SCP_IMAGE
-	unsigned int idx = plat_my_core_pos();
-#endif
-
 	/* arch specific configuration */
 	psci_arch_init();
 
@@ -303,13 +264,6 @@ void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	gicv2_cpuif_enable();
 
 #ifdef SCP_IMAGE
-	/*
-	 * pm core flow synchronization - is used to protect
-	 * core execution flow, release lock
-	 * taken in a8k_pwr_domain_off
-	 */
-	bakery_lock_release(&pm_core_lock[idx]);
-
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_ON_FINISH, idx);
 #endif /* SCP_IMAGE */
@@ -325,20 +279,11 @@ void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 {
 #ifdef SCP_IMAGE
-	unsigned int idx = plat_my_core_pos();
-
 	/* arch specific configuration */
 	psci_arch_init();
 
 	/* Interrupt initialization */
 	gicv2_cpuif_enable();
-
-	/*
-	 * pm core flow synchronization - is used to protect
-	 * core execution flow, release lock
-	 * taken in a8k_pwr_domain_suspend
-	 */
-	bakery_lock_release(&pm_core_lock[idx]);
 
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH, idx);

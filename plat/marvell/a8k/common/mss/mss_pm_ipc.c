@@ -41,107 +41,49 @@
 #include <mss_pm_ipc.h>
 
 /*
- ** SISR is 32 bit interrupt register representing 32 interrupts
- **
- ** +==================+==================+==================+=============+
- ** + Suspend msg int  + Off msg int      + On msg int       + Reserved    +
- ** +==================+==================+==================+=============+
- ** + Bits 31 30 29 28 + Bits 27 26 25 24 + Bits 23 22 21 20 + Bits 19 - 0 +
- ** +==================+==================+==================+=============+
- ** + Core  3  2  1  0 + Core  3  2  1  0 + Core  3  2  1  0 +             +
- ** +==================+==================+==================+=============+
- **
- ** Example: Bit 26 = Off Message Interrupt to core #2
- */
+** SISR is 32 bit interrupt register representing 32 interrupts
+**
+** +======+=============+=============+
+** + Bits + 31          + 30 - 00     +
+** +======+=============+=============+
+** + Desc + MSS Msg Int + Reserved    +
+** +======+=============+=============+
+*/
 #define MSS_SISR		(MVEBU_REGS_BASE + 0x5800D0)
+#define MSS_SISTR		(MVEBU_REGS_BASE + 0x5800D8)
 
-#define MSS_CPU_SUSPEND_INT_SET_OFFSET		(28)
-#define MSS_CPU_OFF_INT_SET_OFFSET		(24)
-#define MSS_CPU_ON_INT_SET_OFFSET		(20)
+#define MSS_MSG_INT_MASK	(0x80000000)
 
 /*******************************************************************************
- * mss_pm_ipc_msg_send
- *
- * DESCRIPTION: create and transmit IPC message
- ******************************************************************************
- */
-int mss_pm_ipc_msg_send(unsigned int channel_id,
-			const psci_power_state_t *target_state)
+* mss_pm_ipc_msg_send
+*
+* DESCRIPTION: create and transmit IPC message
+*******************************************************************************/
+int mss_pm_ipc_msg_send(unsigned int channel_id, unsigned int msg_id, const psci_power_state_t *target_state)
 {
 	/* Transmit IPC message */
 #ifndef DISABLE_CLUSTER_LEVEL
-	mv_pm_ipc_msg_tx(channel_id, IPC_MSG_TX,
-		(unsigned int)target_state->pwr_domain_state[MPIDR_AFFLVL1]);
+	mv_pm_ipc_msg_tx(channel_id, msg_id, (unsigned int)target_state->pwr_domain_state[MPIDR_AFFLVL1]);
 #else
-	mv_pm_ipc_msg_tx(channel_id, IPC_MSG_TX, 0);
+	mv_pm_ipc_msg_tx(channel_id, msg_id, 0);
 #endif
 
 	return 0;
 }
 
 /*******************************************************************************
- * mss_pm_ipc_msg_recv
- *
- * DESCRIPTION: wait from reception of IPC message indication,
- *              once received, read the message from IPC channel,
- *              mark IPC channel as Free, and validate reply
- ******************************************************************************
- */
-int mss_pm_ipc_msg_recv(unsigned int channel_id, unsigned int msg_id)
+* mss_pm_ipc_msg_trigger
+*
+* DESCRIPTION: Trigger IPC message interrupt to MSS
+*******************************************************************************/
+int mss_pm_ipc_msg_trigger(void)
 {
-	struct mss_pm_ipc_msg msg;
+	mmio_write_32(MSS_SISR, MSS_MSG_INT_MASK);
 
-	/* Wait for PC message indication */
-	do {} while (mv_pm_ipc_msg_validate(channel_id,
-					    IPC_MSG_RX, IPC_MSG_OCCUPY) != 0);
+	do {
+		/* wait while SCP process incoming interrupt */
 
-	/* Read the message from IPC channel */
-	mv_pm_ipc_msg_rx(channel_id, IPC_MSG_RX, &msg);
+	} while (mmio_read_32(MSS_SISTR) == MSS_MSG_INT_MASK);
 
-	/* Mark IPC channel as Free */
-	mv_pm_ipc_msg_update(channel_id, IPC_MSG_RX, IPC_MSG_FREE);
-
-	if (msg_id != msg.msg_reply) {
-		ERROR("MSS Error, Invalid reply message type %d\n",
-		      msg.msg_reply);
-		return -1;
-	}
-
-	return 0;
-}
-
-/*******************************************************************************
- * mss_pm_ipc_on_msg_trigger
- *
- * DESCRIPTION: Trigger IPC ON message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_on_msg_trigger(unsigned int cpu_id)
-{
-	mmio_write_32(MSS_SISR, 1 << (MSS_CPU_ON_INT_SET_OFFSET + cpu_id));
-	return 0;
-}
-
-/*******************************************************************************
- * mss_pm_ipc_msg_trigger
- *
- * DESCRIPTION: Trigger IPC OFF message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_suspend_msg_trigger(unsigned int cpu_id)
-{
-	mmio_write_32(MSS_SISR, 1 << (MSS_CPU_SUSPEND_INT_SET_OFFSET + cpu_id));
-	return 0;
-}
-
-/*******************************************************************************
- * mss_pm_ipc_msg_trigger
- *
- * DESCRIPTION: Trigger IPC SUSPEND message interrupt to MSS
- ******************************************************************************
- */
-int mss_pm_ipc_off_msg_trigger(unsigned int cpu_id)
-{
-	mmio_write_32(MSS_SISR, 1 << (MSS_CPU_OFF_INT_SET_OFFSET + cpu_id));
 	return 0;
 }
