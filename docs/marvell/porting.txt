@@ -1,0 +1,106 @@
+ATF Porting Guide
+=================
+
+This section describes how to port ATF to a customer board, assuming that the SoC being used is already supported
+in ATF.
+
+Source code structure
+---------------------
+- The cusomer platform specific code shall reside under "plat/marvell/<soc family>/<soc>_cust"
+	(e.g. 'plat/marvell/a8k/a7040_cust').
+- The platform name for build purposes is called "<soc>_cust" (e.g. a7040_cust).
+- The build system will reuse all files from within the soc directory, and take only the porting
+  files from the customer platform directory.
+
+
+Porting
+-------
+Files that require porting are located at "plat/marvell/<soc family>/<soc>_cust" directory.
+
+A7K/A8K specific:
+
+  - SoC Physical Address Map (soc_phys_map_config.c):
+	- This file describes the SoC physical memory mapping to be used for the CCU, RFU, AXI-MBUS and IOB
+	  address decode units (Refer to the functional spec for more details).
+	- In most cases, using the default address decode windows should work OK.
+	- In cases where a special physical address map is needed (e.g. Special size for PCIe MEM windows,
+	  large memory mapped SPI flash...), then porting of the SoC memory map is required.
+	- Note: For a detailed information on how CCU, RFU, AXI-MBUS & IOB work, please refer to the SoC functional spec,
+	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/rfu].txt" files.
+
+  - booloader recovery (marvell_plat_config.c):
+	- Background:
+		bootrom can skip the current image and choose to boot from next position if a specific value
+		(0xDEADB002) is returned by the ble main function
+		This feature is used for bootloader recovery by booting from a valid flash-image saved on the next
+		position on flash.
+		(e.g. address 2M in SPI flash)
+		supported options to implement the skip request:
+		o GPIO
+		o I2C
+		o User defined
+
+	- Porting:
+		under marvell_plat_config.c need to implement struct that includes the specific board
+		parameters.
+	- Example
+		o A7040-DB specific implementation (.....marvell/plat/a8k/a70x0/board/marvell_plat_config.c)
+		The image skip is implemented by using GPIO:
+		mpp 33 (SW5)
+		before reseting the board make sure there is a valid image on the next flash address:
+			-tftp [valid address] flash-image.bin
+			-sf update [valid address] 0x2000000 [size]
+		press reset and keep pressing on the button connected to the chosen GPIO pin, a skip image request
+		message is supposed to print on the screen and the bootrom boots from the saved image at the next position.
+
+  - DDR Porting (dram_port.c):
+	- This file defines the dram topology and parameters of the target board.
+	- The DDR code is part of the BLE component, which is an extension of ARM Trusted Firmware (ATF).
+	- The DDR driver called mv_ddr is released separately apart from ATF sources.
+	- The BLE and consequently, the DDR init code is executed at the early stage of the boot process.
+	- Each supported platform of the ATF has its own DDR porting file called dram_port.c located at
+		"atf/plat/marvell/a8k/<platform>/board" directory.
+	- Please refer to 'mv_ddr/doc/porting_guide.txt' for detailed porting description.
+	  The build target directory is "build/<platform>/release/ble".
+
+A3700 specific:
+
+  - Wake up source configuration for Low Power mode (pm_src.c):
+	- This file defines the wake up source for Low Power mode of the target board.
+	- Each supported platform of the ATF should have its own wake up source file called pm_src.c
+		located at "atf/plat/marvell/a3700/<platform>/board" directory.
+	- In pm_src.c, a dedicate routine with name mv_wake_up_src_config_get() should be defined, which
+		would be called by A3700 power management framework to get wake up source configuration.
+			struct pm_wake_up_src_config *mv_wake_up_src_config_get(void)
+	- The only supported wake up source is South bridge and North bridge GPIO, and each platform
+		could have up to 4 different wake up sources at the same time.
+	- Wake up source configuration is defined as "struct pm_wake_up_src_config"
+		o wake_up_src_num: the number of wake up source, could be up to 4.
+		o wake_up_src: the array for each wake up source configuration.
+			- wake_up_src_type: now the only supported one is WAKE_UP_SRC_GPIO.
+			- wake_up_data: wake up source data.
+				gpio_data.bank_num: GPIO bank number, 0 for North bridge GPIO, 1 for
+					South bridge GPIO.
+				gpio_data.gpio_num: GPIO number that is used as wake up source.
+	- Example of A3700-DB wake up source:
+		static struct pm_wake_up_src_config wake_up_src_cfg = {
+			.wake_up_src_num = 2,
+			.wake_up_src[0] = {
+				.wake_up_src_type = WAKE_UP_SRC_GPIO,
+				.wake_up_data = {
+					.gpio_data.bank_num = 0, /* North Bridge */
+					.gpio_data.gpio_num = 14
+				}
+			},
+			.wake_up_src[1] = {
+				.wake_up_src_type = WAKE_UP_SRC_GPIO,
+				.wake_up_data = {
+					.gpio_data.bank_num = 1, /* South Bridge */
+					.gpio_data.gpio_num = 2
+				}
+			}
+		};
+		struct pm_wake_up_src_config *mv_wake_up_src_config_get(void)
+		{
+			return &wake_up_src_cfg;
+		}
