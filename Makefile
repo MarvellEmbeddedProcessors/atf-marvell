@@ -40,6 +40,8 @@ VERSION_MINOR			:= 3
 MAKE_HELPERS_DIRECTORY := make_helpers/
 include ${MAKE_HELPERS_DIRECTORY}build_macros.mk
 include ${MAKE_HELPERS_DIRECTORY}build_env.mk
+include tools/doimage/doimage.mk
+include version.mk
 
 ################################################################################
 # Default values for build configurations
@@ -99,7 +101,7 @@ TRUSTED_BOARD_BOOT		:= 0
 # The platform Makefile is free to override this value.
 PROGRAMMABLE_RESET_ADDRESS	:= 0
 # Build flag to treat usage of deprecated platform and framework APIs as error.
-ERROR_DEPRECATED		:= 0
+ERROR_DEPRECATED		:= 1
 # By default, consider that the platform may release several CPUs out of reset.
 # The platform Makefile is free to override this value.
 COLD_BOOT_SINGLE_CPU		:= 0
@@ -117,6 +119,22 @@ ENABLE_PSCI_STAT	:= 0
 SEPARATE_CODE_AND_RODATA	:= 0
 # Flag to enable new version of image loading
 LOAD_IMAGE_V2		:= 0
+# Enable compilation for Palladium emulation platform
+PALLADIUM			:= 0
+# Disable LLC in A8K family of SoCs
+LLC_DISABLE			:= 0
+# Make non-trusted image by default
+MARVELL_SECURE_BOOT	:= 	0
+# Enable end point only for 7040 PCAC
+ifeq ($(PLAT),$(filter $(PLAT),a7040_pcac))
+PCI_EP_SUPPORT			:= 1
+else
+PCI_EP_SUPPORT			:= 0
+endif
+
+# Marvell images
+BOOT_IMAGE			:= boot-image.bin
+FLASH_IMAGE			:= flash-image.bin
 
 ################################################################################
 # Checkpatch script options
@@ -179,7 +197,7 @@ endif
 ifeq (${BUILD_STRING},)
         BUILD_STRING	:=	$(shell git log -n 1 --pretty=format:"%h")
 endif
-VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${BUILD_STRING}
+VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${SUBVERSION}:${BUILD_STRING}
 
 # The cert_create tool cannot generate certificates individually, so we use the
 # target 'certificates' to create them all
@@ -439,6 +457,45 @@ FIPTOOLPATH		?=	tools/fiptool
 FIPTOOL			?=	${FIPTOOLPATH}/fiptool${BIN_EXT}
 
 
+DOIMAGEPATH		?=	tools/doimage
+DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
+
+ifeq ($(findstring a80x0,${PLAT}),)
+DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_7K.cfg
+else
+DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_8K.cfg
+endif # PLAT == a8K/a7K
+
+ifeq (${MARVELL_SECURE_BOOT},1)
+DOIMAGE_SEC_FLAGS := -c $(DOIMAGE_SEC)
+DOIMAGE_LIBS_CHECK = \
+        if ! [ -d "/usr/include/mbedtls" ]; then \
+                        echo "****************************************" >&2; \
+                        echo "Missing mbedTLS installation! " >&2; \
+                        echo "Please download it from \"tls.mbed.org\"" >&2; \
+			echo "Alternatively on Debian/Ubuntu system install" >&2; \
+			echo "\"libmbedtls-dev\" package" >&2; \
+                        echo "Make sure to use version 2.1.0 or later" >&2; \
+                        echo "****************************************" >&2; \
+                exit 1; \
+        else if ! [ -f "/usr/include/libconfig.h" ]; then \
+                        echo "********************************************************" >&2; \
+                        echo "Missing Libconfig installation!" >&2; \
+                        echo "Please download it from \"www.hyperrealm.com/libconfig/\"" >&2; \
+                        echo "Alternatively on Debian/Ubuntu system install packages" >&2; \
+                        echo "\"libconfig8\" and \"libconfig8-dev\"" >&2; \
+                        echo "********************************************************" >&2; \
+                exit 1; \
+        fi \
+        fi
+else #MARVELL_SECURE_BOOT
+DOIMAGE_LIBS_CHECK =
+DOIMAGE_SEC_FLAGS =
+endif #MARVELL_SECURE_BOOT
+
+ROM_BIN_EXT ?= $(BUILD_PLAT)/ble.bin
+DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
+
 ################################################################################
 # Build options checks
 ################################################################################
@@ -466,7 +523,8 @@ $(eval $(call assert_boolean,ENABLE_PMF))
 $(eval $(call assert_boolean,ENABLE_PSCI_STAT))
 $(eval $(call assert_boolean,SEPARATE_CODE_AND_RODATA))
 $(eval $(call assert_boolean,LOAD_IMAGE_V2))
-
+$(eval $(call assert_boolean,MARVELL_SECURE_BOOT))
+$(eval $(call assert_boolean,PCI_EP_SUPPORT))
 
 ################################################################################
 # Add definitions to the cpp preprocessor based on the current build options.
@@ -513,10 +571,19 @@ ifeq (${ARCH},aarch32)
 else
         $(eval $(call add_define,AARCH64))
 endif
+$(eval $(call add_define,PALLADIUM))
+$(eval $(call add_define,LLC_DISABLE))
+$(eval $(call add_define,PCI_EP_SUPPORT))
 
 ################################################################################
 # Include BL specific makefiles
 ################################################################################
+
+ifdef BLE_SOURCES
+NEED_BLE := yes
+include ble/ble.mk
+endif
+
 ifdef BL1_SOURCES
 NEED_BL1 := yes
 include bl1/bl1.mk
@@ -582,6 +649,10 @@ ifeq (${ERROR_DEPRECATED},0)
 endif
 
 # Expand build macros for the different images
+ifeq (${NEED_BLE},yes)
+$(if ${BLE}, ,$(eval $(call MAKE_BL,e)))
+endif
+
 ifeq (${NEED_BL1},yes)
 $(eval $(call MAKE_BL,1))
 endif
@@ -631,6 +702,7 @@ clean:
 	$(call SHELL_REMOVE_DIR,${BUILD_PLAT})
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 realclean distclean:
 	@echo "  REALCLEAN"
@@ -638,6 +710,7 @@ realclean distclean:
 	$(call SHELL_DELETE_ALL, ${CURDIR}/cscope.*)
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 checkcodebase:		locate-checkpatch
 	@echo "  CHECKING STYLE"
@@ -702,12 +775,24 @@ ${BUILD_PLAT}/${FWU_FIP_NAME}: ${FWU_FIP_DEPS} ${FIPTOOL}
 	@echo
 
 fiptool: ${FIPTOOL}
+ifeq (${CALL_DOIMAGE}, y)
+fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
+	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
+	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
+	${DOIMAGETOOL} ${DOIMAGE_FLAGS} ${BUILD_PLAT}/${BOOT_IMAGE} ${BUILD_PLAT}/${FLASH_IMAGE}
+else
 fip: ${BUILD_PLAT}/${FIP_NAME}
+endif
 fwu_fip: ${BUILD_PLAT}/${FWU_FIP_NAME}
 
 .PHONY: ${FIPTOOL}
 ${FIPTOOL}:
 	${Q}${MAKE} CPPFLAGS="-DVERSION='\"${VERSION_STRING}\"'" --no-print-directory -C ${FIPTOOLPATH}
+
+.PHONY: ${DOIMAGETOOL}
+${DOIMAGETOOL}:
+	@$(DOIMAGE_LIBS_CHECK)
+	${Q}${MAKE} --no-print-directory -C ${DOIMAGEPATH}
 
 cscope:
 	@echo "  CSCOPE"
