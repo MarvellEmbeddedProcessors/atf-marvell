@@ -206,14 +206,14 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	 * Initialize CCI for this cluster during cold boot.
 	 * No need for locks as no other CPU is active.
 	 */
-	marvell_cci_init();
+	plat_marvell_interconnect_init();
 
 	/*
 	 * Enable CCI coherency for the primary CPU's cluster.
 	 * Platform specific PSCI code will enable coherency for other
 	 * clusters.
 	 */
-	cci_enable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr()));
+	plat_marvell_interconnect_enter_coherency();
 #endif
 }
 

@@ -70,14 +70,6 @@
 #include <platform_def.h>
 #include <xlat_tables.h>
 
-#ifdef USE_CCI
-#include <cci.h>
-
-static const int cci_map[] = {
-	PLAT_MARVELL_CCI_CLUSTER0_SL_IFACE_IX,
-	PLAT_MARVELL_CCI_CLUSTER1_SL_IFACE_IX
-};
-#endif
 
 /* Weak definitions may be overridden in specific ARM standard platform */
 #pragma weak plat_get_ns_image_entrypoint
@@ -194,9 +186,3 @@ const mmap_region_t *plat_marvell_get_mmap(void)
 	return plat_marvell_mmap;
 }
 
-#ifdef USE_CCI
-void marvell_cci_init(void)
-{
-	cci_init(PLAT_MARVELL_CCI_BASE, cci_map, ARRAY_SIZE(cci_map));
-}
-#endif
