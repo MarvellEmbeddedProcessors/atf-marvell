@@ -33,11 +33,12 @@
 */
 
 #include <plat_def.h>
-#include <apn806_setup.h>
 #include <amb_adec.h>
 #include <iob.h>
 #include <icu.h>
 #include <mmio.h>
+#include <delay_timer.h>
+#include <cp110_setup.h>
 
 /*
   ICU configuration
@@ -366,6 +367,64 @@ void amb_bridge_init(int cp_index)
 	mmio_write_32(MVEBU_AMB_IP_BRIDGE_WIN_REG(cp_index, 0), reg);
 }
 
+void cp110_rtc_init(int cp_index)
+{
+	/* Update MBus timing parameters before accessing RTC registers */
+	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
+			   MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG_OFFS,
+			   MVEBU_RTC_WRCLK_PERIOD_MASK,
+			   MVEBU_RTC_WRCLK_PERIOD_DEFAULT);
+
+	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
+			   MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG_OFFS,
+			   MVEBU_RTC_WRCLK_SETUP_MASK,
+			   MVEBU_RTC_WRCLK_SETUP_DEFAULT << MVEBU_RTC_WRCLK_SETUP_OFFS);
+
+	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
+			   MVEBU_RTC_BRIDGE_TIMING_CTRL1_REG_OFFS,
+			   MVEBU_RTC_READ_OUTPUT_DELAY_MASK,
+			   MVEBU_RTC_READ_OUTPUT_DELAY_DEFAULT);
+
+	/*
+	 * Issue reset to the RTC if Clock Correction register
+	 * contents did not sustain the reboot/power-on.
+	 */
+	if ((mmio_read_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_CCR_REG) &
+	    MVEBU_RTC_NOMINAL_TIMING_MASK) != MVEBU_RTC_NOMINAL_TIMING) {
+		/* Reset Test register */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TEST_CONFIG_REG, 0);
+		udelay(500000);
+
+		/* Reset Time register */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TIME_REG, 0);
+		udelay(62);
+
+		/* Reset Status register */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_STATUS_REG,
+			      (MVEBU_RTC_STATUS_ALARM1_MASK | MVEBU_RTC_STATUS_ALARM2_MASK));
+		udelay(62);
+
+		/* Turn off Int1 and Int2 sources & clear the Alarm count */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_IRQ_1_CONFIG_REG, 0);
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_IRQ_2_CONFIG_REG, 0);
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_ALARM_1_REG, 0);
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_ALARM_2_REG, 0);
+
+		/* Setup nominal register access timing */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_CCR_REG,
+			      MVEBU_RTC_NOMINAL_TIMING);
+
+		/* Reset Time register */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TIME_REG, 0);
+		udelay(10);
+
+		/* Reset Status register */
+		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_STATUS_REG,
+			      (MVEBU_RTC_STATUS_ALARM1_MASK | MVEBU_RTC_STATUS_ALARM2_MASK));
+		udelay(50);
+	}
+}
+
 void cp110_init(int cp_index)
 {
 	/* configure AXI-MBUS windows for CP0*/
@@ -391,6 +450,9 @@ void cp110_init(int cp_index)
 
 	/* Open AMB bridge for comphy for CP0 & CP1*/
 	amb_bridge_init(cp_index);
+
+	/* Reset RTC if needed */
+	cp110_rtc_init(cp_index);
 }
 
 /* Do the minimal setup required to configure the CP in BLE */
