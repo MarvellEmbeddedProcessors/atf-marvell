@@ -34,6 +34,8 @@
 #ifndef __PLAT_CP110_H__
 #define __PLAT_CP110_H__
 
+#include <apn806_setup.h>
+
 #define MVEBU_DEVICE_ID_REG		(MVEBU_CP_DFX_BASE(0) + 0x40)
 #define MVEBU_DEVICE_ID_OFFSET		(0)
 #define MVEBU_DEVICE_ID_MASK		(0xffff << MVEBU_DEVICE_ID_OFFSET)
@@ -41,6 +43,32 @@
 #define MVEBU_DEVICE_REV_MASK		(0xf << MVEBU_DEVICE_REV_OFFSET)
 #define MVEBU_70X0_DEV_ID		(0x7040)
 #define MVEBU_80X0_DEV_ID		(0x8040)
+
+/*******************************************************************************
+ * RTC Configuration
+ ******************************************************************************/
+#define MVEBU_RTC_BASE(cp_index)		(MVEBU_CP_REGS_BASE(cp_index) + 0x284000)
+#define MVEBU_RTC_STATUS_REG			0x0
+#define MVEBU_RTC_STATUS_ALARM1_MASK		0x1
+#define MVEBU_RTC_STATUS_ALARM2_MASK		0x2
+#define MVEBU_RTC_TIME_REG			0xC
+#define MVEBU_RTC_IRQ_1_CONFIG_REG		0x4
+#define MVEBU_RTC_IRQ_2_CONFIG_REG		0x8
+#define MVEBU_RTC_ALARM_1_REG			0x10
+#define MVEBU_RTC_ALARM_2_REG			0x14
+#define MVEBU_RTC_CCR_REG			0x18
+#define MVEBU_RTC_NOMINAL_TIMING		0x2000
+#define MVEBU_RTC_NOMINAL_TIMING_MASK		0x7FFF
+#define MVEBU_RTC_TEST_CONFIG_REG		0x1C
+#define MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG_OFFS	0x0
+#define MVEBU_RTC_WRCLK_PERIOD_MASK		0xFFFF
+#define MVEBU_RTC_WRCLK_PERIOD_DEFAULT		0x3FF
+#define MVEBU_RTC_WRCLK_SETUP_OFFS		16
+#define MVEBU_RTC_WRCLK_SETUP_MASK		0xFFFF0000
+#define MVEBU_RTC_WRCLK_SETUP_DEFAULT		0x29
+#define MVEBU_RTC_BRIDGE_TIMING_CTRL1_REG_OFFS	0x84
+#define MVEBU_RTC_READ_OUTPUT_DELAY_MASK	0xFFFF
+#define MVEBU_RTC_READ_OUTPUT_DELAY_DEFAULT	0x1F
 
 static inline uint32_t cp110_device_id_get(void)
 {
