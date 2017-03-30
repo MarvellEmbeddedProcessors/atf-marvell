@@ -69,6 +69,8 @@ BLE_SOURCES		:=	$(MARVELL_COMMON_BASE)/sys_info.c		 	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		 	\
 				$(MARVELL_DRV_BASE)/aro.c	         	\
+				$(MARVELL_DRV_BASE)/thermal.c			\
+				$(PLAT_COMMON_BASE)/marvell_thermal.c		\
 				$(BLE_PORTING_SOURCES)
 
 ifeq (${PCI_EP_SUPPORT}, 1)
