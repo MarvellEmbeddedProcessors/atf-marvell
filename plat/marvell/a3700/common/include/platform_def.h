@@ -195,4 +195,8 @@ Trusted SRAM section 0x4000000..0x4200000:
 #define CPU_DEC_BR_BASE_OFFS			0
 #define CPU_DEC_BR_BASE_MASK			(0xffff <<  CPU_DEC_BR_BASE_OFFS)
 
+#define CPU_DEC_REMAP_LOW_REG(win_num)		(MVEBU_CPU_DEC_WIN_REG_BASE + 0xC + (win_num) * 0x10)
+#define CPU_DEC_RLR_REMAP_LOW_OFFS		0
+#define CPU_DEC_RLR_REMAP_LOW_MASK		(0xffff <<  CPU_DEC_BR_BASE_OFFS)
+
 #endif /* __PLATFORM_DEF_H__ */

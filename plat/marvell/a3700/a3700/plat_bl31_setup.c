@@ -90,6 +90,9 @@ void bl31_plat_arch_setup(void)
 	/* initiliaze the timer for delay functionality */
 	plat_delay_timer_init();
 
+	/* CPU address decoder windows initialization. */
+	cpu_wins_init();
+
 	/* Pass DRAM size value so that u-boot could get it later */
 	pass_dram_sys_info();
 

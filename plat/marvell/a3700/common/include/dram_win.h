@@ -36,6 +36,7 @@
 #define _DRAM_WIN_H_
 
 void dram_win_map_build(struct dram_win_map *win_map);
+void cpu_wins_init(void);
 
 #endif /* _DRAM_WIN_H_ */
 
