@@ -100,7 +100,7 @@ Build Instructions
 		- a70x0
 		- a70x0_cust (for customers)
 		- a80x0
-		- a80x0_cust (for customers)
+		- a80x0_mcbin (for MacciatoBin)
 
 Special Build Flags
 --------------------
