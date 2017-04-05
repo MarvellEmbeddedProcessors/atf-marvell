@@ -105,6 +105,16 @@ int psci_do_cpu_off(unsigned int end_pwrlvl)
 		PMF_NO_CACHE_MAINT);
 #endif
 
+#ifdef SCP_IMAGE
+	/*
+	 * MSS implementation does not support cluster power down
+	 * in case of Hot plug, therefore we defined MPIDR_AFFLVL1
+	 * state to PSCI_LOCAL_STATE_RUN. resulting in max off level
+	 * set to CPU level
+	 */
+	state_info.pwr_domain_state[MPIDR_AFFLVL1] = PSCI_LOCAL_STATE_RUN;
+#endif
+
 	/*
 	 * Plat. management: Perform platform specific actions to turn this
 	 * cpu off e.g. exit cpu coherency, program the power controller etc.
