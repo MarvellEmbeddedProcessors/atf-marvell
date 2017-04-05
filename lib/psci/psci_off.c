@@ -109,6 +109,15 @@ int psci_do_cpu_off(unsigned int end_pwrlvl)
 	 * Arch. management. Perform the necessary steps to flush all
 	 * cpu caches.
 	 */
+#ifdef SCP_IMAGE
+	/*
+	 * MSS implementation does not support cluster power down
+	 * in case of Hot plug, therefore we defined MPIDR_AFFLVL1
+	 * state to PSCI_LOCAL_STATE_RUN. resulting in max off level
+	 * set to CPU level
+	 */
+	state_info.pwr_domain_state[MPIDR_AFFLVL1] = PSCI_LOCAL_STATE_RUN;
+#endif
 	psci_do_pwrdown_cache_maintenance(psci_find_max_off_lvl(&state_info));
 
 	/*
