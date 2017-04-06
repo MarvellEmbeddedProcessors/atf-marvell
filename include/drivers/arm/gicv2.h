@@ -41,7 +41,6 @@
  * GICv2 specific Distributor interface register offsets and constants.
  ******************************************************************************/
 #define GICD_ITARGETSR		0x800
-#define GICD_SGIR		0xF00
 #define GICD_CPENDSGIR		0xF10
 #define GICD_SPENDSGIR		0xF20
 #define GICD_PIDR2_GICV2	0xFE8

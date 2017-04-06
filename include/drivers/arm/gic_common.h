@@ -68,6 +68,7 @@
 #define GICD_ITARGETSR		0x800
 #define GICD_ICFGR		0xc00
 #define GICD_NSACR		0xe00
+#define GICD_SGIR		0xf00
 
 /* GICD_CTLR bit definitions */
 #define CTLR_ENABLE_G0_SHIFT		0
@@ -108,5 +109,14 @@
 	(GIC_HIGHEST_NS_PRIORITY << 8)	|	\
 	(GIC_HIGHEST_NS_PRIORITY << 16)	|	\
 	(GIC_HIGHEST_NS_PRIORITY << 24))
+
+#ifndef __ASSEMBLY__
+
+#include <mmio.h>
+
+void gicd_write_sgir(uintptr_t base, unsigned int val);
+unsigned int gicd_read_sgir(uintptr_t base);
+
+#endif
 
 #endif /* __GIC_COMMON_H__ */
