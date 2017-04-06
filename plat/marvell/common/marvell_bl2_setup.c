@@ -276,6 +276,23 @@ void bl2_plat_set_bl31_ep_info(image_info_t *bl31_image_info,
 					DISABLE_ALL_EXCEPTIONS);
 }
 
+/*******************************************************************************
+ * Populate the extents of memory available for loading BL32
+ ******************************************************************************/
+#ifdef BL32_BASE
+void bl2_plat_get_bl32_meminfo(meminfo_t *bl32_meminfo)
+{
+	/*
+	 * Populate the extents of memory available for loading BL32.
+	 */
+	bl32_meminfo->total_base = BL32_BASE;
+	bl32_meminfo->free_base = BL32_BASE;
+	bl32_meminfo->total_size =
+			(TRUSTED_DRAM_BASE + TRUSTED_DRAM_SIZE) - BL32_BASE;
+	bl32_meminfo->free_size =
+			(TRUSTED_DRAM_BASE + TRUSTED_DRAM_SIZE) - BL32_BASE;
+}
+#endif
 
 /*******************************************************************************
  * Before calling this function BL32 is loaded in memory and its entrypoint

@@ -125,9 +125,9 @@
 #define PLAT_MARVELL_TRUSTED_ROM_BASE		PLAT_MARVELL_ATF_LOAD_ADDR
 /* 64 MB TODO: reduce this to minimum needed according to fip image size */
 #define PLAT_MARVELL_TRUSTED_ROM_SIZE		0x04000000
-/* TODO: update SCP (Secure PayLoad) Trusted DRAM actual BASE & size */
-#define PLAT_MARVELL_TRUSTED_DRAM_BASE		0x06000000
-#define PLAT_MARVELL_TRUSTED_DRAM_SIZE		0x02000000	/* 32 MB */
+/* Reserve 16M for SCP (Secure PayLoad) Trusted DRAM */
+#define PLAT_MARVELL_TRUSTED_DRAM_BASE		0x04400000
+#define PLAT_MARVELL_TRUSTED_DRAM_SIZE		0x01000000	/* 16 MB */
 
 /*
  * PLAT_ARM_MAX_BL1_RW_SIZE is calculated using the current BL1 RW debug size
@@ -196,5 +196,13 @@
 #define PLAT_MARVELL_MAILBOX_BASE		(MARVELL_TRUSTED_SRAM_BASE + 0x400)
 #define PLAT_MARVELL_MAILBOX_SIZE		0x100
 #define PLAT_MARVELL_MAILBOX_MAGIC_NUM		0x6D72766C	/* mrvl */
+
+/* Securities */
+#define IRQ_SEC_OS_TICK_INT      MARVELL_IRQ_SEC_PHY_TIMER
+
+#define TRUSTED_DRAM_BASE	PLAT_MARVELL_TRUSTED_DRAM_BASE
+#define TRUSTED_DRAM_SIZE	PLAT_MARVELL_TRUSTED_DRAM_SIZE
+
+#define BL32_BASE                                 TRUSTED_DRAM_BASE
 
 #endif /* __PLATFORM_DEF_H__ */
