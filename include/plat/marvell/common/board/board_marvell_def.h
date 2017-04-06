@@ -85,6 +85,8 @@
 # endif
 #elif IMAGE_BL31
 # define PLATFORM_STACK_SIZE 0x400
+#elif IMAGE_BL32
+# define PLATFORM_STACK_SIZE 0x440
 #endif
 
 /*
@@ -119,8 +121,9 @@
 #  define MAX_XLAT_TABLES		4
 #elif IMAGE_BL31
 # define MAX_XLAT_TABLES		4
+#elif IMAGE_BL32
+#  define MAX_XLAT_TABLES               4
 #endif
-
 
 #define MAX_IO_DEVICES			3
 #define MAX_IO_HANDLES			4
