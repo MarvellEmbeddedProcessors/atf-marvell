@@ -456,7 +456,50 @@ CRTTOOL			?=	${CRTTOOLPATH}/cert_create${BIN_EXT}
 FIPTOOLPATH		?=	tools/fiptool
 FIPTOOL			?=	${FIPTOOLPATH}/fiptool${BIN_EXT}
 
+ifeq ($(PLAT),a3700)
+#*********** A3700 *************
+DOIMAGEPATH		?= $(dir $(WTP))
 
+ifeq ($(MARVELL_SECURE_BOOT),1)
+DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/tbb_linux.exe
+DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-tim.txt
+IMAGESPATH	:= $(DOIMAGEPATH)/trusted
+
+TIMNCFG		:= $(DOIMAGEPATH)/atf-timN.txt
+TIMNSIG		:= $(IMAGESPATH)/timnsign.txt
+TIM2IMGARGS	:= -i $(DOIMAGE_CFG) -n $(TIMNCFG)
+TIMN_IMAGE	:= $(shell grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
+else #MARVELL_SECURE_BOOT
+DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/ntbb_linux.exe
+DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-ntim.txt
+IMAGESPATH	:= $(DOIMAGEPATH)/untrusted
+TIM2IMGARGS	:= -i $(DOIMAGE_CFG)
+endif #MARVELL_SECURE_BOOT
+
+TIMBUILD		:= $(DOIMAGEPATH)/buildtim.sh
+TIM2IMG			:= $(DOIMAGEPATH)/tim2img.pl
+WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
+BUILD_UART		:= uart-images
+
+SRCPATH			:= $(dir $(BL33))
+
+CLOCKSPATH		:= $(DOIMAGEPATH)
+CLOCKSPRESET		?= CPU_800_DDR_800
+
+DDR_TOPOLOGY		?= 0
+
+BOOTDEV			?= SPINOR
+PARTNUM			?= 0
+
+TIM_IMAGE		:= $$(grep "Image Filename:" -m 1 $(DOIMAGE_CFG) | cut -c 17-)
+TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
+				$(DDR_TOPOLOGY) $(PARTNUM) $(DEBUG) $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG)
+TIMBLDUARTARGS		:= $(MARVELL_SECURE_BOOT) UART $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
+				$(DDR_TOPOLOGY) 0 0 $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG)
+DOIMAGE_FLAGS		:= -r $(DOIMAGE_CFG) -v -D
+
+else # PLAT != a3700
+#*********** A8K *************
 DOIMAGEPATH		?=	tools/doimage
 DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
 
@@ -496,6 +539,7 @@ endif #MARVELL_SECURE_BOOT
 ROM_BIN_EXT ?= $(BUILD_PLAT)/ble.bin
 DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
 
+endif # PLAT == a3700
 ################################################################################
 # Build options checks
 ################################################################################
@@ -776,10 +820,46 @@ ${BUILD_PLAT}/${FWU_FIP_NAME}: ${FWU_FIP_DEPS} ${FIPTOOL}
 
 fiptool: ${FIPTOOL}
 ifeq (${CALL_DOIMAGE}, y)
+ifeq ($(PLAT),a3700)
+fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL}
+	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
+	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
+	@echo
+	@echo "Building uart images"
+	$(TIMBUILD) $(TIMBLDUARTARGS)
+	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(DOIMAGE_CFG)
+	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
+ifeq ($(MARVELL_SECURE_BOOT),1)
+	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(TIMNCFG)
+	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
+endif
+	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
+	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
+	@rm -rf $(BUILD_PLAT)/$(BUILD_UART)*
+	@mkdir $(BUILD_PLAT)/$(BUILD_UART)
+	@mv -t $(BUILD_PLAT)/$(BUILD_UART) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG)
+	@find . -name "*_h.*" |xargs cp -ut $(BUILD_PLAT)/$(BUILD_UART)
+	@mv $(subst .bin,_h.bin,$(WTMI_IMG)) $(BUILD_PLAT)/$(BUILD_UART)/wtmi_h.bin
+	@tar czf $(BUILD_PLAT)/$(BUILD_UART).tgz -C $(BUILD_PLAT) ./$(BUILD_UART)
+	@echo
+	@echo "Building flash image"
+	$(TIMBUILD) $(TIMBLDARGS)
+	sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(DOIMAGE_CFG)
+	sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
+ifeq ($(MARVELL_SECURE_BOOT),1)
+	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(TIMNCFG)
+	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
+endif
+	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
+	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
+	$(TIM2IMG) $(TIM2IMGARGS) -o $(BUILD_PLAT)/$(FLASH_IMAGE)
+	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG)
+else
 fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
 	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
 	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
 	${DOIMAGETOOL} ${DOIMAGE_FLAGS} ${BUILD_PLAT}/${BOOT_IMAGE} ${BUILD_PLAT}/${FLASH_IMAGE}
+endif
 else
 fip: ${BUILD_PLAT}/${FIP_NAME}
 endif
