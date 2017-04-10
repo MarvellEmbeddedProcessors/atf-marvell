@@ -37,7 +37,7 @@
 
 /* This struct provides the PM wake up src configuration */
 static struct pm_wake_up_src_config wake_up_src_cfg = {
-	.wake_up_src_num = 2,
+	.wake_up_src_num = 3,
 	.wake_up_src[0] = {
 		.wake_up_src_type = WAKE_UP_SRC_GPIO,
 		.wake_up_data = {
@@ -51,6 +51,9 @@ static struct pm_wake_up_src_config wake_up_src_cfg = {
 			.gpio_data.bank_num = 1, /* South Bridge */
 			.gpio_data.gpio_num = 2
 		}
+	},
+	.wake_up_src[2] = {
+		.wake_up_src_type = WAKE_UP_SRC_UART1,
 	}
 };
 
