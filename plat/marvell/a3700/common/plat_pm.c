@@ -53,6 +53,13 @@
 #define MVEBU_WARM_RESET_REG            (MVEBU_NB_REGS_BASE + 0x840)
 #define MVEBU_WARM_RESET_MAGIC          0x1D1E
 
+/* North Bridge GPIO1 SEL register */
+#define MVEBU_NB_GPIO1_SEL_REG		(MVEBU_NB_REGS_BASE + 0x830)
+ #define MVEBU_NB_GPIO1_UART1_SEL	BIT(19)
+ #define MVEBU_NB_GPIO1_GPIO_25_26_EN	BIT(17)
+ #define MVEBU_NB_GPIO1_GPIO_19_EN	BIT(14)
+ #define MVEBU_NB_GPIO1_GPIO_18_EN	BIT(13)
+
 /* CPU 1 reset register */
 #define MVEBU_CPU_1_RESET_VECTOR        (MVEBU_REGS_BASE + 0x14044)
 #define MVEBU_CPU_1_RESET_REG           (MVEBU_REGS_BASE + 0xD00C)
@@ -185,6 +192,11 @@
 /* North Bridge Step-Down Registers */
 #define MVEBU_NB_STEP_DOWN_INT_EN_REG	MVEBU_NB_STEP_DOWN_REG_BASE
  #define MVEBU_NB_GPIO_INT_WAKE_WCPU_CLK	BIT(8)
+
+#define MVEBU_NB_GPIO_18	18
+#define MVEBU_NB_GPIO_19	19
+#define MVEBU_NB_GPIO_25	25
+#define MVEBU_NB_GPIO_26	26
 
 typedef int (*wake_up_src_func)(union pm_wake_up_src_data *);
 
@@ -524,12 +536,40 @@ int a3700_pm_src_gpio(union pm_wake_up_src_data *src_data)
 	return 0;
 }
 
+int a3700_pm_src_uart1(union pm_wake_up_src_data *src_data)
+{
+	/* Clear Uart1 select */
+	mmio_clrbits_32(MVEBU_NB_GPIO1_SEL_REG, MVEBU_NB_GPIO1_UART1_SEL);
+	/* set pin 19 gpio usage*/
+	mmio_setbits_32(MVEBU_NB_GPIO1_SEL_REG, MVEBU_NB_GPIO1_GPIO_19_EN);
+	/* Enable gpio wake-up*/
+	a3700_pm_en_nb_gpio(MVEBU_NB_GPIO_19);
+	/* set pin 18 gpio usage*/
+	mmio_setbits_32(MVEBU_NB_GPIO1_SEL_REG, MVEBU_NB_GPIO1_GPIO_18_EN);
+	/* Enable gpio wake-up*/
+	a3700_pm_en_nb_gpio(MVEBU_NB_GPIO_18);
+
+	return 0;
+}
+
+int a3700_pm_src_uart0(union pm_wake_up_src_data *src_data)
+{
+	/* set pin 25/26 gpio usage*/
+	mmio_setbits_32(MVEBU_NB_GPIO1_SEL_REG, MVEBU_NB_GPIO1_GPIO_25_26_EN);
+	/* Enable gpio wake-up*/
+	a3700_pm_en_nb_gpio(MVEBU_NB_GPIO_25);
+	/* Enable gpio wake-up*/
+	a3700_pm_en_nb_gpio(MVEBU_NB_GPIO_26);
+
+	return 0;
+}
+
 struct wake_up_src_func_map src_func_table[WAKE_UP_SRC_MAX] = {
 	{WAKE_UP_SRC_GPIO, a3700_pm_src_gpio},
+	{WAKE_UP_SRC_UART1, a3700_pm_src_uart1},
+	{WAKE_UP_SRC_UART0, a3700_pm_src_uart0},
 	/* FOLLOWING SRC NOT SUPPORTED YET */
-	{WAKE_UP_SRC_TIMER, NULL},
-	{WAKE_UP_SRC_UART0, NULL},
-	{WAKE_UP_SRC_UART1, NULL}
+	{WAKE_UP_SRC_TIMER, NULL}
 };
 
 static wake_up_src_func a3700_get_wake_up_src_func(enum pm_wake_up_src_type type)
