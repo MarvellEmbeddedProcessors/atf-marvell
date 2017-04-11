@@ -596,17 +596,17 @@ void a3700_pwr_domain_suspend(const psci_power_state_t *target_state)
 	/* Prevent interrupts from spuriously waking up this cpu */
 	plat_marvell_gic_cpuif_disable();
 
-	/* SoC can not be powered down with pending IRQ, acknowledge all the pending IRQ */
-	a3700_pm_ack_irq();
-
-	/* Set power off options */
-	a3700_set_pwr_off_option();
-
 	/* Set wake up options */
 	a3700_set_wake_up_option();
 
 	/* Set wake up sources */
 	a3700_set_wake_up_source();
+
+	/* SoC can not be powered down with pending IRQ, acknowledge all the pending IRQ */
+	a3700_pm_ack_irq();
+
+	/* Set power off options */
+	a3700_set_pwr_off_option();
 
 	/* Save the flag for enter the low power mode */
 	a3700_pm_save_lp_flag();
