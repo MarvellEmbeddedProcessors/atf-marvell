@@ -134,6 +134,7 @@ endif
 
 # Marvell images
 BOOT_IMAGE			:= boot-image.bin
+BOOT_ENC_IMAGE			:= boot-image-enc.bin
 FLASH_IMAGE			:= flash-image.bin
 
 ################################################################################
@@ -479,6 +480,7 @@ endif #MARVELL_SECURE_BOOT
 TIMBUILD		:= $(DOIMAGEPATH)/buildtim.sh
 TIM2IMG			:= $(DOIMAGEPATH)/tim2img.pl
 WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
+WTMI_ENC_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi-enc.bin
 BUILD_UART		:= uart-images
 
 SRCPATH			:= $(dir $(BL33))
@@ -493,9 +495,9 @@ PARTNUM			?= 0
 
 TIM_IMAGE		:= $$(grep "Image Filename:" -m 1 $(DOIMAGE_CFG) | cut -c 17-)
 TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
-				$(DDR_TOPOLOGY) $(PARTNUM) $(DEBUG) $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG)
+				$(DDR_TOPOLOGY) $(PARTNUM) $(DEBUG) $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 1
 TIMBLDUARTARGS		:= $(MARVELL_SECURE_BOOT) UART $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
-				$(DDR_TOPOLOGY) 0 0 $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG)
+				$(DDR_TOPOLOGY) 0 0 $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 0
 DOIMAGE_FLAGS		:= -r $(DOIMAGE_CFG) -v -D
 
 else # PLAT != a3700
@@ -849,11 +851,24 @@ endif
 ifeq ($(MARVELL_SECURE_BOOT),1)
 	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(TIMNCFG)
 	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
+	@echo -e "\n\t=======================================================\n";
+	@echo -e "\t  Secure boot. Encrypting wtmi and boot-image \n";
+	@echo -e "\t=======================================================\n";
+	@truncate -s %16 $(WTMI_IMG)
+	@openssl enc -aes-256-cbc -e -in $(WTMI_IMG) -out $(WTMI_ENC_IMG) \
+	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
+	-iv `cat $(IMAGESPATH)/iv.txt` -p
+	@truncate -s %16 $(BUILD_PLAT)/$(BOOT_IMAGE);
+	@openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) -out $(BUILD_PLAT)/$(BOOT_ENC_IMAGE) \
+	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
+	-iv `cat $(IMAGESPATH)/iv.txt` -p
 endif
 	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
 	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
+	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then sed -i 's|$(WTMI_IMG)|$(WTMI_ENC_IMG)|1;s|$(BOOT_IMAGE)|$(BOOT_ENC_IMAGE)|1;' $(TIMNCFG); fi
 	$(TIM2IMG) $(TIM2IMGARGS) -o $(BUILD_PLAT)/$(FLASH_IMAGE)
-	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG)
+	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG) $(WTMI_IMG)
+	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then mv -t $(BUILD_PLAT) $(WTMI_ENC_IMG); fi
 else
 fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
 	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
