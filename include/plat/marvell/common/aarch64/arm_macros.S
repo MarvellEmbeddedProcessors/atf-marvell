@@ -169,7 +169,7 @@ cci_iface_regs:
 	 * Clobbers: x0 - x9, sp
 	 * ------------------------------------------------
 	 */
-	.macro plat_print_interconnect_regs
+	.macro print_cci_regs
 #ifdef USE_CCI
 	adr	x6, cci_iface_regs
 	/* Store in x7 the base address of the first interface */
