@@ -483,16 +483,12 @@ static void a3700_pm_en_nb_gpio(uint32_t gpio)
 
 		/* NB_CPU_WAKE-up ENABLE GPIO int */
 		mmio_setbits_32(MVEBU_NB_GPIO_IRQ_EN_HIGH_REG, BIT(gpio - 32));
-		/* GPIO wakeup enable inside gpio_int_north */
-		mmio_setbits_32(MVEBU_NB_GPIO_IRQ_WK_HIGH_REG, BIT(gpio - 32));
 	} else {
 		/* GPIO int mask */
 		mmio_clrbits_32(MVEBU_NB_GPIO_IRQ_MASK_1_REG, BIT(gpio));
 
 		/* NB_CPU_WAKE-up ENABLE GPIO int */
 		mmio_setbits_32(MVEBU_NB_GPIO_IRQ_EN_LOW_REG, BIT(gpio));
-		/* GPIO wakeup enable inside gpio_int_north */
-		mmio_setbits_32(MVEBU_NB_GPIO_IRQ_WK_LOW_REG, BIT(gpio));
 	}
 
 	mmio_setbits_32(MVEBU_NB_STEP_DOWN_INT_EN_REG, MVEBU_NB_GPIO_INT_WAKE_WCPU_CLK);
@@ -516,9 +512,6 @@ static void a3700_pm_en_sb_gpio(uint32_t gpio)
 
 	/* NB_CPU_WAKE-up ENABLE GPIO int */
 	mmio_setbits_32(MVEBU_SB_GPIO_IRQ_EN_REG, BIT(gpio));
-
-	/* GPIO wakeup enable inside gpio_int_north */
-	mmio_setbits_32(MVEBU_SB_GPIO_IRQ_WK_REG, BIT(gpio));
 }
 
 int a3700_pm_src_gpio(union pm_wake_up_src_data *src_data)
