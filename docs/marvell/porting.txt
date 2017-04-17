@@ -72,7 +72,7 @@ A3700 specific:
 	- In pm_src.c, a dedicate routine with name mv_wake_up_src_config_get() should be defined, which
 		would be called by A3700 power management framework to get wake up source configuration.
 			struct pm_wake_up_src_config *mv_wake_up_src_config_get(void)
-	- The only supported wake up source is South bridge and North bridge GPIO, and each platform
+	- The supported wake up source are South bridge, North bridge GPIO, Uart TX/RX, and each platform
 		could have up to 4 different wake up sources at the same time.
 	- Wake up source configuration is defined as "struct pm_wake_up_src_config"
 		o wake_up_src_num: the number of wake up source, could be up to 4.
@@ -84,7 +84,7 @@ A3700 specific:
 				gpio_data.gpio_num: GPIO number that is used as wake up source.
 	- Example of A3700-DB wake up source:
 		static struct pm_wake_up_src_config wake_up_src_cfg = {
-			.wake_up_src_num = 2,
+			.wake_up_src_num = 3,
 			.wake_up_src[0] = {
 				.wake_up_src_type = WAKE_UP_SRC_GPIO,
 				.wake_up_data = {
@@ -97,6 +97,10 @@ A3700 specific:
 				.wake_up_data = {
 					.gpio_data.bank_num = 1, /* South Bridge */
 					.gpio_data.gpio_num = 2
+				}
+			},
+			.wake_up_src[2] = {
+				.wake_up_src_type = WAKE_UP_SRC_UART1,
 				}
 			}
 		};
