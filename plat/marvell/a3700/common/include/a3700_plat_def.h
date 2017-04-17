@@ -88,8 +88,11 @@
 
 /* North Bridge GPIO selection regsiter */
 #define MVEBU_NB_GPIO_SEL_REG			(MVEBU_NB_GPIO_REG_BASE + 0x30)
+#define MVEBU_NB_GPIO_OUTPUT_EN_HIGH_REG	(MVEBU_NB_GPIO_REG_BASE + 0x04)
 /* I2C1 GPIO Enable bit offset */
 #define MVEBU_GPIO_TW1_GPIO_EN_OFF		(10)
+/* SPI pins mode bit offset */
+#define MVEBU_GPIO_NB_SPI_PIN_MODE_OFF		(28)
 
 /*******************************************************************************
  * DRAM registers related constants
