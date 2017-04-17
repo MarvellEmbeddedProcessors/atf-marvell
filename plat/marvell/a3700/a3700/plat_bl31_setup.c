@@ -60,6 +60,19 @@ static void pass_dram_sys_info(void)
 static void marvell_bl31_mpp_init(void)
 {
 	mmio_clrbits_32(MVEBU_NB_GPIO_SEL_REG, 1 << MVEBU_GPIO_TW1_GPIO_EN_OFF);
+
+	/* Set hiden GPIO setting for SPI.
+	 * In north_bridge_pin_out_en_high register 13804,
+	 * bit 28 is the one which enables CS, CLK pins to be
+	 * output, need to set it to 1.
+	 * The initial value of this bit is 1, but in UART boot mode
+	 * initialization, this bit is disabled and the SPI CS and CLK pins
+	 * are used for downloading image purpose; so after downloading,
+	 * we should set this bit to 1 again to enable SPI CS and CLK pins.
+	 * And anyway, this bit value sould be 1 in all modes,
+	 * so here we does not judge boot mode and set this bit to 1 always.
+	 */
+	mmio_setbits_32(MVEBU_NB_GPIO_OUTPUT_EN_HIGH_REG, 1 << MVEBU_GPIO_NB_SPI_PIN_MODE_OFF);
 }
 
 /* This function overruns the same function in marvell_bl31_setup.c */
