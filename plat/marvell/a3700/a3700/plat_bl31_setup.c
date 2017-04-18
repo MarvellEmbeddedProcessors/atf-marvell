@@ -40,19 +40,21 @@
 #include <plat_config.h>
 #include <dram_win.h>
 
-/* This function passes DRAM size in ATF to sys info */
-static void pass_dram_sys_info(void)
+/* This function passes DRAM cpu decode window information in ATF to sys info */
+static void pass_dram_sys_info(struct dram_win_map *win_map)
 {
-	uint32_t cs_id, base_low, base_high, size_mbytes;
+	uint32_t win_id;
+	struct dram_win *win;
 
-	for (cs_id = 0; cs_id < MVEBU_MAX_CS_MMAP_NUM; cs_id++) {
-		if (marvell_get_dram_cs_base_size(cs_id, &base_low, &base_high, &size_mbytes)) {
-			set_info(DRAM_CS0 + cs_id, 0);
+	for (win_id = 0; win_id < DRAM_WIN_MAP_NUM_MAX; win_id++) {
+		win = win_map->dram_windows + win_id;
+		if (win_id < win_map->dram_win_num) {
+			set_info(CPU_DEC_WIN0_BASE + win_id, win->base_addr);
+			set_info(CPU_DEC_WIN0_SIZE + win_id, win->win_size);
 		} else {
-			set_info(DRAM_CS0 + cs_id, 1);
-			/* Pass DRAM size value, so that u-boot could get it later */
-			set_info(DRAM_CS0_SIZE + cs_id, size_mbytes);
+			set_info(CPU_DEC_WIN0_SIZE + win_id, 0);
 		}
+
 	}
 }
 
@@ -93,13 +95,15 @@ void bl31_plat_arch_setup(void)
 	/* CPU address decoder windows initialization. */
 	cpu_wins_init();
 
-	/* Pass DRAM size value so that u-boot could get it later */
-	pass_dram_sys_info();
-
 	/* fetch CPU-DRAM window mapping information by reading
 	 * CPU-DRAM decode windows (only the enabled ones)
 	 */
 	dram_win_map_build(&dram_wins_map);
+
+	/* Pass DRAM cpu decode window information
+	 * so that u-boot could get it later
+	 */
+	pass_dram_sys_info(&dram_wins_map);
 
 	/* Get IO address decoder windows */
 	if (marvell_get_io_dec_win_conf(&io_dec_map, &dec_win_num)) {
