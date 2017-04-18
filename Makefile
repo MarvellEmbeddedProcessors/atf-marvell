@@ -469,7 +469,7 @@ IMAGESPATH	:= $(DOIMAGEPATH)/trusted
 TIMNCFG		:= $(DOIMAGEPATH)/atf-timN.txt
 TIMNSIG		:= $(IMAGESPATH)/timnsign.txt
 TIM2IMGARGS	:= -i $(DOIMAGE_CFG) -n $(TIMNCFG)
-TIMN_IMAGE	:= $(shell grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
+TIMN_IMAGE	:= $$(grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
 else #MARVELL_SECURE_BOOT
 DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/ntbb_linux.exe
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-ntim.txt
