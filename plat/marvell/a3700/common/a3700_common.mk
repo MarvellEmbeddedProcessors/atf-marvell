@@ -56,6 +56,7 @@ PLAT_INCLUDES		:=	-I$(PLAT_FAMILY_BASE)/$(PLAT)			\
 				-I$(PLAT_COMMON_BASE)/include			\
 				-I$(PLAT_INCLUDE_BASE)/common			\
 				-I$(MARVELL_DRV_BASE)/uart			\
+				-I$/drivers/arm/gic/common/			\
 				$(ATF_INCLUDES)
 
 PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a3700_common.c	\
