@@ -286,6 +286,9 @@ void a3700_pwr_domain_off(const psci_power_state_t *target_state)
 {
 	uint32_t cpu_idx = plat_my_core_pos();
 
+	/* Save the per-cpu IRQ state */
+	plat_marvell_gic_irq_pcpu_save();
+
 	/* Disable the GIC CPU interface */
 	plat_marvell_gic_cpuif_disable();
 
@@ -574,12 +577,22 @@ static void a3700_pm_clear_lp_flag(void)
 	mmio_clrbits_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG, MVEBU_PM_LOW_POWER_STATE);
 }
 
+static uint32_t a3700_pm_get_lp_flag(void)
+{
+	/* Get the flag for enter the low power mode */
+	return mmio_read_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG) & MVEBU_PM_LOW_POWER_STATE;
+}
+
 /*******************************************************************************
  * A3700 handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
  ******************************************************************************/
 void a3700_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
+	/* Save IRQ states */
+	plat_marvell_gic_irq_save();
+	plat_marvell_gic_irq_pcpu_save();
+
 	/* Prevent interrupts from spuriously waking up this cpu */
 	plat_marvell_gic_cpuif_disable();
 
@@ -614,6 +627,10 @@ void a3700_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	/* Per-CPU interrupt initialization */
 	plat_marvell_gic_pcpu_init();
 	plat_marvell_gic_cpuif_enable();
+
+	/* Restore the per-cpu IRQ state */
+	if (a3700_pm_get_lp_flag())
+		plat_marvell_gic_irq_pcpu_restore();
 }
 
 /*******************************************************************************
@@ -634,6 +651,10 @@ void a3700_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 
 	/* Interrupt initialization */
 	plat_marvell_gic_init();
+
+	/* Restore IRQ states */
+	plat_marvell_gic_irq_restore();
+	plat_marvell_gic_irq_pcpu_restore();
 
 	/*
 	 * Initialize CCI for this cluster after resume from suspend state.
