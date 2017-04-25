@@ -37,8 +37,8 @@
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#ifndef IMAGE_BLE
 #include <plat_def.h>
+#ifndef IMAGE_BLE
 
 /*******************************************************************************
  * AMB Configuration
@@ -150,6 +150,8 @@ int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size)
 	return 0;
 }
 
+/* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
+#else
 /*******************************************************************************
  * PCIe Configuration
  ******************************************************************************/
@@ -171,8 +173,7 @@ struct pci_hw_cfg *plat_get_pcie_hw_data(void)
 {
 	return &a70x0_pci_hw_cfg;
 }
-/* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
-#else
+
 /*******************************************************************************
  * SKIP IMAGE Configuration
  ******************************************************************************/
