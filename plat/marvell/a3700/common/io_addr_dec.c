@@ -98,13 +98,13 @@ static int set_io_addr_dec(struct dram_win_map *win_map, struct dec_win_config *
 	int id;
 
 	/* disable all windows first */
-	for (id = 0; id < dec_win->max_win; id++)
+	for (id = 0; id < dec_win->max_dram_win; id++)
 		mmio_write_32(MVEBU_DEC_WIN_CTRL_REG(dec_win->dec_reg_base, id, dec_win->win_offset), 0);
 
 	/* configure IO decode windows for DRAM, inheritate DRAM size, base and target from CPU-DRAM
 	 * decode window, and others from hard coded IO decode window settings array.
 	 */
-	if (win_map->dram_win_num > dec_win->max_win) {
+	if (win_map->dram_win_num > dec_win->max_dram_win) {
 		/*
 		* If cpu dram windows number exceeds the io decode windows max number,
 		* then fill the first io decode window with base(0) and size(4GB).
@@ -172,8 +172,8 @@ int init_io_addr_dec(struct dram_win_map *dram_wins_map, struct dec_win_config *
 			return -1;
 		}
 		INFO("Set IO decode window successfully, base(0x%x)", io_dec_win->dec_reg_base);
-		INFO(" win_attr(%x) max_win(%d) max_remap(%d) win_offset(%d)\n",
-		     io_dec_win->win_attr, io_dec_win->max_win, io_dec_win->max_remap, io_dec_win->win_offset);
+		INFO(" win_attr(%x) max_dram_win(%d) max_remap(%d) win_offset(%d)\n",
+		     io_dec_win->win_attr, io_dec_win->max_dram_win, io_dec_win->max_remap, io_dec_win->win_offset);
 	}
 
 	return 0;

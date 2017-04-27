@@ -40,10 +40,17 @@
 /* Target number for dram in cpu decoder windows. */
 #define DRAM_CPU_DEC_TARGET_NUM	0
 
+/*
+* Not all configurable decode windows could be used for dram, some units have
+* to reserve one decode window for other unit they have to communicate with;
+* for example, DMA engineer has 3 configurable windows, but only two could be
+* for dram while the last one has to be for pcie, so for DMA, its max_dram_win
+* is 2.
+*/
 struct dec_win_config {
 	uint32_t dec_reg_base; /* IO address decoder register base address */
 	uint32_t win_attr;     /* IO address decoder windows attributes */
-	uint32_t max_win;      /* How many decoder windows that this unit has */
+	uint32_t max_dram_win; /* How many configurable dram decoder windows that this unit has; */
 	uint32_t max_remap;    /* The decoder windows number including remapping that this unit has */
 	uint32_t win_offset;   /* The offset between continuous decode windows within the same unit, typically 0x10 */
 };
