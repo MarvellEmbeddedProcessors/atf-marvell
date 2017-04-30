@@ -126,7 +126,7 @@ LLC_DISABLE			:= 0
 # Make non-trusted image by default
 MARVELL_SECURE_BOOT	:= 	0
 # Enable end point only for 7040 PCAC
-ifeq ($(PLAT),$(filter $(PLAT),a7040_pcac))
+ifeq ($(PLAT),$(filter $(PLAT),a70x0_pcac))
 PCI_EP_SUPPORT			:= 1
 else
 PCI_EP_SUPPORT			:= 0
