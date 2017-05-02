@@ -108,7 +108,9 @@ struct iob_win iob_memory_map_cp0[] = {
 	/* PEX2_X1 window */
 	{0x0,	0xf8000000,	0x0,	0x1000000,	PEX2_TID},
 	/* PEX0_X4 window */
-	{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID}
+	{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID},
+	{0x0,	0xc0000000,	0x0,   0x30000000,	PEX0_TID},
+	{0x8,	0x00000000,	0x1,   0x00000000,	PEX0_TID},
 };
 
 struct iob_win iob_memory_map_cp1[] = {
@@ -157,6 +159,8 @@ int marvell_get_iob_memory_map(struct iob_win **win,
 
 struct ccu_win ccu_memory_map[] = {
 	{0x0,	0xf2000000,	0x0,	0xe000000,  IO_0_TID}, /* IO window */
+	{0x0,	0xc0000000,	0x0,   0x30000000,  IO_0_TID}, /* IO window */
+	{0x8,	0x00000000,	0x1,   0x00000000,  IO_0_TID}, /* IO window */
 };
 
 uintptr_t marvell_get_ccu_reg_offs(void)
