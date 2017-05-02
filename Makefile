@@ -460,9 +460,9 @@ FIPTOOL			?=	${FIPTOOLPATH}/fiptool${BIN_EXT}
 ifeq ($(PLAT),a3700)
 #*********** A3700 *************
 DOIMAGEPATH		?= $(dir $(WTP))
+DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/TBB_linux
 
 ifeq ($(MARVELL_SECURE_BOOT),1)
-DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/tbb_linux.exe
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-tim.txt
 IMAGESPATH	:= $(DOIMAGEPATH)/trusted
 
@@ -471,7 +471,6 @@ TIMNSIG		:= $(IMAGESPATH)/timnsign.txt
 TIM2IMGARGS	:= -i $(DOIMAGE_CFG) -n $(TIMNCFG)
 TIMN_IMAGE	:= $$(grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
 else #MARVELL_SECURE_BOOT
-DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/ntbb_linux.exe
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-ntim.txt
 IMAGESPATH	:= $(DOIMAGEPATH)/untrusted
 TIM2IMGARGS	:= -i $(DOIMAGE_CFG)
