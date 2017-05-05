@@ -52,6 +52,9 @@
 #define CCU_LTC_CR				(MVEBU_CCU_BASE + 0x300)
 #define CCU_CLEAN_INV_WRITE_OFFSET		8
 
+#define DSS_CR0					(MVEBU_RFU_BASE + 0x100)
+#define DVM_48BIT_VA_ENABLE			(1 << 21)
+
 /* Secure MoChi incoming access */
 #define SEC_MOCHI_IN_ACC_REG			(MVEBU_RFU_BASE + 0x4738)
 #define SEC_MOCHI_IN_ACC_IHB0_EN		(1)
@@ -176,6 +179,12 @@ void apn806_axi_attr_init(void)
 	return;
 }
 
+void dss_setup(void)
+{
+	/* Enable 48-bit VA */
+	mmio_setbits_32(DSS_CR0, DVM_48BIT_VA_ENABLE);
+}
+
 void misc_soc_configurations(void)
 {
 	uint32_t reg;
@@ -201,6 +210,9 @@ void apn806_init(void)
 
 	/* configure CCU windows */
 	init_ccu();
+
+	/* configure DSS */
+	dss_setup();
 
 	/* configure the SMMU */
 	setup_smmu();
