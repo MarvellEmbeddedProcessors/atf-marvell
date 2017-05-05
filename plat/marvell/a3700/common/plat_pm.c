@@ -701,6 +701,9 @@ void a3700_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	 */
 	plat_marvell_interconnect_enter_coherency();
 
+	/* CPU address decoder windows initialization. */
+	cpu_wins_init();
+
 	/* fetch CPU-DRAM window mapping information by reading
 	 * CPU-DRAM decode windows (only the enabled ones)
 	 */
