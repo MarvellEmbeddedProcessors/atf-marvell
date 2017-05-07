@@ -46,6 +46,7 @@ struct dec_win_config io_dec_win_conf[] = {
 	{0xc800,         0x3d,     2,       0,        0x10}, /* SATA */
 	{0xca00,         0x3d,     2,       0,        0x08}, /* SD */
 	{0xcb00,         0x3d,     2,       0,        0x10}, /* eMMC */
+	{0xce00,	 0x3d,	   2,	    0,        0x10}, /* EIP97 */
 };
 
 int marvell_get_io_dec_win_conf(struct dec_win_config **win, uint32_t *size)
