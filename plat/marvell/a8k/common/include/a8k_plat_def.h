@@ -82,6 +82,12 @@
 /*******************************************************************************
  * MVEBU memory map related constants
  ******************************************************************************/
+#define MVEBU_SAMPLE_AT_RESET_REG(x)	(MVEBU_CP_REGS_BASE(x) + 0x440600)
+#define SAR_PCIE1_CLK_CFG_OFFSET	31
+#define SAR_PCIE1_CLK_CFG_MASK		(0x1 << SAR_PCIE1_CLK_CFG_OFFSET)
+#define SAR_PCIE0_CLK_CFG_OFFSET	30
+#define SAR_PCIE0_CLK_CFG_MASK		(0x1 << SAR_PCIE0_CLK_CFG_OFFSET)
+
 
 /* Aggregate of all devices in the first GB */
 #define DEVICE0_BASE			MVEBU_REGS_BASE
@@ -129,6 +135,19 @@
 #define DOMAIN_INNER_SHAREABLE			0x1
 #define DOMAIN_OUTER_SHAREABLE			0x2
 #define DOMAIN_SYSTEM_SHAREABLE			0x3
+
+/*******************************************************************************
+ * MSS Device Push Set Register
+ ******************************************************************************/
+#define MVEBU_CP_MSS_DPSHSR_REG(x)	(MVEBU_CP_REGS_BASE(x) + 0x280040)
+#define MSS_DPSHSR_REG_PCIE_CLK_SEL	0x8
+
+/*******************************************************************************
+ * PCIE clock buffer control
+ ******************************************************************************/
+#define MVEBU_PCIE_REF_CLK_BUF_CTRL(x)	(MVEBU_CP_REGS_BASE(x) + 0x4404F0)
+#define PCIE1_REFCLK_BUFF_SOURCE	0x800
+#define PCIE0_REFCLK_BUFF_SOURCE	0x400
 
 /*************************************************************************
  * Required platform porting definitions common to all
