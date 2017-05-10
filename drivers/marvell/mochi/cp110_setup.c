@@ -281,6 +281,49 @@ void cp110_errata_wa_init(int cp_index)
 	mmio_write_32(MVEBU_SOC_CFG_REG(cp_index, MVEBU_SOC_CFG_REG_NUM), data);
 }
 
+void cp110_pcie_clk_cfg(int cp_index)
+{
+	uint32_t pcie0_clk, pcie1_clk, reg;
+
+	/*
+	 * Determine the pcie0/1 clock direction (input/output) from the
+	 * sample at reset.
+	 */
+	reg = mmio_read_32(MVEBU_SAMPLE_AT_RESET_REG(cp_index));
+	pcie0_clk = (reg & SAR_PCIE0_CLK_CFG_MASK) >> SAR_PCIE0_CLK_CFG_OFFSET;
+	pcie1_clk = (reg & SAR_PCIE1_CLK_CFG_MASK) >> SAR_PCIE1_CLK_CFG_OFFSET;
+
+	/* CP110 revision A2 */
+	if (cp110_rev_id_get() == MVEBU_CP110_REF_ID_A2) {
+		/*
+		 * PCIe Reference Clock Buffer Control register must be
+		 * set according to the clock direction (input/output)
+		 */
+		reg = mmio_read_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index));
+		reg &= ~(PCIE0_REFCLK_BUFF_SOURCE | PCIE0_REFCLK_BUFF_SOURCE);
+		if (pcie0_clk)
+			reg |= PCIE0_REFCLK_BUFF_SOURCE;
+		if (pcie1_clk)
+			reg |= PCIE1_REFCLK_BUFF_SOURCE;
+
+		mmio_write_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index), reg);
+	}
+
+	/* CP110 revision A1 */
+	if (cp110_rev_id_get() == MVEBU_CP110_REF_ID_A1) {
+		if (!pcie0_clk || !pcie1_clk) {
+			/*
+			 * if one of the pcie clocks is set to input,
+			 * we need to set mss_push[131] field, otherwise,
+			 * the pcie clock might not work.
+			 */
+			reg = mmio_read_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index));
+			reg |= MSS_DPSHSR_REG_PCIE_CLK_SEL;
+			mmio_write_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index), reg);
+		}
+	}
+}
+
 /* Set a unique stream id for all DMA capable devices */
 void cp110_stream_id_init(uintptr_t cp110_base)
 {
@@ -438,6 +481,9 @@ void cp110_init(int cp_index)
 
 	/* Execute SW WA for erratas */
 	cp110_errata_wa_init(cp_index);
+
+	/* Confiure pcie clock according to clock direction */
+	cp110_pcie_clk_cfg(cp_index);
 
 	/* configure icu for CP0 */
 	/* ICU - Interrupt Consolidation unit
