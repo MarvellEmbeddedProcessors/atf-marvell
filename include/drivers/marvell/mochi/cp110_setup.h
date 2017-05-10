@@ -43,6 +43,9 @@
 #define MVEBU_DEVICE_REV_MASK		(0xf << MVEBU_DEVICE_REV_OFFSET)
 #define MVEBU_70X0_DEV_ID		(0x7040)
 #define MVEBU_80X0_DEV_ID		(0x8040)
+#define MVEBU_CP110_REF_ID_A1		1
+#define MVEBU_CP110_REF_ID_A2		2
+
 
 /*******************************************************************************
  * RTC Configuration
@@ -79,6 +82,13 @@ static inline uint32_t cp110_device_id_get(void)
 	return (mmio_read_32(MVEBU_DEVICE_ID_REG) >>
 		MVEBU_DEVICE_ID_OFFSET) &
 		MVEBU_DEVICE_ID_MASK;
+}
+
+static inline uint32_t cp110_rev_id_get(void)
+{
+	return (mmio_read_32(MVEBU_DEVICE_ID_REG) &
+		MVEBU_DEVICE_REV_MASK) >>
+		MVEBU_DEVICE_REV_OFFSET;
 }
 
 void cp110_init(int cp_index);
