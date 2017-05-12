@@ -25,3 +25,8 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+
+# Ignore unnecessary files after build
+CSK*_KeyHash.txt
+TIMHash.txt
+Tim_msg.txt
