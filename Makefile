@@ -459,7 +459,7 @@ FIPTOOL			?=	${FIPTOOLPATH}/fiptool${BIN_EXT}
 
 ifeq ($(PLAT),a3700)
 #*********** A3700 *************
-DOIMAGEPATH		?= $(dir $(WTP))
+DOIMAGEPATH	:= $(WTP)
 DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/TBB_linux
 
 ifeq ($(MARVELL_SECURE_BOOT),1)
