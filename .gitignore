@@ -22,3 +22,8 @@ tools/doimage/doimage
 # Ignore header files copied.
 tools/fiptool/firmware_image_package.h
 tools/fiptool/uuid.h
+
+# Ignore unnecessary files after build
+CSK*_KeyHash.txt
+TIMHash.txt
+Tim_msg.txt
