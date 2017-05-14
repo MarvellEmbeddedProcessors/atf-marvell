@@ -126,7 +126,7 @@ void dw_pcie_configure(uintptr_t regs_base, uint32_t cap_speed)
 	 * presets to evaluate during the link equalization training to preset4.
 	 */
 	reg &= ~GEN3_EQ_PSET_REQ_VEC_MASK;
-	reg |= 0x10 << GEN3_EQ_PSET_REQ_VEC_OFFSET;
+	reg |= 0x50 << GEN3_EQ_PSET_REQ_VEC_OFFSET;
 	mmio_write_32(regs_base + PCIE_GEN3_EQU_CTRL, reg);
 
 	/*
