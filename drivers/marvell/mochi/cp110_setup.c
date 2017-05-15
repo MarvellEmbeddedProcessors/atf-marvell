@@ -301,10 +301,10 @@ void cp110_pcie_clk_cfg(int cp_index)
 		 * set according to the clock direction (input/output)
 		 */
 		reg = mmio_read_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index));
-		reg &= ~(PCIE0_REFCLK_BUFF_SOURCE | PCIE0_REFCLK_BUFF_SOURCE);
-		if (pcie0_clk)
+		reg &= ~(PCIE0_REFCLK_BUFF_SOURCE | PCIE1_REFCLK_BUFF_SOURCE);
+		if (!pcie0_clk)
 			reg |= PCIE0_REFCLK_BUFF_SOURCE;
-		if (pcie1_clk)
+		if (!pcie1_clk)
 			reg |= PCIE1_REFCLK_BUFF_SOURCE;
 
 		mmio_write_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index), reg);
