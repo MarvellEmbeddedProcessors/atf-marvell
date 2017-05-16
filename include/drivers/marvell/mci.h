@@ -101,10 +101,10 @@
 #define MCI_CTRL_RX_TX_MEM_CFG_DELTA_THRESH(val)	(((val) & 0xF) << 4)
 #define MCI_CTRL_RX_TX_MEM_CFG_RTC(val)			(((val) & 0x3) << 2)
 #define MCI_CTRL_RX_TX_MEM_CFG_WTC(val)			(((val) & 0x3) << 0)
-#define MCI_CTRL_RX_MEM_CFG_REG_DEF_VAL		(MCI_CTRL_RX_TX_MEM_CFG_RQ_THRESH(0x8) | \
-						 MCI_CTRL_RX_TX_MEM_CFG_PQ_THRESH(0x8) | \
-						 MCI_CTRL_RX_TX_MEM_CFG_NQ_THRESH(0x8) | \
-						 MCI_CTRL_RX_TX_MEM_CFG_DELTA_THRESH(3) | \
+#define MCI_CTRL_RX_MEM_CFG_REG_DEF_VAL		(MCI_CTRL_RX_TX_MEM_CFG_RQ_THRESH(0x7) | \
+						 MCI_CTRL_RX_TX_MEM_CFG_PQ_THRESH(0x7) | \
+						 MCI_CTRL_RX_TX_MEM_CFG_NQ_THRESH(0x7) | \
+						 MCI_CTRL_RX_TX_MEM_CFG_DELTA_THRESH(2) | \
 						 MCI_CTRL_RX_TX_MEM_CFG_RTC(1) | \
 						 MCI_CTRL_RX_TX_MEM_CFG_WTC(1))
 
@@ -186,15 +186,15 @@
 /* /HB /Units /HB_REG /HB_REGHopping Bus Registers /Window 0 Destination Register */
 #define MCI_HB_CTRL_WIN0_DESTINATION_REG_NUM		0x3
 #define MCI_HB_CTRL_WIN0_DEST_VALID_FLAG(val)		(((val) & 0x1) << 16)
-#define MCI_HB_CTRL_WIN0_DEST_ID(val)			(((val) & 0xfF) << 0)
+#define MCI_HB_CTRL_WIN0_DEST_ID(val)			(((val) & 0xFF) << 0)
 
 /* /HB /Units /HB_REG /HB_REGHopping Bus Registers /Tx Control Register */
 #define MCI_HB_CTRL_TX_CTRL_REG_NUM			0xD
 #define MCI_HB_CTRL_TX_CTRL_PCIE_MODE_OFFSET		24
 #define MCI_HB_CTRL_TX_CTRL_PCIE_MODE			(1 << MCI_HB_CTRL_TX_CTRL_PCIE_MODE_OFFSET)
 #define MCI_HB_CTRL_TX_CTRL_PRI_TH_QOS(val)		(((val) & 0xF) << 12)
-#define MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(val)		(((val) & 0xF) << 6)
-#define MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(val)		(((val) & 0xF) << 0)
+#define MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(val)		(((val) & 0x1F) << 6)
+#define MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(val)		(((val) & 0x1F) << 0)
 
 /* HB /Units /IHB_REG /IHB_REGInterchip Hopping Bus Registers /IHB PHY Idle Control Register */
 #define MCI_PHY_P0_IDLE_CTRL_REG_NUM		0x6
