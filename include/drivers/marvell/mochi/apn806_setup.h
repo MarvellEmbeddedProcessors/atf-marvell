@@ -44,7 +44,23 @@
 #define GWD_IIDR2_REV_ID_OFFSET			12
 #define GWD_IIDR2_REV_ID_MASK			0xF
 
+#define AP806_SAR0_REG_BASE			(MVEBU_REGS_BASE + 0x6F82D4)
+#define AP806_SAR0_BOOT_SOURCE_OFFSET		8
+#define AP806_SAR0_BOOT_SOURCE_MASK		0x7
+
+enum ap806_sar_target_dev {
+	SAR_PIDI_MCIX2		= 0x0,
+	SAR_MCIX4		= 0x1,
+	SAR_SPI			= 0x2,
+	SAR_SD			= 0x3,
+	SAR_PIDI_MCIX2_BD	= 0x4, /* BootRom disabled */
+	SAR_MCIX4_DB		= 0x5, /* BootRom disabled */
+	SAR_SPI_DB		= 0x6, /* BootRom disabled */
+	SAR_EMMC		= 0x7,
+};
+
 void apn806_init(void);
+uint32_t apn806_sar_get_bootsrc(void);
 
 static inline int apn806_rev_id_get(void)
 {
