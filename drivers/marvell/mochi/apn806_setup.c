@@ -87,6 +87,14 @@ enum axi_attr {
 	AXI_MAX_ATTR,
 };
 
+uint32_t apn806_sar_get_bootsrc()
+{
+	uint32_t reg;
+
+	reg = mmio_read_32(AP806_SAR0_REG_BASE);
+	return (reg >> AP806_SAR0_BOOT_SOURCE_OFFSET) & AP806_SAR0_BOOT_SOURCE_MASK;
+}
+
 static void apn_sec_masters_access_en(uint32_t enable)
 {
 	uint32_t reg;
