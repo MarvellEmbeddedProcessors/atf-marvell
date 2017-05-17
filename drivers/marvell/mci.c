@@ -496,10 +496,19 @@ int mci_configure_a1(int mci_index)
 {
 	int rval;
 
-	/* set MCI to support read/write transactions to arrive at the same time */
-	rval = mci_enable_simultaneous_transactions(mci_index);
-	if (rval)
-		ERROR("Failed to set MCI for simultaneous read/write transactions\n");
+	/* When boot source is from MCI, then bootROM is already enabling MCI
+	 * simultaneous transactions (ID assignment), so in that case we must avoid
+	 * enabling it for the 2nd time.
+	 */
+	if (apn806_sar_get_bootsrc() != SAR_MCIX4) {
+		VERBOSE("MCI is not used for boot source: configuring MCI ID assignment\n");
+		/* set MCI to support read/write transactions to arrive at the same time */
+		rval = mci_enable_simultaneous_transactions(mci_index);
+		if (rval)
+			ERROR("Failed to set MCI for simultaneous read/write transactions\n");
+	}
+	else
+		VERBOSE("MCI is used for boot source: skipping MCI ID assignment\n");
 
 	/* enable PHY register mode read/write access */
 	mci_enable_phy_regs_access(mci_index);
