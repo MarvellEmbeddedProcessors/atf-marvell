@@ -509,9 +509,6 @@ int mci_configure_a1(int mci_index)
 	} else
 		VERBOSE("MCI is used for boot source: skipping MCI ID assignment\n");
 
-	/* enable PHY register mode read/write access */
-	mci_enable_phy_regs_access(mci_index);
-
 	/* Configure MCI for more consistent behavior with AXI protocol */
 	rval = mci_axi_set_pcie_mode(mci_index);
 	if (rval)
