@@ -76,12 +76,15 @@ Build Instructions
 			Requires full initialization and command sequence
 			- SATA	- SATA device boot
 	- PARTNUM: For Armada37x0 only, the boot partition number, default is 0. To boot from eMMC, the value
-		should be aligned with the parameter in u-boot with name of CONFIG_SYS_MMC_ENV_PART, whose
+		should be aligned with the parameter in U-Boot with name of CONFIG_SYS_MMC_ENV_PART, whose
 		value by default is 1.
-		For detail about CONFIG_SYS_MMC_ENV_PART, please refer to u-boot build instructions.
-	- WTMI_IMG: For Armada37x0 only, the path of the wtmi image, it can point to a image which does
-		nothing, a image which supports EFUSE or a customized CM3 firmware image, default is
+		For detail about CONFIG_SYS_MMC_ENV_PART, please refer to U-Boot build instructions.
+	- WTMI_IMG: For Armada37x0 only, the path of the WTMI image can point to a image which does
+		nothing, a image which supports EFUSE or a customized CM3 firmware image, the default is
 		"tools/wtp/wtmi/build/wtmi.bin" which supports EFUSE.
+	- WTP: For Armada37x0 only, use this parameter to point to wtptools source code directory, which
+		could be found as a3700_utils.zip in the release.
+		Usage example: WTP=/path/to/a3700_utils
 
 	For example: in order to build the image in debug mode with log level up to 'notice' level run:
 
@@ -89,7 +92,7 @@ Build Instructions
 
 	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level,
 	the image has the preset CPU at 1000 MHz, preset DDR3 at 800 MHz, the DDR topology of DDR3 2CS,
-        the image boot from SPI NOR flash partition 0, and the image is non trusted in wtp, the command
+        the image boot from SPI NOR flash partition 0, and the image is non trusted in WTP, the command
         line is as following:
 
 		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 SECURE=0 CLOCKSPRESET=CPU_1000_DDR_800 \
@@ -124,27 +127,8 @@ Marvell's ATF compilation generates 7 files:
 
 Tools Installation for Armada37x0 Builds
 -----------------------------------
-1. Extract the tools/wtp/WTPTP_TOOLS_x_x_xx.zip into a temporary directory
-
-		# cd tools/wtp
-		# 7z x WTPTP_TOOLS_x_x_xx.zip
-
-2. If required, add executable permissions to files in the extracted
-   WTPTP_TOOLS_x_x_xx/Linux_Tools folder:
-
-		# sudo chmod a+x WTPTP_TOOLS_x_x_xx/Linux_Tools/*.exe
-
-3. Copy executable files from WTPTP_TOOLS_x_x_xx/Linux_Tools
-   to location pointed to $PATH environment variable.
-   For instance:
-
-		# sudo cp WTPTP_TOOLS_x_x_xx/Linux_Tools/*.exe /usr/local/bin
-
-4. Make sure the "ntbb_linux.exe" can be executed from any
-   location and "make" passes without error.
-
-5. Install a cross GNU ARM tool chain for building the WTMI binary.
-   Any cross GNU ARM tool chain able to build ARM Cortex M3 binaries
+1. Install a cross GNU ARM tool chain for building the WTMI binary.
+   Any cross GNU ARM tool chain that is able to build ARM Cortex M3 binaries
    is suitable.
    On Debian/Uboot hosts the default GNU ARM tool chain can be installed
    using the following command:
@@ -152,7 +136,7 @@ Tools Installation for Armada37x0 Builds
 		# sudo apt-get install gcc-arm-linux-gnueabi
 
    If required, the default tool chain prefix "arm-linux-gnueabi-" can be
-   overwritten using environment variable CROSS_CM3.
+   overwritten using the environment variable CROSS_CM3.
    Example for BASH shell:
 
 		# export CROSS_CM3=/opt/arm-cross/bin/arm-linux-gnueabi
