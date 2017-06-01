@@ -115,9 +115,9 @@ Trusted SRAM section 0x4000000..0x4200000:
 #define PLAT_MARVELL_TRUSTED_ROM_SIZE		0x04000000	/* 64 MB TODO: reduce this to minimum needed
 								according to fip image size*/
 
-#define PLAT_MARVELL_TRUSTED_DRAM_BASE		0x06000000	/* TODO: update SCP (Secure PayLoad)
-									Trusted DRAM actual BASE & size */
-#define PLAT_MARVELL_TRUSTED_DRAM_SIZE		0x02000000	/* 32 MB */
+#define PLAT_MARVELL_TRUSTED_DRAM_BASE		0x04400000	/* Reserve 16M for SCP (Secure PayLoad)
+									Trusted DRAM */
+#define PLAT_MARVELL_TRUSTED_DRAM_SIZE		0x01000000	/* 16 MB */
 
 #define PLAT_MARVELL_CPU_ENTRY_ADDR		BL1_RO_BASE
 
@@ -198,5 +198,13 @@ Trusted SRAM section 0x4000000..0x4200000:
 #define CPU_DEC_REMAP_LOW_REG(win_num)		(MVEBU_CPU_DEC_WIN_REG_BASE + 0xC + (win_num) * 0x10)
 #define CPU_DEC_RLR_REMAP_LOW_OFFS		0
 #define CPU_DEC_RLR_REMAP_LOW_MASK		(0xffff <<  CPU_DEC_BR_BASE_OFFS)
+
+/* Securities */
+#define IRQ_SEC_OS_TICK_INT	MARVELL_IRQ_SEC_PHY_TIMER
+
+#define TRUSTED_DRAM_BASE	PLAT_MARVELL_TRUSTED_DRAM_BASE
+#define TRUSTED_DRAM_SIZE	PLAT_MARVELL_TRUSTED_DRAM_SIZE
+
+#define BL32_BASE		TRUSTED_DRAM_BASE
 
 #endif /* __PLATFORM_DEF_H__ */
