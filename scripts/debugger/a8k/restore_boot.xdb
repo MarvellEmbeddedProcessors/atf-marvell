@@ -8,8 +8,15 @@ if (@strcmp(@BIN_EXT_ELF_PATH,"EMPTY")==0) then
 	END
 end
 
-! Set value bin_ext_run = 1 if the user run this script
-set val @bin_ext_run = 1
+if (@strcmp(@BI_BIN_PATH,"EMPTY")==0) then
+	set value @BI_BIN_PATH  = @queryinputfile("select Boot-image binary file", "all files (*.*)|*.*");
+	if @strlen(BI_BIN_PATH) == 0 then
+		!user hit cancel button
+		print "user abort\n"
+		MESSAGE "Update the path of the Boot-image binary, and reload the script"
+		EXIT
+	end
+end
 
 ! Reset the board
 TCI TRESET
@@ -20,22 +27,14 @@ IF @flash_empty != 1 THEN
 	SET BREAKPOINT AT (0xFFE1C048) HARD
 ELSE
 	! break at UART error of Bootrom
-	IF @armada_8040_rz != 1 THEN
-		! not Armada-8040-RZ(include AP-806-Z)
-		SET BREAKPOINT AT (0xFFFF0D14) HARD
-		RUN
-		SET BREAKPOINT AT (0xffff23d4) HARD
-	ELSE
-		SET BREAKPOINT AT (0xffff2270) HARD
-		RUN
-		SET BREAKPOINT AT (0xffff3244) HARD
-	END
+	SET BREAKPOINT AT (0xFFFF0D14) HARD
+	RUN
+	SET BREAKPOINT AT (0xffff242c) HARD
 END
 
 ! Run till the breakpoint
 RUN
 DELETE BREAKPOINT /ALL
-
 
 IF @flash_empty != 1 THEN
 ! load BLE elf file (run from 0xFFE1C048)
@@ -45,8 +44,8 @@ ELSE
 LOAD /SEGMENT /DEBUG /GLOBAL /INIT="" OF @BIN_EXT_ELF_PATH
 END
 
-! Break at the end of bin_ext_run before jumping back top BootROM
-SET BREAKPOINT AT (0xFFE1C08C) HARD
+! Break at the end of DRAM init before jumping back top BootROM
+SET BREAKPOINT AT (0xFFE1C0B4) HARD
 RUN
 DELETE BREAKPOINT /ALL
 
@@ -57,4 +56,10 @@ SET REGISTER PC=0xffff0668
 
 ! Before run the BootRom, set breakpoint before jump to image execution
 SET BREAKPOINT AT (0xffff068c) HARD
+RUN
+DELETE BREAKPOINT /ALL
+
+! Load boot-image.bin and run
+SET REGISTER PC=0x4100000
+LOAD /BINARY /ADDRESS=0x4100000 OF @BI_BIN_PATH
 RUN
