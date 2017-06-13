@@ -310,12 +310,6 @@ void cp110_pcie_clk_cfg(int cp_index)
 		mmio_write_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index), reg);
 	}
 
-#if 0
-	/*
-	 * TODO: Some instabilities in PCIe occur after introducing this code.
-	 * Until we understand the root cause of this issue,
-	 * disable it temporarily.
-	 */
 	/* CP110 revision A1 */
 	if (cp110_rev_id_get() == MVEBU_CP110_REF_ID_A1) {
 		if (!pcie0_clk || !pcie1_clk) {
@@ -329,7 +323,6 @@ void cp110_pcie_clk_cfg(int cp_index)
 			mmio_write_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index), reg);
 		}
 	}
-#endif
 }
 
 /* Set a unique stream id for all DMA capable devices */
