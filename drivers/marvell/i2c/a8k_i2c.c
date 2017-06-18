@@ -248,6 +248,20 @@ static int marvell_i2c_address_set(uint8_t chain, int command)
 	return 0;
 }
 
+/*
+ * The I2C module contains a clock divider to generate the SCL clock.
+ * This function calculates and sets the <N> and <M> fields in the I2C Baud
+ * Rate Register (t=01) to obtain given 'requested_speed'.
+ * The requested_speed will be equal to:
+ * CONFIG_SYS_TCLK / (10 * (M + 1) * (2 << N))
+ * Where M is the value represented by bits[6:3] and N is the value represented
+ * by bits[2:0] of "I2C Baud Rate Register".
+ * Therefore max M which can be set is 16 (2^4) and max N is 8 (2^3). So the
+ * lowest possible baudrate is:
+ * CONFIG_SYS_TCLK/(10 * (16 +1) * (2 << 8), which equals to:
+ * CONFIG_SYS_TCLK/87040. Assuming that CONFIG_SYS_TCLK=250MHz, the lowest
+ * possible frequency is ~2,872KHz.
+ */
 static unsigned int marvell_i2c_bus_speed_set(unsigned int requested_speed)
 {
 	unsigned int n, m, freq, margin, min_margin = 0xffffffff;
