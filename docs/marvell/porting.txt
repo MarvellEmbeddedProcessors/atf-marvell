@@ -19,7 +19,7 @@ Files that require porting are located at "plat/marvell/<soc family>/<soc>_cust"
 
 A7K/A8K specific:
 
-  - SoC Physical Address Map (soc_phys_map_config.c):
+  - SoC Physical Address Map (marvell_plat_config.c):
 	- This file describes the SoC physical memory mapping to be used for the CCU, RFU, AXI-MBUS and IOB
 	  address decode units (Refer to the functional spec for more details).
 	- In most cases, using the default address decode windows should work OK.
@@ -41,7 +41,7 @@ A7K/A8K specific:
 		o User defined
 
 	- Porting:
-		under marvell_plat_config.c need to implement struct that includes the specific board
+		under marvell_plat_config.c need to implement struct skip_image that includes the specific board
 		parameters.
 	- Example
 		o A7040-DB specific implementation (.....marvell/plat/a8k/a70x0/board/marvell_plat_config.c)
