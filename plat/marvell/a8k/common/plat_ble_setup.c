@@ -76,9 +76,17 @@
 #define MVEBU_AP_SAR_REG_BASE(r)	(MVEBU_AP_GEN_MGMT_BASE + 0x200 +\
 								((r) << 2))
 
-#define FREQ_MODE_AP_SAR_REG_NUM	(0)
 #define SAR_CLOCK_FREQ_MODE_OFFSET	(0)
 #define SAR_CLOCK_FREQ_MODE_MASK	(0x1f << SAR_CLOCK_FREQ_MODE_OFFSET)
+#define SAR_PIDI_LOW_SPEED_OFFSET	(20)
+#define SAR_PIDI_LOW_SPEED_MASK		(1 << SAR_PIDI_LOW_SPEED_OFFSET)
+#define SAR_PIDI_LOW_SPEED_SHIFT	(16)
+#define SAR_PIDI_LOW_SPEED_SET		(1 << SAR_PIDI_LOW_SPEED_SHIFT)
+
+#define FREQ_MODE_AP_SAR_REG_NUM	(0)
+#define SAR_CLOCK_FREQ_MODE(v)		(((v) & SAR_CLOCK_FREQ_MODE_OFFSET) | \
+					(((v) & SAR_PIDI_LOW_SPEED_MASK) >> \
+					SAR_PIDI_LOW_SPEED_SHIFT))
 
 #define AVS_EN_CTRL_REG			(MVEBU_AP_GEN_MGMT_BASE + 0x130)
 #define AVS_ENABLE_OFFSET		(0)
@@ -86,6 +94,8 @@
 #define AVS_LOW_VDD_LIMIT_OFFSET	(4)
 #define AVS_HIGH_VDD_LIMIT_OFFSET	(12)
 #define AVS_TARGET_DELTA_OFFSET		(21)
+#define AVS_VDD_LOW_LIMIT_MASK	        (0xFF << AVS_LOW_VDD_LIMIT_OFFSET)
+#define AVS_VDD_HIGH_LIMIT_MASK	        (0xFF << AVS_HIGH_VDD_LIMIT_OFFSET)
 /* VDD limit is 0.9V for A70x0 @ CPU frequency < 1600MHz */
 #define AVS_A7K_LOW_CLK_VALUE		((0x80 << AVS_TARGET_DELTA_OFFSET) | \
 					 (0x1A << AVS_HIGH_VDD_LIMIT_OFFSET) | \
@@ -98,6 +108,40 @@
 					 (0x24 << AVS_LOW_VDD_LIMIT_OFFSET) | \
 					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
 					 (0x1 << AVS_ENABLE_OFFSET))
+
+#define MVEBU_AP_EFUSE_SRV_CTRL_REG	(MVEBU_AP_GEN_MGMT_BASE + 0x8)
+#define EFUSE_SRV_CTRL_LD_SELECT_OFFS	6
+#define EFUSE_SRV_CTRL_LD_SEL_USER_MASK	(1 << EFUSE_SRV_CTRL_LD_SELECT_OFFS)
+
+/*
+ - AVS work points in the LD0 eFuse:
+	2Ghz/1.8Ghz work point: LD0[89:82]
+	1.6Ghz work point:      LD0[97:90]
+	1.3Ghz work point:      LD0[105:98]
+ - Identification information in the LD-0 eFuse:
+	DRO:      LD0[75:66]
+	Revision: LD0[79:76]
+	Bin:      LD0[81:80]
+*/
+#define MVEBU_AP_LD_EFUSE_BASE		(MVEBU_AP_GEN_MGMT_BASE + 0xF00)
+/* Bits [94:63] - 32 data bits total */
+#define MVEBU_AP_LD0_94_63_EFUSE_OFFS	(MVEBU_AP_LD_EFUSE_BASE + 0x8)
+/* Bits [125:95] - 31 data bits total, 32nd bit is parity for bits [125:63] */
+#define MVEBU_AP_LD0_125_95_EFUSE_OFFS	(MVEBU_AP_LD_EFUSE_BASE + 0xC)
+/* Offsets for the above 2 fields combined into single 64-bit value [125:63] */
+#define EFUSE_AP_LD0_DRO_OFFS		3
+#define EFUSE_AP_LD0_DRO_MASK		0x3FF
+#define EFUSE_AP_LD0_REVID_OFFS		13
+#define EFUSE_AP_LD0_REVID_MASK		0xF
+#define EFUSE_AP_LD0_BIN_OFFS		17
+#define EFUSE_AP_LD0_BIN_MASK		0x3
+#define EFUSE_AP_LD0_2_0_GHZ_WP_OFFS	19
+#define EFUSE_AP_LD0_1_6_GHZ_WP_OFFS	27
+#define EFUSE_AP_LD0_1_3_GHZ_WP_OFFS	35
+#define EFUSE_AP_LD0_WP_MASK		0xFF
+
+#define EFUSE_SVC_REVISION_ID_0		0x8
+#define EFUSE_SVC_BIN_PREMIUM		0x1
 
 enum cpu_clock_freq_mode {
 	CPU_2000_DDR_1200_RCLK_1200 = 0x0,
@@ -281,6 +325,78 @@ static void ble_plat_avs_config(void)
 	}
 }
 
+/******************************************************************************
+ * SVC flow - v0.4
+ * The feature is inteded  to configure AVS value according to eFuse values
+ * that are burned individually for each SoC during the test process.
+ * Primary AVS value is stored in HD efuse and processed on power on by the HW engine
+ * Secondary AVS value is located in LD efuse and contains 3 work points for
+ * various CPU frequencies.
+ * The Secondary AVS value is only taken into account if the Revision ID stored
+ * in the efuse matches the expected value, the CPU is running in a certain speed
+ * and the SoC Bin matches the value selected for the AVS update.
+ *****************************************************************************/
+static void ble_plat_svc_config(void)
+{
+	uint32_t reg_val, avs_workpoint = 0, freq_pidi_mode;
+	uint64_t efuse;
+
+	/* Set access to LD0 */
+	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
+	reg_val &= ~EFUSE_SRV_CTRL_LD_SELECT_OFFS;
+	mmio_write_32(MVEBU_AP_EFUSE_SRV_CTRL_REG, reg_val);
+
+	/* Obtain the value of LD0[125:63] */
+	efuse = mmio_read_32(MVEBU_AP_LD0_125_95_EFUSE_OFFS);
+	efuse <<= 32;
+	efuse |= mmio_read_32(MVEBU_AP_LD0_94_63_EFUSE_OFFS);
+
+	/* TODO - DRO usage is undefined in v0.4 */
+	/* Revision ID */
+	reg_val = (efuse >> EFUSE_AP_LD0_REVID_OFFS) & EFUSE_AP_LD0_REVID_MASK;
+	if (reg_val != EFUSE_SVC_REVISION_ID_0) {
+		INFO("Revision 0x%x. Update to SVC is not supported\n", reg_val);
+		ble_plat_avs_config();
+		return;
+	}
+
+	/* Frequency mode from SAR */
+	reg_val = mmio_read_32(MVEBU_AP_SAR_REG_BASE(FREQ_MODE_AP_SAR_REG_NUM));
+	freq_pidi_mode = SAR_CLOCK_FREQ_MODE(reg_val);
+
+	/* Bin */
+	reg_val = (efuse >> EFUSE_AP_LD0_BIN_OFFS) & EFUSE_AP_LD0_BIN_MASK;
+	if (reg_val == EFUSE_SVC_BIN_PREMIUM) {
+		INFO("Premium Bin, freq&pidi mode 0x%x\n", freq_pidi_mode);
+		/* Premium bin */
+		if (freq_pidi_mode == CPU_1600_DDR_1050_RCLK_1050) {
+			/* Modify AVS according to 1.6GHz eFuse work point */
+			avs_workpoint = (efuse >> EFUSE_AP_LD0_1_6_GHZ_WP_OFFS) &
+				  EFUSE_AP_LD0_WP_MASK;
+		}
+	} else {
+		INFO("Non-premium Bin, freq&pidi mode 0x%x\n", freq_pidi_mode);
+		/* Non-premium bin */
+		if (freq_pidi_mode ==
+		    (SAR_PIDI_LOW_SPEED_SET | CPU_1300_DDR_800_RCLK_800)) {
+			/* Modify AVS according to 1.3GHz eFuse work point */
+			avs_workpoint = (efuse >> EFUSE_AP_LD0_1_3_GHZ_WP_OFFS) &
+				  EFUSE_AP_LD0_WP_MASK;
+		}
+	}
+
+	/* Set AVS control if needed */
+	if (avs_workpoint != 0) {
+		INFO("AVS work point changed to 0x%x\n", avs_workpoint);
+		reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
+		reg_val &= ~(AVS_VDD_LOW_LIMIT_MASK | AVS_VDD_HIGH_LIMIT_MASK);
+		reg_val |= 0x1 << AVS_ENABLE_OFFSET;
+		reg_val |= avs_workpoint << AVS_HIGH_VDD_LIMIT_OFFSET;
+		reg_val |= avs_workpoint << AVS_LOW_VDD_LIMIT_OFFSET;
+		mmio_write_32(AVS_EN_CTRL_REG, reg_val);
+	}
+}
+
 static int ble_skip_image_i2c(struct skip_image *skip_im)
 {
 	ERROR("skipping image using i2c is not supported\n");
@@ -386,7 +502,7 @@ int ble_plat_setup(int *skip)
 	cp110_ble_init(0);
 
 	/* Setup AVS */
-	ble_plat_avs_config();
+	ble_plat_svc_config();
 
 	/* Get dram data from platform */
 	cfg = (struct dram_config *)plat_get_dram_data();
