@@ -39,6 +39,7 @@
 #include <sys_info.h>
 #include <dram_if.h>
 #include <ccu.h>
+#include <aro.h>
 #include <rfu.h>
 #include <apn806_setup.h>
 #include <cp110_setup.h>
@@ -142,26 +143,6 @@
 
 #define EFUSE_SVC_REVISION_ID_0		0x8
 #define EFUSE_SVC_BIN_PREMIUM		0x1
-
-enum cpu_clock_freq_mode {
-	CPU_2000_DDR_1200_RCLK_1200 = 0x0,
-	CPU_2000_DDR_1050_RCLK_1050 = 0x1,
-	CPU_1600_DDR_800_RCLK_800   = 0x4,
-	CPU_1800_DDR_1200_RCLK_1200 = 0x6,
-	CPU_1800_DDR_1050_RCLK_1050 = 0x7,
-	CPU_1600_DDR_900_RCLK_900   = 0x0B,
-	CPU_1600_DDR_1050_RCLK_1050 = 0x0D,
-	CPU_1600_DDR_900_RCLK_900_2 = 0x0E,
-	CPU_1000_DDR_650_RCLK_650   = 0x13,
-	CPU_1300_DDR_800_RCLK_800   = 0x14,
-	CPU_1300_DDR_650_RCLK_650   = 0x17,
-	CPU_1200_DDR_800_RCLK_800   = 0x19,
-	CPU_1400_DDR_800_RCLK_800   = 0x1a,
-	CPU_600_DDR_800_RCLK_800    = 0x1B,
-	CPU_800_DDR_800_RCLK_800    = 0x1C,
-	CPU_1000_DDR_800_RCLK_800   = 0x1D,
-	CPU_DDR_RCLK_INVALID
-};
 
 /* Notify bootloader on DRAM setup */
 void pass_dram_sys_info(struct dram_config *cfg)
@@ -503,6 +484,8 @@ int ble_plat_setup(int *skip)
 
 	/* Setup AVS */
 	ble_plat_svc_config();
+
+	init_aro();
 
 	/* Get dram data from platform */
 	cfg = (struct dram_config *)plat_get_dram_data();
