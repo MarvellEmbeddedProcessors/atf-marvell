@@ -78,7 +78,6 @@
 /* Extension header types */
 #define EXT_TYPE_SECURITY	0x1
 #define EXT_TYPE_BINARY		0x2
-#define EXT_TYPE_REGISTER	0x3
 
 #define MAIN_HDR_MAGIC		0xB105B002
 
@@ -124,12 +123,6 @@ typedef struct _ext_header {
 	uint16_t	reserved;
 	uint32_t	size;
 } ext_header_t;
-
-
-typedef struct _reg_entry {
-	uint32_t	addr;
-	uint32_t	value;
-} reg_entry_t;
 
 typedef struct _sec_entry {
 	uint8_t		kak_key[MAX_RSA_DER_BYTE_LEN];
@@ -179,7 +172,6 @@ typedef struct _sec_options {
 
 typedef struct _options {
 	char bin_ext_file[MAX_FILENAME];
-	char reg_ext_file[MAX_FILENAME];
 	char sec_cfg_file[MAX_FILENAME];
 	sec_options *sec_opts;
 	uint32_t  load_addr;
@@ -220,10 +212,6 @@ void usage(void)
 	printf("            This image is executed before the boot image. this is typically\n");
 	printf("            used to initiliaze the memory controller.\n");
 	printf("            Currently supports only a single file.\n");
-	printf("  -r        register extension file.\n");
-	printf("            A text file containing pairs of register address and value.\n");
-	printf("            These values are written before the execution of the boot image.\n");
-	printf("            Currently supports only a single file.\n");
 #ifdef CONFIG_MVEBU_SECURE_BOOT
 	printf("  -c        Make trusted boot image using parameters from the configuration file.\n");
 #endif
@@ -246,7 +234,6 @@ void usage(void)
 /* globals */
 options_t opts = {
 	.bin_ext_file = "NA",
-	.reg_ext_file = "NA",
 	.sec_cfg_file = "NA",
 	.sec_opts = 0,
 	.load_addr = 0x0,
@@ -1110,25 +1097,6 @@ void print_sec_ext(ext_header_t *ext_hdr, int base)
 
 }
 
-void print_reg_ext(ext_header_t *ext_hdr, int base)
-{
-	uint32_t *reg_list;
-	int size = ext_hdr->size;
-	int i = 0;
-
-	printf("\n########### Register extension #########\n");
-
-	base = print_ext_hdr(ext_hdr, base);
-
-	reg_list = (uint32_t *)((uintptr_t)(ext_hdr) + sizeof(ext_header_t));
-	while (size) {
-		do_print_field(reg_list[i++], "address", base, 4, FMT_HEX);
-		do_print_field(reg_list[i++], "value  ", base + 4, 4, FMT_HEX);
-		base += 8;
-		size -= 8;
-	}
-}
-
 void print_bin_ext(ext_header_t *ext_hdr, int base)
 {
 	printf("\n########### Binary extension ###########\n");
@@ -1145,8 +1113,6 @@ int print_extension(void *buf, int base, int count, int ext_size)
 	while (count--) {
 		if (ext_hdr->type == EXT_TYPE_BINARY)
 			print_bin_ext(ext_hdr, base);
-		else if (ext_hdr->type == EXT_TYPE_REGISTER)
-			print_reg_ext(ext_hdr, base);
 		else if (ext_hdr->type == EXT_TYPE_SECURITY)
 			print_sec_ext(ext_hdr, base);
 
@@ -1264,75 +1230,6 @@ error:
 	return ret;
 }
 
-int format_reg_ext(char *filename, FILE *out_fd)
-{
-	ext_header_t header;
-	FILE *in_fd;
-	int size, written;
-	uint32_t *buf;
-	int line_id = 0, entry = 0, i;
-	char *addr, *value;
-	char line[256];
-
-	in_fd = fopen(filename, "rb");
-	if (in_fd == NULL) {
-		printf("failed to open reg extension file %s\n", filename);
-		return 1;
-	}
-
-	size = get_file_size(filename);
-	if (size <= 0) {
-		printf("reg extension file size is bad\n");
-		return 1;
-	}
-
-	buf = malloc(size);
-	while (fgets(line, sizeof(line), in_fd)) {
-		line_id++;
-		if (line[0] == '#' || line[0] == ' ')
-			continue;
-
-		if (strlen(line) <= 1)
-			continue;
-
-		if (line[0] != '0') {
-			printf("Bad register file format at line %d\n", line_id);
-			return 1;
-		}
-
-		addr = strtok(&line[0], " \t");
-		value = strtok(NULL, " \t");
-		if ((addr == NULL) || (value == NULL)) {
-			printf("Bad register file format at line %d\n", line_id);
-			return 1;
-		}
-
-		buf[entry++]     = strtoul(addr, NULL, 0);
-		buf[entry++] = strtoul(value, NULL, 0);
-	}
-
-	header.type = EXT_TYPE_REGISTER;
-	header.offset = 0;
-	header.size = (entry * 4);
-	header.reserved = 0;
-
-	/* Write header */
-	written = fwrite(&header, sizeof(ext_header_t), 1, out_fd);
-	if (written != 1) {
-		printf("failed writing header to extension file\n");
-		return 1;
-	}
-
-	/* Write register */
-	for (i = 0; i < entry; i++)
-		fwrite(&buf[i], 4, 1, out_fd);
-
-	free(buf);
-	fclose(in_fd);
-	return 0;
-}
-
-
 int format_bin_ext(char *filename, FILE *out_fd)
 {
 	ext_header_t header;
@@ -1385,7 +1282,7 @@ int format_bin_ext(char *filename, FILE *out_fd)
 
 /* ****************************************
  *
- * Write all extensions (binary, reg, secure
+ * Write all extensions (binary, secure
  * extensions) to file
  *
  * ****************************************/
@@ -1403,12 +1300,6 @@ int format_extensions(char *ext_filename)
 
 	if (strncmp(opts.bin_ext_file, "NA", MAX_FILENAME)) {
 		if (format_bin_ext(opts.bin_ext_file, out_fd)) {
-			ret = 1;
-			goto error;
-		}
-	}
-	if (strncmp(opts.reg_ext_file, "NA", MAX_FILENAME)) {
-		if (format_reg_ext(opts.reg_ext_file, out_fd)) {
 			ret = 1;
 			goto error;
 		}
@@ -1561,7 +1452,7 @@ int main(int argc, char *argv[])
 	int read;
 	uint32_t nand_block_size_kb, mlc_nand;
 
-	while ((opt = getopt(argc, argv, "hpms:i:l:e:a:b:r:u:n:t:c:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "hpms:i:l:e:a:b:u:n:t:c:k:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage();
@@ -1580,10 +1471,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'b':
 			strncpy(opts.bin_ext_file, optarg, MAX_FILENAME);
-			ext_cnt++;
-			break;
-		case 'r':
-			strncpy(opts.reg_ext_file, optarg, MAX_FILENAME);
 			ext_cnt++;
 			break;
 		case 'p':
