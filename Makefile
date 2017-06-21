@@ -825,6 +825,7 @@ ifeq ($(PLAT),a3700)
 fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL}
 	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
 	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
+	$(shell truncate -s %4 ${BUILD_PLAT}/${BOOT_IMAGE})
 	@echo
 	@echo "Building uart images"
 	$(TIMBUILD) $(TIMBLDUARTARGS)
