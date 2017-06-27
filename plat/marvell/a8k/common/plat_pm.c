@@ -36,6 +36,7 @@
 #include <gicv2.h>
 #include <mmio.h>
 #include <debug.h>
+#include <delay_timer.h>
 
 #ifdef SCP_IMAGE
 #include <bakery_lock.h>
@@ -56,6 +57,211 @@
 /* this lock synchronize AP multiple cores execution with MSS */
 DEFINE_BAKERY_LOCK(pm_sys_lock);
 #endif
+
+
+/* AP806 CPU power down /power up definitions */
+enum CPU_ID {
+	CPU0,
+	CPU1,
+	CPU2,
+	CPU3
+};
+
+#define CPUS_PER_CLUSTER		2
+#define REG_WR_VALIDATE_TIMEOUT		(2000)
+
+#define FEATURE_DISABLE_STATUS_REG			(MVEBU_REGS_BASE + 0x6F8230)
+#define FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET	4
+#define FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK		(0x1 << FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET)
+
+#define PWRC_CPUN_CR_REG(cpu_id)		(MVEBU_REGS_BASE + 0x680000 + (cpu_id * 0x10))
+#define PWRC_CPUN_CR_PWR_DN_RQ_OFFSET		0
+#define PWRC_CPUN_CR_PWR_DN_RQ_MASK		(0x1 << PWRC_CPUN_CR_PWR_DN_RQ_OFFSET)
+#define PWRC_CPUN_CR_ISO_ENABLE_OFFSET		16
+#define PWRC_CPUN_CR_ISO_ENABLE_MASK		(0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)
+#define PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET	31
+#define PWRC_CPUN_CR_LDO_BYPASS_RDY_MASK	(0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)
+
+#define CCU_B_PRCRN_REG(cpu_id)			(MVEBU_REGS_BASE + 0x1A50 + \
+						((cpu_id / 2) * (0x400)) + ((cpu_id % 2) * 4))
+#define CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET	0
+#define CCU_B_PRCRN_CPUPORESET_STATIC_MASK	(0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)
+
+/*
+ * Power down CPU:
+ * Used to reduce power consumption, and avoid SoC unnecessary temperature rise.
+ */
+int plat_marvell_cpu_powerdown(int cpu_id)
+{
+	uint32_t	reg_val;
+	int		exit_loop = REG_WR_VALIDATE_TIMEOUT;
+
+	INFO("Powering down CPU%d\n", cpu_id);
+
+	/* 1. Isolation enable */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val |= 0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 2. Read and check Isolation enabled - verify bit set to 1 */
+	do {
+		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+		exit_loop--;
+	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) && exit_loop > 0);
+
+	/* 3. Switch off CPU power */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val &= ~PWRC_CPUN_CR_PWR_DN_RQ_MASK;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 4. Read and check Switch Off - verify bit set to 0 */
+	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	do {
+		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+		exit_loop--;
+	} while (reg_val & PWRC_CPUN_CR_PWR_DN_RQ_MASK && exit_loop > 0);
+
+	if (exit_loop <= 0)
+		goto cpu_poweroff_error;
+
+	/* 5. De-Assert power ready */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val &= ~PWRC_CPUN_CR_LDO_BYPASS_RDY_MASK;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 6. Assert CPU POR reset */
+	reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
+	reg_val &= ~CCU_B_PRCRN_CPUPORESET_STATIC_MASK;
+	mmio_write_32(CCU_B_PRCRN_REG(cpu_id), reg_val);
+
+	/* 7. Read and poll on Validate the CPU is out of reset */
+	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	do {
+		reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
+		exit_loop--;
+	} while (reg_val & CCU_B_PRCRN_CPUPORESET_STATIC_MASK && exit_loop > 0);
+
+	if (exit_loop <= 0)
+		goto cpu_poweroff_error;
+
+	INFO("Successfully powered down CPU%d\n", cpu_id);
+
+	return 0;
+
+cpu_poweroff_error:
+	ERROR("ERROR: Can't power down CPU%d\n" , cpu_id);
+	return -1;
+}
+
+/*
+ * Power down CPUs 1-3 at early boot stage,
+ * to reduce power consumption and SoC temperature.
+ * This is triggered by BLE prior to DDR initialization.
+ *
+ * Note:
+ * All CPUs will be powered up by plat_marvell_cpu_powerup on Linux boot stage,
+ * which is triggered by PSCI ops (pwr_domain_on).
+ */
+int plat_marvell_early_cpu_powerdown(void)
+{
+	uint32_t cpu_cluster_status = mmio_read_32(FEATURE_DISABLE_STATUS_REG)
+						& FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK;
+	/* if cpu_cluster_status bit is set, that means we have only single cluster */
+	int cluster_count = cpu_cluster_status ? 1 : 2;
+
+	INFO("Powering off unused CPUs\n");
+
+	/* CPU1 is in AP806 cluster-0, which always exists - so power it down */
+	if (plat_marvell_cpu_powerdown(CPU1) == -1)
+		return -1;
+
+	/*
+	 * CPU2-3 are in AP806 2nd cluster (cluster-1), which doesn't exists in dual-core systems.
+	 * so need to check if we have dual-core (single cluster) or quad-code (2 clusters)
+	 */
+	if (cluster_count == 2) {
+		/* CPU2-3 are part of 2nd cluster */
+		if (plat_marvell_cpu_powerdown(CPU2) == -1)
+			return -1;
+		if (plat_marvell_cpu_powerdown(CPU3) == -1)
+			return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Power up CPU - part of Linux boot stage
+ */
+int plat_marvell_cpu_powerup(u_register_t mpidr)
+{
+	uint32_t	reg_val;
+	int	cpu_id = MPIDR_CPU_GET(mpidr), cluster = MPIDR_CLUSTER_GET(mpidr);
+	int	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+
+	/* calculate absolute CPU ID */
+	cpu_id = cluster * CPUS_PER_CLUSTER + cpu_id;
+
+	INFO("Powering on CPU%d\n", cpu_id);
+
+	/* 1. Switch CPU power ON */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val |= 0x1 << PWRC_CPUN_CR_PWR_DN_RQ_OFFSET;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 2. Wait for CPU on, up to 100 uSec: */
+	udelay(100);
+
+	/* 3. Assert power ready */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val |= 0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 4. Read & Validate power ready - used in order to generate 16 Host CPU cycles */
+	do {
+		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+		exit_loop--;
+	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)) && exit_loop > 0);
+
+	if (exit_loop <= 0)
+		goto cpu_poweron_error;
+
+	/* 5. Isolation disable */
+	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+	reg_val &= ~PWRC_CPUN_CR_ISO_ENABLE_MASK;
+	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
+
+	/* 6. Read and check Isolation enabled - verify bit set to 1 */
+	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	do {
+		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
+		exit_loop--;
+	} while ((reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) && exit_loop > 0);
+
+	/* 7. De Assert CPU POR reset & Core reset */
+	reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
+	reg_val |= 0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET;
+	mmio_write_32(CCU_B_PRCRN_REG(cpu_id), reg_val);
+
+	/* 8. Read & Validate CPU POR reset */
+	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	do {
+		reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
+		exit_loop--;
+	} while (!(reg_val & (0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)) && exit_loop > 0);
+
+	if (exit_loop <= 0)
+		goto cpu_poweron_error;
+
+	INFO("Successfully powered on CPU%d\n", cpu_id);
+
+	return 0;
+
+cpu_poweron_error:
+	ERROR("ERROR: Can't power up CPU%d\n" , cpu_id);
+	return -1;
+}
+
 
 int plat_marvell_cpu_on(u_register_t mpidr)
 {
@@ -144,6 +350,9 @@ void a8k_cpu_standby(plat_local_state_t cpu_state)
  ******************************************************************************/
 int a8k_pwr_domain_on(u_register_t mpidr)
 {
+	/* Power up CPU (CPUs 1-3 are powered off at start of BLE) */
+	plat_marvell_cpu_powerup(mpidr);
+
 #ifdef SCP_IMAGE
 	unsigned int target = ((mpidr & 0xFF) + (((mpidr >> 8) & 0xFF) * 2));
 

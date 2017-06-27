@@ -364,6 +364,9 @@ int ble_plat_setup(int *skip)
 	int ret;
 	struct dram_config *cfg;
 
+	/* Power down unused CPUs */
+	plat_marvell_early_cpu_powerdown();
+
 	/*
 	 * Save the current CCU configuration and make required changes:
 	 * - Allow access to DRAM larger than 4GB

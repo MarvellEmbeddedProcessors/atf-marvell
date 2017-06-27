@@ -127,4 +127,5 @@ void marvell_bl1_setup_mpps(void);
 
 const mmap_region_t *plat_marvell_get_mmap(void);
 
+int plat_marvell_early_cpu_powerdown(void);
 #endif /* __PLAT_MARVELL_H__ */
