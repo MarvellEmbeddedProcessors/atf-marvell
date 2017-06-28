@@ -383,7 +383,7 @@ static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
 
 	/* AP RX thresholds and delta configurations (IHB_reg 0x0) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_CTRL_RX_MEM_CFG_REG_DEF_VAL);
+			  MCI_CTRL_RX_MEM_CFG_REG_DEF_AP_VAL);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_RX_MEM_CFG_REG_NUM) |
 			  MCI_INDIRECT_CTRL_LOCAL_PKT);
@@ -391,7 +391,7 @@ static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
 
 	/* CP RX thresholds and delta configurations (IHB_reg 0x0) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_CTRL_RX_MEM_CFG_REG_DEF_VAL);
+			  MCI_CTRL_RX_MEM_CFG_REG_DEF_CP_VAL);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_RX_MEM_CFG_REG_NUM) |
 			  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT));
@@ -400,8 +400,8 @@ static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
 	/* AP AR & AW maximum AXI outstanding request configuration (HB_reg 0xd) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
 			  MCI_HB_CTRL_TX_CTRL_PRI_TH_QOS(8) |
-			  MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(5) |
-			  MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(5));
+			  MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(3) |
+			  MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(3));
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_HB_CTRL_TX_CTRL_REG_NUM) |
 			  MCI_INDIRECT_CTRL_HOPID(GID_AXI_HB) |
@@ -411,8 +411,8 @@ static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
 	/* CP AR & AW maximum AXI outstanding request configuration (HB_reg 0xd) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
 			  MCI_HB_CTRL_TX_CTRL_PRI_TH_QOS(8) |
-			  MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(13) |
-			  MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(31));
+			  MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(0xB) |
+			  MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(0x11));
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_HB_CTRL_TX_CTRL_REG_NUM) |
 			  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT) |
