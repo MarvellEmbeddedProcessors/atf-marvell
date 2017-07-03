@@ -96,6 +96,7 @@
 #define ICC_IAR1_EL1    S3_0_c12_c12_0
 #define ICC_EOIR0_EL1   S3_0_c12_c8_1
 #define ICC_EOIR1_EL1   S3_0_c12_c12_1
+#define ICC_SGI1R_EL1   S3_0_c12_c11_5
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
