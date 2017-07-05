@@ -167,12 +167,8 @@ int update_dram_info(struct dram_config *cfg)
 		else
 			 /* initialize ap i2c */
 			i2c_init((void *)MVEBU_CP0_I2C_BASE);
-		/*
-		 * Dummy read to the SPD chip memory page selector.
-		 * It is needed for for selecting the SPD memory page 0
-		 * prior to accessing the DRAM configuration data
-		 */
-		i2c_read(I2C_SPD_P0_ADDR, 0x0, 1, tm->spd_data.all_bytes, 1);
+		/* select SPD memory page 0 to access DRAM configuration */
+		i2c_write(I2C_SPD_P0_ADDR, 0x0, 1, tm->spd_data.all_bytes, 1);
 		/* read data from spd */
 		i2c_read(I2C_SPD_ADDR, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
