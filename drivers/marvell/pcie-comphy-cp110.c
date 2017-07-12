@@ -410,7 +410,7 @@ int comphy_pcie_power_up(uint32_t lane, struct pci_hw_cfg *hw)
 	mask |= HPIPE_LANE_CFG_FOM_ONLY_MODE_MASK;
 	data |= 0x1 << HPIPE_LANE_CFG_FOM_ONLY_MODE_OFFFSET;
 	mask |= HPIPE_LANE_CFG_FOM_PRESET_VECTOR_MASK;
-	data |= 0x2 << HPIPE_LANE_CFG_FOM_PRESET_VECTOR_OFFSET;
+	data |= 0x1 << HPIPE_LANE_CFG_FOM_PRESET_VECTOR_OFFSET;
 	reg_set(hpipe_addr + HPIPE_LANE_EQ_REMOTE_SETTING_REG, data, mask);
 
 	if (!hw->is_end_point) {
