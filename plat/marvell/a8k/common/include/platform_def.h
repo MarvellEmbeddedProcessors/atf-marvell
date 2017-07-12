@@ -145,7 +145,7 @@
  * PLAT_ARM_MAX_BL31_SIZE is calculated using the current BL31 debug size plus a
  * little space for growth.
  */
-#define PLAT_MARVEL_MAX_BL31_SIZE		0x1D000
+#define PLAT_MARVEL_MAX_BL31_SIZE		0x5D000
 
 #define PLAT_MARVELL_CPU_ENTRY_ADDR		BL1_RO_BASE
 
