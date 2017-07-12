@@ -36,7 +36,56 @@
 #include <debug.h>
 #include <plat_private.h> /* timer functionality */
 #include "mss_scp_bootloader.h"
+#include <plat_config.h>
+#include <platform_def.h>
+#include <ccu.h>
+#include <rfu.h>
+#include <mmio.h>
 
+/* IO windows configuration */
+#define IOW_GCR_OFFSET		(0x70)
+
+struct ccu_win mem_map[] = {
+	{0x0, MVEBU_CP_REGS_BASE(0), 0x0, 0x2000000, IO_0_TID},
+	{0x0, MVEBU_CP_REGS_BASE(1), 0x0, 0x2000000, IO_0_TID},
+};
+
+/* Since the scp_bl2 image can contain firmware for cp1 and cp0 coprocessors,
+ * the access to cp0 and cp1 need to be provided. More precisely it is
+ * required to:
+ *  - get the information about device id which is stored in CP0 registers
+ *    (to distinguish between cases where we have cp0 and cp1 or standalone cp0)
+ *  - get the access to cp which is needed for loading fw for cp0/cp1
+ *    coprocessors
+ * This function configures ccu windows accordingly.
+ *
+ * Note: there is no need to restore previous ccu configuration, since in next
+ * phase (BL31) the init_ccu will be called (via apn806_init/
+ * bl31_plat_arch_setu) and therefore the ccu configuration will be overwritten.
+ */
+static int bl2_plat_mmap_init(void)
+{
+	size_t win_nr, win_id;
+	uintptr_t iow_base = MVEBU_RFU_BASE;
+
+	win_nr =  sizeof(mem_map) / sizeof(struct ccu_win);
+
+	if (win_nr > marvell_get_ccu_max_win()) {
+		ERROR("BL2: %s: trying to open too many windows\n", __func__);
+		return -1;
+	}
+
+	for (win_id = 0; win_id < win_nr; win_id++) {
+		/* Enable required CCU windows */
+		ccu_win_check(&mem_map[win_id], win_id);
+		ccu_enable_win(&mem_map[win_id], win_id);
+	}
+
+	/* Set the default target id to PIDI */
+	mmio_write_32(iow_base + IOW_GCR_OFFSET, PIDI_TID);
+
+	return 0;
+}
 
 /*******************************************************************************
  * Transfer SCP_BL2 from Trusted RAM using the SCP Download protocol.
@@ -51,6 +100,10 @@ int bl2_plat_handle_scp_bl2(image_info_t *scp_bl2_image_info)
 
 	/* initialize time (for delay functionality) */
 	plat_delay_timer_init();
+
+	ret = bl2_plat_mmap_init();
+	if (ret != 0)
+		return ret;
 
 	ret = scp_bootloader_transfer((void *)scp_bl2_image_info->image_base,
 		scp_bl2_image_info->image_size);

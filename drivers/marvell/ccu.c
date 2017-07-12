@@ -134,7 +134,7 @@ static void dump_ccu(void)
 }
 #endif
 
-static void ccu_win_check(struct ccu_win *win, uint32_t win_num)
+void ccu_win_check(struct ccu_win *win, uint32_t win_num)
 {
 	uint64_t start_addr, win_size;
 
@@ -159,7 +159,7 @@ static void ccu_win_check(struct ccu_win *win, uint32_t win_num)
 	}
 }
 
-static void ccu_enable_win(struct ccu_win *win, uint32_t win_id)
+void ccu_enable_win(struct ccu_win *win, uint32_t win_id)
 {
 	uint32_t ccu_win_reg;
 	uint32_t alr, ahr;

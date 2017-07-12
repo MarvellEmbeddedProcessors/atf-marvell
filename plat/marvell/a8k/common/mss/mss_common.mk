@@ -35,8 +35,10 @@ MSS_SOURCE		:= 	$(PLAT_MARVELL)/a8k/common/mss
 
 BL2_SOURCES		+=	$(MSS_SOURCE)/mss_bl2_setup.c		\
 				$(MSS_SOURCE)/mss_scp_bootloader.c 	\
-                                $(PLAT_MARVELL)/common/plat_delay_timer.c \
-				drivers/delay_timer/delay_timer.c
+				$(PLAT_MARVELL)/common/plat_delay_timer.c \
+				drivers/delay_timer/delay_timer.c	\
+				$(MARVELL_DRV)				\
+				$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
 BL31_SOURCES		+=	$(MSS_SOURCE)/mss_ipc_drv.c		\
 				$(MSS_SOURCE)/mss_pm_ipc.c
