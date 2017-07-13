@@ -39,11 +39,13 @@
 #include <platform_def.h>
 #include <delay_timer.h>
 #include <apn806_setup.h>
+#include <cp110_setup.h>
 
 #include <plat_pm_trace.h>
 #include <mss_scp_bootloader.h>
 #include <mss_ipc_drv.h>
 #include <mss_mem.h>
+#include <mss_scp_bl2_format.h>
 
 
 #define MSS_DMA_SRCBR(base)		(base + 0xC0)
@@ -75,6 +77,7 @@
 #define MSS_HANDSHAKE_TIMEOUT		50
 /* TODO: Fix this */
 #define AP_MSS_REG_BASE			(MVEBU_REGS_BASE + 0x580000)
+#define CP_MSS_REG_BASE(CP)		(MVEBU_CP_REGS_BASE(CP) + 0x280000)
 
 
 static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
@@ -103,6 +106,12 @@ static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
 static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
 {
 	uint32_t i, loop_num, timeout;
+
+	/* Check if the img size is not bigger than ID-RAM size of MSS CM3 */
+	if (size > MSS_IDRAM_SIZE) {
+		ERROR("image is too big to fit into MSS CM3 memory\n");
+		return 1;
+	}
 
 	NOTICE("Loading MSS image from address 0x%x Size 0x%x to MSS at 0x%x\n",
 	       src_addr, size, (uint32_t)mss_regs);
@@ -158,18 +167,15 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
 	return 0;
 }
 
-int scp_bootloader_transfer(void *image, unsigned int image_size)
+/* Load image to MSS AP and do PM related initialization
+ * Note that this routine is different than other CM3 loading routines, because
+ * firmware for AP is dedicated for PM and therefore some additional PM
+ * initialization is required
+ */
+static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size)
 {
-	int ret;
 	struct mss_pm_ctrl_block *mss_pm_crtl;
-
-	assert((uintptr_t) image == SCP_BL2_BASE);
-
-	if ((image_size == 0) || (image_size % 4 != 0)) {
-		ERROR("SCP_BL2 image size must be a multiple of 4 bytes\n");
-		ERROR("and not zero (current size = 0x%x)\n", image_size);
-		return -1;
-	}
+	int ret;
 
 	/* TODO: add PM Control Info from platform */
 	mss_pm_crtl = (struct mss_pm_ctrl_block *)MSS_SRAM_PM_CONTROL_BASE;
@@ -200,8 +206,8 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 
 	/* TODO: add checksum to image */
 	VERBOSE("Send info about the SCP_BL2 image to be transferred to SCP\n");
-	NOTICE("Load image to AP MSS\n");
-	ret = mss_image_load((uintptr_t)image, image_size, AP_MSS_REG_BASE);
+
+	ret = mss_image_load(single_img, image_size, AP_MSS_REG_BASE);
 	if (ret != 0) {
 		ERROR("SCP Image load failed\n");
 		return -1;
@@ -213,6 +219,129 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 		ERROR("SCP Image check failed\n");
 		return -1;
 	}
+
+	return 0;
+}
+
+/* Load CM3 image (single_img) to CM3 pointed by cm3_type */
+static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t image_size)
+{
+	_Bool has_cp1 = 0;
+	int ret;
+
+	if (cp110_device_id_get() == MVEBU_80X0_DEV_ID)
+		has_cp1 = 1;
+
+	switch (cm3_type) {
+	case MSS_AP:
+		NOTICE("Load image to AP MSS\n");
+		ret = mss_ap_load_image(single_img, image_size);
+		if (ret != 0)
+			return ret;
+		break;
+	case MSS_CP0:
+		NOTICE("Load image to CP0 MSS\n");
+		ret = mss_image_load(single_img, image_size, CP_MSS_REG_BASE(0));
+		if (ret != 0) {
+			ERROR("SCP Image load failed\n");
+			return -1;
+		}
+		break;
+	case MSS_CP1:
+		if (!has_cp1) {
+			NOTICE("Skipping MSS CP1 related image\n");
+			break;
+		}
+		NOTICE("Load image to CP1 MSS\n");
+		ret = mss_image_load(single_img, image_size, CP_MSS_REG_BASE(1));
+		if (ret != 0) {
+			ERROR("SCP Image load failed\n");
+			return -1;
+		}
+		break;
+	case MG_CP0:
+		/* TODO: */
+		NOTICE("Load image to CP0 MG not supported\n");
+		break;
+	case MG_CP1:
+		if (!has_cp1) {
+			NOTICE("Skipping MG CP1 related image\n");
+			break;
+		}
+		/* TODO: */
+		NOTICE("Load image to CP1 MG not supported\n");
+		break;
+	default:
+		ERROR("SCP_BL2 wrong img format (cm3_type=%d)\n", cm3_type);
+		break;
+	}
+
+	return 0;
+}
+
+/* The Armada 8K has 5 service CPUs and Armada 7K has 3. Therefore it was
+ * required to provide a method for loading firmware to all of the service CPUs.
+ * To achieve that, the scp_bl2 image in fact is file containing up to 5
+ * concatenated firmwares and this routine splits concatenated image into single
+ * images dedicated for appropriate service CPU and then load them.
+ */
+static int split_and_load_bl2_image(void *image)
+{
+	file_header_t *file_hdr;
+	img_header_t *img_hdr;
+	uintptr_t single_img;
+	int i;
+
+	file_hdr = (file_header_t *)image;
+
+	if (file_hdr->magic != FILE_MAGIC) {
+		ERROR("SCP_BL2 wrong img format\n");
+		return -1;
+	}
+
+	if (file_hdr->nr_of_imgs > MAX_NR_OF_FILES) {
+		ERROR("SCP_BL2 concatenated image contains to many images\n");
+		return -1;
+	}
+
+	img_hdr = (img_header_t *)((uintptr_t)image + sizeof(file_header_t));
+	single_img = (uintptr_t)image + sizeof(file_header_t) +
+				    sizeof(img_header_t) * file_hdr->nr_of_imgs;
+
+	NOTICE("SCP_BL2 contains %d concatenated images\n",
+							  file_hdr->nr_of_imgs);
+	for (i = 0; i < file_hdr->nr_of_imgs; i++) {
+
+		/* Before loading make sanity check on header */
+		if (img_hdr->version != HEADER_VERSION) {
+			ERROR("Wrong header, img corrupted exiting\n");
+			return -1;
+		}
+
+		load_img_to_cm3(img_hdr->type, single_img, img_hdr->length);
+
+		/* Prepare offsets for next run */
+		single_img += img_hdr->length;
+		img_hdr++;
+	}
+
+	return 0;
+}
+
+int scp_bootloader_transfer(void *image, unsigned int image_size)
+{
+	assert((uintptr_t) image == SCP_BL2_BASE);
+
+	VERBOSE("Concatenated img size %d\n", image_size);
+
+	if (image_size == 0) {
+		ERROR("SCP_BL2 image size can't be 0 (current size = 0x%x)\n",
+								    image_size);
+		return -1;
+	}
+
+	if (split_and_load_bl2_image(image))
+		return -1;
 
 	return 0;
 }
