@@ -1,0 +1,39 @@
+Marvell support for scp_bl2 concatenated images
+===============================================
+
+The Armada 8K has 5 service CPUs and Armada 7K has 3. Therefore it was required
+to provide a method for loading firmware to all of the service CPUs. To achieve
+that, the scp_bl2 image in fact is file containing up to 5 concatenated
+firmwares.
+
+The Marvell ATF platform code is able to recognize new format of scp_bl2 image,
+interpret it correctly, restore built-in images and load particular image to
+appropriate service CPU pointed in image header.
+
+scp_bl2 file format
+-------------------
+The new scp_bl2 file format is:
+	0x0:	File header (magic, nr_of_images)
+	0x8:	Image header 0 (type, length, version)
+	0x14:	Image header 1 (type, length, version)
+	...
+	0xyy	Build-in image described by image header 0
+	0xzz	Build-in image described by image header 1
+	...
+
+The possible images that can be built in scp_bl2 image are firmwares for:
+mss ap cm3, mss cp0 cm3, mss cp1 cm3, mg cp0 cm3 and mg cp1 cm3. Thanks to the
+file format and headers for each file, ATF platform code is able to recognise
+how many files are built-in and what is their destination (to which co-processor
+they need to be loaded).
+
+Tool for concatenating multiple images
+--------------------------------------
+The doimage_scp_bl2 tool allows to concatenate multiple CM3 images into one
+output file (scp_bl2 image). The possible images that can be concatenated are
+dedicated for: mss ap cm3, mss cp0 cm3, mss cp1 cm3, mg cp0 cm3 and mg cp1 cm3
+and they can be specified via appropriate options of mentioned tool.
+
+The tool for concatenating img is part of Marvell firmware repository and is
+used automatically or manually to create common concatenated scp_bl2 image. More
+information about usage can be find in doimage_scp_bl2 help.
