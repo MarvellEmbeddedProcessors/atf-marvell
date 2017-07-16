@@ -32,6 +32,8 @@
  ***************************************************************************
  */
 
+#include <delay_timer.h>
+#include <mmio.h>
 #include <plat_config.h>
 /*
  * If bootrom is currently at BLE there's no need to include the memory
@@ -39,6 +41,36 @@
  */
 #ifndef IMAGE_BLE
 #include <plat_def.h>
+
+/*******************************************************************************
+ * GPIO Configuration
+ ******************************************************************************/
+#define MPP_CONTROL_REGISTER		0xf2440018
+#define MPP_CONTROL_MPP_SEL_52_MASK	0xf0000
+#define GPIO_DATA_OUT1_REGISTER		0xf2440140
+#define GPIO_DATA_OUT_EN_CTRL1_REGISTER 0xf2440144
+#define GPIO52_MASK			0x100000
+
+/* Reset PCIe via GPIO number 52 */
+int marvell_gpio_config(void)
+{
+	uint32_t reg;
+
+	reg = mmio_read_32(MPP_CONTROL_REGISTER);
+	reg |= MPP_CONTROL_MPP_SEL_52_MASK;
+	mmio_write_32(MPP_CONTROL_REGISTER, reg);
+
+	reg = mmio_read_32(GPIO_DATA_OUT1_REGISTER);
+	reg |= GPIO52_MASK;
+	mmio_write_32(GPIO_DATA_OUT1_REGISTER, reg);
+
+	reg = mmio_read_32(GPIO_DATA_OUT_EN_CTRL1_REGISTER);
+	reg &= ~GPIO52_MASK;
+	mmio_write_32(GPIO_DATA_OUT_EN_CTRL1_REGISTER, reg);
+	udelay(100);
+
+	return 0;
+}
 
 /*******************************************************************************
  * AMB Configuration
