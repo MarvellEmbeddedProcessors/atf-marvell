@@ -86,6 +86,7 @@ struct skip_image {
 	} info;
 };
 
+int marvell_gpio_config(void);
 uintptr_t marvell_get_amb_reg_offs(int cp_index);
 uintptr_t marvell_get_rfu_reg_offs(void);
 uintptr_t marvell_get_iob_reg_offs(int cp_index);

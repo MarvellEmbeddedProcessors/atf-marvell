@@ -33,6 +33,7 @@
  */
 
 #include <plat_marvell.h>
+#include <plat_config.h>
 #include <plat_private.h>
 #include <apn806_setup.h>
 #include <cp110_setup.h>
@@ -45,6 +46,13 @@
 #include <mss_ipc_drv.h>
 #include <mss_mem.h>
 #endif
+
+/* Set a weak stub for platforms that don't need to configure GPIO */
+#pragma weak marvell_gpio_config
+int marvell_gpio_config(void)
+{
+	return 0;
+}
 
 void marvell_bl31_mpp_init(void)
 {
@@ -108,4 +116,7 @@ void bl31_plat_arch_setup(void)
 	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||
 	    mailbox[MBOX_IDX_SUSPEND_MAGIC] != MVEBU_MAILBOX_SUSPEND_STATE)
 		marvell_bl31_mss_init();
+
+	/* Configure GPIO */
+	marvell_gpio_config();
 }
