@@ -131,6 +131,9 @@ PCI_EP_SUPPORT			:= 1
 else
 PCI_EP_SUPPORT			:= 0
 endif
+ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
+PCI_EP_SUPPORT			:= 1
+endif
 
 # Marvell images
 BOOT_IMAGE			:= boot-image.bin
