@@ -93,6 +93,10 @@
 #define PCIE_SPCIE_NEXT_OFFSET_MASK		0xfff00000
 #define PCIE_SPCIE_NEXT_OFFSET_OFFSET		20
 
+#define PCIE_LANE_EQ_CTRL01_REG			0x164
+#define PCIE_LANE_EQ_CTRL23_REG			0x168
+#define PCIE_LANE_EQ_SETTING			0x55555555
+
 #define PCIE_TPH_EXT_CAP_HDR_REG		0x1b8
 #define PCIE_TPH_REQ_NEXT_PTR_MASK		0xfff00000
 #define PCIE_TPH_REQ_NEXT_PTR_OFFSET		20
@@ -106,6 +110,30 @@
 void dw_pcie_configure(uintptr_t regs_base, uint32_t cap_speed)
 {
 	uint32_t reg;
+
+	/*
+	 * Set the correct hints for lane equalization.
+	 *
+	 * These registers consist of the following fields:
+	 *	- Downstream Port Transmitter Preset - Used for equalization by
+	 *	  this port when the Port is operating as a downstream Port.
+	 *	- Downstream Port Receiver Preset Hint - May be used as a hint
+	 *	  for receiver equalization by this port when the Port is
+	 *	  operating as a downstream Port.
+	 *	- Upstream Port Transmitter Preset - Field contains the
+	 *	  transmit preset value sent or received during link
+	 *	  equalization.
+	 *	- Upstream Port Receiver Preset Hint - Field contains the
+	 *	  receiver preset hint value sent or received during link
+	 *	  equalization.
+	 *
+	 * The default values for this registers aren't optimal for our
+	 * hardware, so we set the optimal values according to HW measurements.
+	 */
+	mmio_write_32(regs_base + PCIE_LANE_EQ_CTRL01_REG,
+		      PCIE_LANE_EQ_SETTING);
+	mmio_write_32(regs_base + PCIE_LANE_EQ_CTRL23_REG,
+		      PCIE_LANE_EQ_SETTING);
 
 	/*  Set link to GEN 3 */;
 	reg  = mmio_read_32(regs_base + PCIE_LINK_CTL_2);
