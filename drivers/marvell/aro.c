@@ -318,7 +318,7 @@ int init_aro(void)
 	if (target_freq == (2000) || target_freq == (1800)) {
 		max_freq_guardeband = 200;
 		ref_counter_init_val = 5;
-		cpu_counter_init_val = ((target_freq - max_freq_guardeband) / (25 * ref_counter_init_val));
+		cpu_counter_init_val = (((target_freq - max_freq_guardeband) / 25) * ref_counter_init_val);
 		start_aro_mode(ref_counter_init_val, cpu_counter_init_val);
 
 		/* CPU is now running in ARO mode*/
@@ -326,7 +326,7 @@ int init_aro(void)
 
 		/* update the Ref count to higher value to gain accuracy. */
 		ref_counter_init_val = 10000;
-		cpu_counter_init_val = (target_freq / 25 * (ref_counter_init_val));
+		cpu_counter_init_val = ((target_freq / 25) * (ref_counter_init_val));
 		start_aro_mode(ref_counter_init_val, cpu_counter_init_val);
 
 	} else {
