@@ -432,7 +432,7 @@ int a8k_pwr_domain_on(u_register_t mpidr)
 	bakery_lock_release(&pm_sys_lock);
 
 	/* trace message */
-	PM_TRACE((TRACE_PWR_DOMAIN_ON | target), plat_my_core_pos());
+	PM_TRACE(TRACE_PWR_DOMAIN_ON | target);
 #else
 	/* proprietary CPU ON exection flow */
 	plat_marvell_cpu_on(mpidr);
@@ -474,7 +474,7 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 	bakery_lock_release(&pm_sys_lock);
 
 	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_OFF, idx);
+	PM_TRACE(TRACE_PWR_DOMAIN_OFF);
 #else
 	INFO("a8k_pwr_domain_off is not supported without SCP\n");
 	return;
@@ -508,7 +508,7 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 	bakery_lock_release(&pm_sys_lock);
 
 	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND, idx);
+	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND);
 #else
 	/* Suspend to RAM */
 	plat_marvell_power_suspend_to_ram();
@@ -531,7 +531,7 @@ void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 
 #ifdef SCP_IMAGE
 	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_ON_FINISH, idx);
+	PM_TRACE(TRACE_PWR_DOMAIN_ON_FINISH);
 #endif /* SCP_IMAGE */
 }
 
@@ -552,7 +552,7 @@ void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	gicv2_cpuif_enable();
 
 	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH, idx);
+	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH);
 #else
 	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
 

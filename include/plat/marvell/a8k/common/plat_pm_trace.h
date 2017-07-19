@@ -108,11 +108,11 @@ typedef void (*core_trace_func)(unsigned int);
 
 extern core_trace_func funcTbl[PLATFORM_CORE_COUNT];
 
-#define PM_TRACE(trace, core) funcTbl[core](trace);
+#define PM_TRACE(trace) funcTbl[plat_my_core_pos()](trace);
 
 #else
 
-#define PM_TRACE(trace, core)
+#define PM_TRACE(trace)
 
 #endif
 
