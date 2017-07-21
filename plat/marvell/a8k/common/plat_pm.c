@@ -62,6 +62,8 @@
 DEFINE_BAKERY_LOCK(pm_sys_lock);
 #endif
 
+/* Weak definitions may be overridden in specific board */
+#pragma weak plat_marvell_power_off_trigger
 
 /* AP806 CPU power down /power up definitions */
 enum CPU_ID {
@@ -311,6 +313,12 @@ static void plat_exit_bootrom(void)
 	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
 }
 
+/* Trigger the power off of the system */
+void plat_marvell_power_off_trigger(void)
+{
+
+}
+
 /*
  * Send a command to external PMIC to cut off the power rail
  */
@@ -331,6 +339,12 @@ void plat_marvell_power_suspend_to_ram(void)
 			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
 			   2 * sizeof(uintptr_t));
 #endif
+
+	/*
+	 * Trigger to enter power off state, it should be guaranteed that CPU has enough time to
+	 * finish remained tasks before the power off takes effect.
+	 */
+	plat_marvell_power_off_trigger();
 
 	isb();
 	/*
