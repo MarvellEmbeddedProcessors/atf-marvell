@@ -312,7 +312,8 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 
 	/* Configure remote CP side */
 	/* PIDI Workaround for entering PIDI mode */
-	reg_data = MCI_PHY_CTRL_PIDI_MODE | MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1;
+	reg_data = MCI_PHY_CTRL_PIDI_MODE | MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1 |
+		   MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_CTRL_IHB_MODE_FWD_MOD);
@@ -327,7 +328,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 	ret |= mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
 
 	/* Exit PIDI mode */
-	reg_data = MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1;
+	reg_data = MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1 | MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_CTRL_IHB_MODE_FWD_MOD);
