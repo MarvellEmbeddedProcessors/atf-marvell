@@ -273,6 +273,7 @@ static int sar_freq_get(int dev_num, enum hws_freq *freq)
 		break;
 	case CPU_1000_DDR_800_RCLK_800:
 		*freq = CPU_FREQ_1000;
+		break;
 	default:
 		*freq = 0;
 		return -1;
