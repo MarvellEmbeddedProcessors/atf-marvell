@@ -39,6 +39,16 @@
 
 #define CP_COUNT		1	/* A70x0 has single CP0 */
 
+/* Force disable of LLC, regardless of LLC_DISABLE compilation flag
+ * this is due to an issue observed while running iperf with
+ * smartNIC End Poind driver/application, while LLC is enabled.
+ * as a temporary workaround, until issue is solved, we disable LLC
+ */
+#ifdef LLC_DISABLE
+#undef LLC_DISABLE
+#define LLC_DISABLE		1
+#endif
+
 /*************************************************************************
  * Required platform porting definitions common to all
  * Mangement Compute SubSystems (MSS)
