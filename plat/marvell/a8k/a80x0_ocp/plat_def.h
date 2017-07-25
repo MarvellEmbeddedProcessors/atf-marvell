@@ -39,4 +39,14 @@
 
 #define CP_COUNT		2	/* A80x0 has both CP0 & CP1 */
 
+/* Force disable of LLC, regardless of LLC_DISABLE compilation flag
+ * this is due to an issue observed while running iperf with
+ * smartNIC End Poind driver/application, while LLC is enabled.
+ * as a temporary workaround, until issue is solved, we disable LLC
+ */
+#ifdef LLC_DISABLE
+#undef LLC_DISABLE
+#define LLC_DISABLE		1
+#endif
+
 #endif /* __MVEBU_DEF_H__ */
