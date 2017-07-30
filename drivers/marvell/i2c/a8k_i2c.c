@@ -111,13 +111,11 @@ static void marvell_i2c_interrupt_clear(void)
 {
 	uint32_t reg;
 
-	/* Wait for 1 ms to prevent I2C register write after write issues */
-	udelay(1000);
 	reg = mmio_read_32((uintptr_t)&base->control);
 	reg &= ~(I2C_CONTROL_IFLG);
 	mmio_write_32((uintptr_t)&base->control, reg);
-	/* Wait for 1 ms for the clear to take effect */
-	udelay(1000);
+	/* Wait for 1 us for the clear to take effect */
+	udelay(1);
 
 	return;
 }
@@ -228,7 +226,7 @@ static int marvell_i2c_address_set(uint8_t chain, int command)
 	reg = (chain << I2C_DATA_ADDR_7BIT_OFFS) & I2C_DATA_ADDR_7BIT_MASK;
 	reg |= command;
 	mmio_write_32((uintptr_t)&base->data, reg);
-	udelay(1000);
+	udelay(1);
 
 	marvell_i2c_interrupt_clear();
 
@@ -457,7 +455,7 @@ void i2c_init(void *i2c_base)
 	/* Reset the I2C logic */
 	mmio_write_32((uintptr_t)&base->soft_reset, 0);
 
-	udelay(2000);
+	udelay(200);
 
 	marvell_i2c_bus_speed_set(CONFIG_SYS_I2C_SPEED);
 
@@ -471,7 +469,7 @@ void i2c_init(void *i2c_base)
 	/* unmask I2C interrupt */
 	mmio_write_32((uintptr_t)&base->control, mmio_read_32((uintptr_t)&base->control) | I2C_CONTROL_INTEN);
 
-	udelay(1000);
+	udelay(10);
 }
 
 /*
@@ -503,9 +501,9 @@ int i2c_read(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 			return ret;
 		}
 
-		/* wait for 1 ms for the interrupt clear to take effect */
+		/* wait for 1 us for the interrupt clear to take effect */
 		if (counter > 0)
-			udelay(1000);
+			udelay(1);
 		counter++;
 
 		ret = marvell_i2c_start_bit_set();
@@ -543,7 +541,7 @@ int i2c_read(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 		ERROR("I2C transactions failed, got EAGAIN %d times\n", I2C_MAX_RETRY_CNT);
 	mmio_write_32((uintptr_t)&base->control, mmio_read_32((uintptr_t)&base->control) | I2C_CONTROL_ACK);
 
-	udelay(1000);
+	udelay(1);
 	return 0;
 }
 
@@ -571,9 +569,9 @@ int i2c_write(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 			marvell_i2c_stop_bit_set();
 			return ret;
 		}
-		/* wait for 1 ms for the interrupt clear to take effect */
+		/* wait for 1 us for the interrupt clear to take effect */
 		if (counter > 0)
-			udelay(1000);
+			udelay(1);
 		counter++;
 
 		ret = marvell_i2c_start_bit_set();
@@ -603,6 +601,6 @@ int i2c_write(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 	if (counter == I2C_MAX_RETRY_CNT)
 		ERROR("I2C transactions failed, got EAGAIN %d times\n", I2C_MAX_RETRY_CNT);
 
-	udelay(1000);
+	udelay(1);
 	return 0;
 }
