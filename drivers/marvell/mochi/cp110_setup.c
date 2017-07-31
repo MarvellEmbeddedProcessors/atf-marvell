@@ -209,6 +209,11 @@ static const struct icu_config icu_config = {
 #define MVEBU_AMB_IP_BRIDGE_WIN_SIZE_OFFSET		16
 #define MVEBU_AMB_IP_BRIDGE_WIN_SIZE_MASK		(0xffff << MVEBU_AMB_IP_BRIDGE_WIN_SIZE_OFFSET)
 
+/* Errata */
+/* This bit disables internal HW fix for CP i2c init on REV A1 and later */
+#define MVEBU_CONF_I2C_INIT_SEL_BIT			(4)
+#define MVEBU_CONF_I2C_INIT_SEL_MASK			(1 << MVEBU_CONF_I2C_INIT_SEL_BIT)
+
 enum axi_attr {
 	AXI_ADUNIT_ATTR = 0,
 	AXI_COMUNIT_ATTR,
@@ -265,6 +270,34 @@ uintptr_t stream_id_reg[] = {
 	CP_DMA_1_STREAM_ID_REG,
 	0
 };
+
+void cp110_ble_errata_wa_init(int cp_index)
+{
+	uint32_t data;
+
+	/* ERRATA FE-6163379 (STORM-1443):
+	 * Serial ROM initialization from CP is not functional (Rev-A0).
+	 * The above was fixed in the HW starting Rev-A1, so when I2C0 Serial
+	 * ROM is enabled, MPP[38:37] wakes up as I2C Clock and Data.
+	 * The MPP configuration register does not reflect the real function
+	 * state since internaly it overridden by the HW engine to i2c function.
+	 * The normal MPP functionality should be restored by setting bit[4]
+	 * in the push-pull register when the CPU released from reset so the
+	 * I2C serial ROM initialization has already finished.
+	 * Without this fix MPP[38:37] will not accept any other function
+	 * excepting the i2c (which is set by the HW).
+	 * This write has no affect on Rev-A0 SoCs, in which CP I2C init
+	 * remains not functional.
+	 *
+	 * Disable HW fix through the push-pull register if CP I2C ROM init
+	 * mode is active. This should be done before access to DDR SPD.
+	 */
+
+	data = mmio_read_32(MVEBU_SAMPLE_AT_RESET_REG(cp_index));
+	if (data & SAR_I2C_INIT_EN_MASK)
+		mmio_write_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index),
+			      MVEBU_CONF_I2C_INIT_SEL_MASK);
+}
 
 void cp110_errata_wa_init(int cp_index)
 {
@@ -505,6 +538,8 @@ void cp110_init(int cp_index)
 /* Do the minimal setup required to configure the CP in BLE */
 void cp110_ble_init(int cp_index)
 {
+	cp110_ble_errata_wa_init(cp_index);
+
 #if PCI_EP_SUPPORT
 	amb_bridge_init(cp_index);
 
