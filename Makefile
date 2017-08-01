@@ -463,11 +463,11 @@ FIPTOOL			?=	${FIPTOOLPATH}/fiptool${BIN_EXT}
 ifeq ($(PLAT),a3700)
 #*********** A3700 *************
 DOIMAGEPATH	:= $(WTP)
-DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp_tool/linux/TBB_linux
+DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp/linux/TBB_linux
 
 ifeq ($(MARVELL_SECURE_BOOT),1)
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-tim.txt
-IMAGESPATH	:= $(DOIMAGEPATH)/trusted
+IMAGESPATH	:= $(DOIMAGEPATH)/tim/trusted
 
 TIMNCFG		:= $(DOIMAGEPATH)/atf-timN.txt
 TIMNSIG		:= $(IMAGESPATH)/timnsign.txt
@@ -475,19 +475,19 @@ TIM2IMGARGS	:= -i $(DOIMAGE_CFG) -n $(TIMNCFG)
 TIMN_IMAGE	:= $$(grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
 else #MARVELL_SECURE_BOOT
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-ntim.txt
-IMAGESPATH	:= $(DOIMAGEPATH)/untrusted
+IMAGESPATH	:= $(DOIMAGEPATH)/tim/untrusted
 TIM2IMGARGS	:= -i $(DOIMAGE_CFG)
 endif #MARVELL_SECURE_BOOT
 
-TIMBUILD		:= $(DOIMAGEPATH)/buildtim.sh
-TIM2IMG			:= $(DOIMAGEPATH)/tim2img.pl
+TIMBUILD		:= $(DOIMAGEPATH)/script/buildtim.sh
+TIM2IMG			:= $(DOIMAGEPATH)/script/tim2img.pl
 WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
 WTMI_ENC_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi-enc.bin
 BUILD_UART		:= uart-images
 
 SRCPATH			:= $(dir $(BL33))
 
-CLOCKSPATH		:= $(DOIMAGEPATH)
+CLOCKSPATH		:= $(DOIMAGEPATH)/ddr/tim_ddr
 CLOCKSPRESET		?= CPU_800_DDR_800
 
 DDR_TOPOLOGY		?= 0
