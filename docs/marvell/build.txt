@@ -22,7 +22,7 @@ Build Instructions
 
 	Set MSS/SCP image path (only for Armada70x0, Armada80x0):
 
-		# export SCP_BL2=path/to/scp_image.bin
+		# export SCP_BL2=path/to/RTOSDemo-cm3.bin
 
 3. Armada37x0 build requires WTP tools installation.
 
