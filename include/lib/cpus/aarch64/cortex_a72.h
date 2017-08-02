@@ -57,6 +57,7 @@
 #define CPUACTLR_DISABLE_L1_DCACHE_HW_PFTCH	(1 << 56)
 #define CPUACTLR_NO_ALLOC_WBWA         (1 << 49)
 #define CPUACTLR_DCC_AS_DCCI           (1 << 44)
+#define CPUACTLR_EL1_DIS_INSTR_PREFETCH		(1 << 32)
 
 /*******************************************************************************
  * L2 Control register specific definitions.
