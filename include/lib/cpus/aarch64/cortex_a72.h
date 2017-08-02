@@ -33,6 +33,7 @@
 #define CORTEX_A72_ACTLR_DISABLE_L1_DCACHE_HW_PFTCH	(1 << 56)
 #define CORTEX_A72_ACTLR_NO_ALLOC_WBWA		(1 << 49)
 #define CORTEX_A72_ACTLR_DCC_AS_DCCI		(1 << 44)
+#define CORTEX_A72_ACTLR_EL1_DIS_INSTR_PREFETCH		(1 << 32)
 
 /*******************************************************************************
  * L2 Control register specific definitions.
