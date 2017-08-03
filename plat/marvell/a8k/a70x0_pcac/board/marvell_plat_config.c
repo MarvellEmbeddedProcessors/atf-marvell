@@ -178,17 +178,9 @@ struct pci_hw_cfg *plat_get_pcie_hw_data(void)
  * SKIP IMAGE Configuration
  ******************************************************************************/
 
-struct skip_image skip_im = {
-	.detection_method = GPIO,
-	.info.gpio.num = 33,
-	.info.gpio.button_state = HIGH,
-	.info.test.cp_ap = CP,
-	.info.test.cp_index = 0,
-};
-
 void *plat_get_skip_image_data(void)
 {
-	/* Return the skip_image configurations */
-	return &skip_im;
+	/* No recovery button on A7k-PCAC board */
+	return NULL;
 }
 #endif
