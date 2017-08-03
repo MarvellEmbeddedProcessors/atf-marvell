@@ -575,14 +575,7 @@ void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 				   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
 				   2 * sizeof(uintptr_t));
 #endif
-		return;
 	}
-
-	/* arch specific configuration */
-	psci_arch_init();
-
-	/* Interrupt initialization */
-	gicv2_cpuif_enable();
 #endif /* SCP_IMAGE */
 }
 
