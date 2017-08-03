@@ -659,6 +659,9 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 			   2 * sizeof(uintptr_t));
 #endif
 
+	/* Flush and disable LLC before going off-power */
+	llc_disable();
+
 	/*
 	 * Power off whole system, it should be guaranteed that CPU has enough time to finish
 	 * remained tasks before the power off takes effect.
