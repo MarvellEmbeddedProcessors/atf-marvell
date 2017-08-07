@@ -1,0 +1,785 @@
+From ec6b55e5ba7ea417c3c518f9a79e03c43c3b82a7 Mon Sep 17 00:00:00 2001
+From: Kevin Peng <kevinp@marvell.com>
+Date: Wed, 8 Mar 2017 13:42:43 +0800
+Subject: [PATCH] services: add Marvell secure-el1 payload dispatcher
+
+This is the companian service with Marvell's Trusted OS(Marvell TEE),
+aka secure-EL1 payload, for ATF.
+It is responsible for the initialisation of the Trusted OS and
+all communications with it.
+
+To add secure-EL1 payload and the coresponding dispatcher:
+1. export BL32=path/to/marvell/tee
+2. add "SPD=marvell_spd" in make command params, for example for a8k:
+make DEBUG=0 USE_COHERENT_MEN=0 LOG_LEVEL=30 PLAT=a80x0 all fip SPD=marvell_spd
+
+Change-Id: Icf973e820a474d0bf723bfd81769447df0041293
+Signed-off-by: Kevin Peng <kevinp@marvell.com>
+---
+ docs/marvell/build.txt                         |   8 +
+ include/bl32/payloads/marvell_spd.h            |  45 +++++
+ services/spd/marvell_spd/marvell_spd.mk        |  41 ++++
+ services/spd/marvell_spd/marvell_spd_common.c  | 143 ++++++++++++++
+ services/spd/marvell_spd/marvell_spd_helpers.S |  95 +++++++++
+ services/spd/marvell_spd/marvell_spd_main.c    | 259 +++++++++++++++++++++++++
+ services/spd/marvell_spd/marvell_spd_private.h | 106 ++++++++++
+ 7 files changed, 697 insertions(+)
+ create mode 100644 include/bl32/payloads/marvell_spd.h
+ create mode 100644 services/spd/marvell_spd/marvell_spd.mk
+ create mode 100644 services/spd/marvell_spd/marvell_spd_common.c
+ create mode 100644 services/spd/marvell_spd/marvell_spd_helpers.S
+ create mode 100644 services/spd/marvell_spd/marvell_spd_main.c
+ create mode 100644 services/spd/marvell_spd/marvell_spd_private.h
+
+diff --git a/docs/marvell/build.txt b/docs/marvell/build.txt
+index 86e813d..ddabb3d 100644
+--- a/docs/marvell/build.txt
++++ b/docs/marvell/build.txt
+@@ -86,11 +86,19 @@ Build Instructions
+ 	- WTP: For Armada37x0 only, use this parameter to point to wtptools source code directory, which
+ 		could be found as a3700_utils.zip in the release.
+ 		Usage example: WTP=/path/to/a3700_utils
++	- SPD: To add secure-EL1 payload and the coresponding dispatcher
++		marvell_spd - the SPD for Marvell TEE
++		Usage example:
++			# export BL32=path/to/marvell_tee/tee_tw.bin
++			SPD=marvell_spd
+
+ 	For example: in order to build the image in debug mode with log level up to 'notice' level run:
+
+ 		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
+
++	if you want to build the image with Marvell TEE integrated:
++		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip SPD=marvell_spd
++
+ 	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level,
+ 	the image has the preset CPU at 1000 MHz, preset DDR3 at 800 MHz, the DDR topology of DDR3 2CS,
+         the image boot from SPI NOR flash partition 0, and the image is non trusted in WTP, the command
+diff --git a/include/bl32/payloads/marvell_spd.h b/include/bl32/payloads/marvell_spd.h
+new file mode 100644
+index 0000000..b940ed8
+--- /dev/null
++++ b/include/bl32/payloads/marvell_spd.h
+@@ -0,0 +1,45 @@
++/*
++ * ***************************************************************************
++ * Copyright (C) 2017 Marvell International Ltd.
++ * ***************************************************************************
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * Redistributions of source code must retain the above copyright notice, this
++ * list of conditions and the following disclaimer.
++ *
++ * Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * Neither the name of Marvell nor the names of its contributors may be used
++ * to endorse or promote products derived from this software without specific
++ * prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ***************************************************************************
++ */
++
++#ifndef __MARVELL_SPD_H__
++#define __MARVELL_SPD_H__
++
++#include <bl_common.h>
++#include <platform.h>
++
++#define MARVELL_SPD_NTW_SMC		0x72000000
++#define MARVELL_SPD_TW_SMC		0x32000000
++#define MARVELL_SPD_NTW_NEW_REQ		0x73000000
++
++#endif /* __MARVELL_SPD_H__ */
+diff --git a/services/spd/marvell_spd/marvell_spd.mk b/services/spd/marvell_spd/marvell_spd.mk
+new file mode 100644
+index 0000000..48850db
+--- /dev/null
++++ b/services/spd/marvell_spd/marvell_spd.mk
+@@ -0,0 +1,41 @@
++#
++# * ***************************************************************************
++# * Copyright (C) 2017 Marvell International Ltd.
++# * ***************************************************************************
++# *
++# * Redistribution and use in source and binary forms, with or without
++# * modification, are permitted provided that the following conditions are met:
++# *
++# * Redistributions of source code must retain the above copyright notice, this
++# * list of conditions and the following disclaimer.
++# *
++# * Redistributions in binary form must reproduce the above copyright notice,
++# * this list of conditions and the following disclaimer in the documentation
++# * and/or other materials provided with the distribution.
++# *
++# * Neither the name of Marvell nor the names of its contributors may be used
++# * to endorse or promote products derived from this software without specific
++# * prior written permission.
++# *
++# * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++# * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++# * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++# * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++# * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++# * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++# * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++# * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++# * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++# * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# * POSSIBILITY OF SUCH DAMAGE.
++# *
++# ***************************************************************************
++
++MARVELLSPD_DIR		:=	services/spd/marvell_spd
++SPD_INCLUDES		:=	-Iinclude/bl32/payloads
++
++SPD_SOURCES		:=	services/spd/marvell_spd/marvell_spd_common.c	\
++				services/spd/marvell_spd/marvell_spd_main.c	\
++				services/spd/marvell_spd/marvell_spd_helpers.S
++
++NEED_BL32		:=	yes
+diff --git a/services/spd/marvell_spd/marvell_spd_common.c b/services/spd/marvell_spd/marvell_spd_common.c
+new file mode 100644
+index 0000000..841f9bb
+--- /dev/null
++++ b/services/spd/marvell_spd/marvell_spd_common.c
+@@ -0,0 +1,143 @@
++/*
++ * ***************************************************************************
++ * Copyright (C) 2017 Marvell International Ltd.
++ * ***************************************************************************
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * Redistributions of source code must retain the above copyright notice, this
++ * list of conditions and the following disclaimer.
++ *
++ * Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * Neither the name of Marvell nor the names of its contributors may be used
++ * to endorse or promote products derived from this software without specific
++ * prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ***************************************************************************
++ */
++
++#include <arch_helpers.h>
++#include <assert.h>
++#include <bl_common.h>
++#include <context_mgmt.h>
++#include <string.h>
++#include <gic_common.h>
++#include <gicv2.h>
++#include "marvell_spd_private.h"
++
++/*******************************************************************************
++ * Given a secure payload entrypoint info pointer, entry point PC, register
++ * width, cpu id & pointer to a context data structure, this function will
++ * initialize tsp context and entry point info for the secure payload
++ ******************************************************************************/
++void marvell_spd_init_marvell_spd_ep_state(struct entry_point_info *marvell_spd_entry_point,
++				uint32_t rw,
++				uint64_t pc,
++				struct marvell_spd_context *marvell_spd_ctx)
++{
++	uint32_t ep_attr;
++
++	/* Passing a NULL context is a critical programming error */
++	assert(marvell_spd_ctx);
++	assert(marvell_spd_entry_point);
++	assert(pc);
++
++	/*
++	 * We support AArch32 marvell_spd for now.
++	 * TODO: Add support for AArch64 marvell_spd
++	 */
++	assert(rw == MARVELL_SPD_AARCH32);
++
++	/* Associate this context with the cpu specified */
++	marvell_spd_ctx->mpidr = read_mpidr_el1();
++
++
++	cm_set_context(&marvell_spd_ctx->cpu_ctx, SECURE);
++
++	/* initialise an entrypoint to set up the CPU context */
++	ep_attr = SECURE | EP_ST_ENABLE;
++	if (read_sctlr_el3() & SCTLR_EE_BIT)
++		ep_attr |= EP_EE_BIG;
++	SET_PARAM_HEAD(marvell_spd_entry_point, PARAM_EP, VERSION_1, ep_attr);
++
++	marvell_spd_entry_point->pc = pc;
++	marvell_spd_entry_point->spsr = SPSR_MODE32(MODE32_svc, SPSR_T_ARM,
++							SPSR_E_LITTLE,
++							DAIF_FIQ_BIT |
++							DAIF_IRQ_BIT |
++							DAIF_ABT_BIT);
++	memset(&marvell_spd_entry_point->args, 0, sizeof(marvell_spd_entry_point->args));
++}
++
++/*******************************************************************************
++ * This function takes an SP context pointer and:
++ * 1. Applies the S-EL1 system register context from marvell_spd_ctx->cpu_ctx.
++ * 2. Saves the current C runtime state (callee saved registers) on the stack
++ *    frame and saves a reference to this state.
++ * 3. Calls el3_exit() so that the EL3 system and general purpose registers
++ *    from the marvell_spd_ctx->cpu_ctx are used to enter the secure payload image.
++ ******************************************************************************/
++uint64_t marvell_spd_synchronous_sp_entry(struct marvell_spd_context *marvell_spd_ctx)
++{
++	uint64_t rc;
++
++	assert(marvell_spd_ctx != NULL);
++	assert(marvell_spd_ctx->c_rt_ctx == 0);
++
++	/* Apply the Secure EL1 system register context and switch to it */
++	assert(cm_get_context(SECURE) == &marvell_spd_ctx->cpu_ctx);
++	cm_el1_sysregs_context_restore(SECURE);
++	cm_set_next_eret_context(SECURE);
++
++	rc = marvell_spd_enter_sp(&marvell_spd_ctx->c_rt_ctx);
++
++	return rc;
++}
++
++
++/*******************************************************************************
++ * This function takes an SP context pointer and:
++ * 1. Saves the S-EL1 system register context tp marvell_spd_ctx->cpu_ctx.
++ * 2. Restores the current C runtime state (callee saved registers) from the
++ *    stack frame using the reference to this state saved in tspd_enter_sp().
++ * 3. It does not need to save any general purpose or EL3 system register state
++ *    as the generic smc entry routine should have saved those.
++ ******************************************************************************/
++void marvell_spd_synchronous_sp_exit(struct marvell_spd_context *marvell_spd_ctx, uint64_t ret)
++{
++	assert(marvell_spd_ctx != NULL);
++	/* Save the Secure EL1 system register context */
++	assert(cm_get_context(SECURE) == &marvell_spd_ctx->cpu_ctx);
++	cm_el1_sysregs_context_save(SECURE);
++
++	assert(marvell_spd_ctx->c_rt_ctx != 0);
++	marvell_spd_exit_sp(marvell_spd_ctx->c_rt_ctx, ret);
++
++	/* Should never reach here */
++	assert(0);
++}
++
++void marvell_spd_switch_to(uint64_t dst_world)
++{
++	assert(dst_world == NON_SECURE || dst_world == SECURE);
++
++	cm_el1_sysregs_context_save(!dst_world);
++	cm_el1_sysregs_context_restore(dst_world);
++	cm_set_next_eret_context(dst_world);
++}
+diff --git a/services/spd/marvell_spd/marvell_spd_helpers.S b/services/spd/marvell_spd/marvell_spd_helpers.S
+new file mode 100644
+index 0000000..995a380
+--- /dev/null
++++ b/services/spd/marvell_spd/marvell_spd_helpers.S
+@@ -0,0 +1,95 @@
++/*
++ * ***************************************************************************
++ * Copyright (C) 2017 Marvell International Ltd.
++ * ***************************************************************************
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * Redistributions of source code must retain the above copyright notice, this
++ * list of conditions and the following disclaimer.
++ *
++ * Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * Neither the name of Marvell nor the names of its contributors may be used
++ * to endorse or promote products derived from this software without specific
++ * prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ***************************************************************************
++ */
++
++#include <asm_macros.S>
++#include "marvell_spd_private.h"
++
++	.global	marvell_spd_enter_sp
++marvell_spd_enter_sp:
++	/* Make space for the registers that we're going to save */
++	mov	x3, sp
++	str	x3, [x0, #0]
++	sub	sp, sp, #MARVELL_SPD_C_RT_CTX_SIZE
++
++	/* Save callee-saved registers on to the stack */
++	stp	x19, x20, [sp, #MARVELL_SPD_C_RT_CTX_X19]
++	stp	x21, x22, [sp, #MARVELL_SPD_C_RT_CTX_X21]
++	stp	x23, x24, [sp, #MARVELL_SPD_C_RT_CTX_X23]
++	stp	x25, x26, [sp, #MARVELL_SPD_C_RT_CTX_X25]
++	stp	x27, x28, [sp, #MARVELL_SPD_C_RT_CTX_X27]
++	stp	x29, x30, [sp, #MARVELL_SPD_C_RT_CTX_X29]
++
++	/* ---------------------------------------------
++	 * Everything is setup now. el3_exit() will
++	 * use the secure context to restore to the
++	 * general purpose and EL3 system registers to
++	 * ERET into the secure payload.
++	 * ---------------------------------------------
++	 */
++	b	el3_exit
++
++	/* ---------------------------------------------
++	 * This function is called 'x0' pointing to a C
++	 * runtime context saved in tspd_enter_sp().  It
++	 * restores the saved registers and jumps to
++	 * that runtime with 'x0' as the new sp. This
++	 * destroys the C runtime context that had been
++	 * built on the stack below the saved context by
++	 * the caller. Later the second parameter 'x1'
++	 * is passed as return value to the caller
++	 * ---------------------------------------------
++	 */
++	.global marvell_spd_exit_sp
++marvell_spd_exit_sp:
++	/* Restore the previous stack */
++	mov	sp, x0
++
++	/* Restore callee-saved registers on to the stack */
++	ldp	x19, x20, [x0, #(MARVELL_SPD_C_RT_CTX_X19 - MARVELL_SPD_C_RT_CTX_SIZE)]
++	ldp	x21, x22, [x0, #(MARVELL_SPD_C_RT_CTX_X21 - MARVELL_SPD_C_RT_CTX_SIZE)]
++	ldp	x23, x24, [x0, #(MARVELL_SPD_C_RT_CTX_X23 - MARVELL_SPD_C_RT_CTX_SIZE)]
++	ldp	x25, x26, [x0, #(MARVELL_SPD_C_RT_CTX_X25 - MARVELL_SPD_C_RT_CTX_SIZE)]
++	ldp	x27, x28, [x0, #(MARVELL_SPD_C_RT_CTX_X27 - MARVELL_SPD_C_RT_CTX_SIZE)]
++	ldp	x29, x30, [x0, #(MARVELL_SPD_C_RT_CTX_X29 - MARVELL_SPD_C_RT_CTX_SIZE)]
++
++	/* ---------------------------------------------
++	 * This should take us back to the instruction
++	 * after the call to the last marvell_spd_enter_sp().
++	 * Place the second parameter to x0 so that the
++	 * caller will see it as a return value from the
++	 * original entry call
++	 * ---------------------------------------------
++	 */
++	mov	x0, x1
++	ret
+diff --git a/services/spd/marvell_spd/marvell_spd_main.c b/services/spd/marvell_spd/marvell_spd_main.c
+new file mode 100644
+index 0000000..bdb319c
+--- /dev/null
++++ b/services/spd/marvell_spd/marvell_spd_main.c
+@@ -0,0 +1,259 @@
++/*
++ * ***************************************************************************
++ * Copyright (C) 2017 Marvell International Ltd.
++ * ***************************************************************************
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * Redistributions of source code must retain the above copyright notice, this
++ * list of conditions and the following disclaimer.
++ *
++ * Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * Neither the name of Marvell nor the names of its contributors may be used
++ * to endorse or promote products derived from this software without specific
++ * prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ***************************************************************************
++ */
++
++#include <arch_helpers.h>
++#include <assert.h>
++#include <bl_common.h>
++#include <bl31.h>
++#include <context_mgmt.h>
++#include <debug.h>
++#include <errno.h>
++#include <platform.h>
++#include <runtime_svc.h>
++#include <stddef.h>
++#include <uuid.h>
++#include <gic_common.h>
++#include <gicv2.h>
++#include <marvell_spd.h>
++#include "marvell_spd_private.h"
++
++/*******************************************************************************
++ * Array to keep track of per-cpu Secure Payload state
++ ******************************************************************************/
++struct marvell_spd_context marvell_spd_sp_context;
++
++/*******************************************************************************
++ * This function is the handler registered for S-EL1 interrupts by the MARVELL_SPD. It
++ * validates the interrupt and upon success switch to TEE for handling the interrupt.
++ ******************************************************************************/
++static uint64_t marvell_spd_sel1_interrupt_handler(uint32_t id,
++						uint32_t flags,
++						void *handle,
++						void *cookie)
++{
++	cpu_context_t *sw_cpu_context;
++	/* Check the security state when the exception was generated */
++	assert(get_interrupt_src_ss(flags) == NON_SECURE);
++
++#if IMF_READ_INTERRUPT_ID
++	/* Check the security status of the interrupt */
++	assert(plat_ic_get_interrupt_type(id) == INTR_TYPE_S_EL1);
++#endif
++
++	/* Sanity check the pointer to this cpu's context */
++	assert(handle == cm_get_context(NON_SECURE));
++
++	/* Get a reference to the secure context */
++	sw_cpu_context = cm_get_context(SECURE);
++	assert(sw_cpu_context);
++
++	cm_el1_sysregs_context_save(NON_SECURE);
++	cm_el1_sysregs_context_restore(SECURE);
++	cm_set_next_eret_context(SECURE);
++	/* Return to S-EL1 */
++	SMC_RET0(sw_cpu_context);
++}
++
++/*******************************************************************************
++ * This function passes control to the TEE image (BL32) for the first
++ * time on the primary cpu after a cold boot. It assumes that a valid secure
++ * context has already been created by marvell_spd_setup() which can be directly used.
++ * It also assumes that a valid non-secure context has been initialised by PSCI
++ * so it does not need to save and restore any non-secure state. This function
++ * performs a synchronous entry into the Secure payload. The SP passes control
++ * back to this routine through a SMC. It also passes the extents of memory made
++ * available to BL32 by BL31.
++ ******************************************************************************/
++int32_t marvell_spd_init(void)
++{
++	struct marvell_spd_context *marvell_spd_ctx = &marvell_spd_sp_context;
++	entry_point_info_t *marvell_spd_entry_point;
++	uint64_t rc;
++
++	/*
++	 * Get information about the Secure Payload (BL32) image. Its
++	 * absence is a critical failure.
++	 */
++	marvell_spd_entry_point = bl31_plat_get_next_image_ep_info(SECURE);
++	assert(marvell_spd_entry_point);
++
++	cm_init_my_context(marvell_spd_entry_point);
++
++	/*
++	 * Arrange for an entry into the test secure payload. It will be
++	 * returned via TSP_ENTRY_DONE case
++	 */
++	rc = marvell_spd_synchronous_sp_entry(marvell_spd_ctx);
++
++	return rc;
++}
++
++/*******************************************************************************
++ * Secure Payload Dispatcher setup. The SPD finds out the SP entrypoint and type
++ * (aarch32/aarch64) if not already known and initialises the context for entry
++ * into the SP for its initialisation.
++ ******************************************************************************/
++int32_t marvell_spd_setup(void)
++{
++	entry_point_info_t *marvell_spd_ep_info;
++	uint32_t linear_id;
++
++	linear_id = plat_my_core_pos();
++	if (linear_id != 0)
++		return -EPERM;
++
++	/*
++	 * Get information about the Secure Payload (BL32) image. Its
++	 * absence is a critical failure.  TODO: Add support to
++	 * conditionally include the SPD service
++	 */
++	marvell_spd_ep_info = bl31_plat_get_next_image_ep_info(SECURE);
++	if (!marvell_spd_ep_info) {
++		WARN("No marvell_spd provided by BL2 boot loader,");
++		WARN("Booting device without marvell_spd initialization.");
++		WARN("SMC`s destined for TSP will return SMC_UNK\n");
++		return 1;
++	}
++
++	/*
++	 * If there's no valid entry point for SP, we return a non-zero value
++	 * signalling failure initializing the service. We bail out without
++	 * registering any handlers
++	 */
++	if (!marvell_spd_ep_info->pc)
++		return 1;
++
++	/*
++	 * We could inspect the SP image and determine it's execution
++	 * state i.e whether AArch32 or AArch64
++	 */
++	marvell_spd_init_marvell_spd_ep_state(marvell_spd_ep_info,
++					MARVELL_SPD_AARCH32,
++					marvell_spd_ep_info->pc,
++					&marvell_spd_sp_context);
++
++	/*
++	 * All MARVELL_SPD initialization done. Now register our init function with
++	 * BL31 for deferred invocation
++	 */
++	bl31_register_bl32_init(&marvell_spd_init);
++
++	return 0;
++}
++
++/*******************************************************************************
++ * This function is responsible for handling all SMCs in the Trusted OS/App
++ * range from the non-secure state as defined in the SMC Calling Convention
++ * Document. It is also responsible for communicating with the Secure payload
++ * to delegate work and return results back to the non-secure state. Lastly it
++ * will also return any information that the secure payload needs to do the
++ * work assigned to it.
++ ******************************************************************************/
++uint64_t marvell_spd_smc_handler(uint32_t smc_fid,
++			 uint64_t x1,
++			 uint64_t x2,
++			 uint64_t x3,
++			 uint64_t x4,
++			 void *cookie,
++			 void *handle,
++			 uint64_t flags)
++{
++	uint32_t linear_id = plat_my_core_pos();
++	struct marvell_spd_context *marvell_spd_ctx = &marvell_spd_sp_context;
++	cpu_context_t *ns_cpu_context;
++	cpu_context_t *sw_cpu_context;
++
++	static int64_t initialized = -1;
++
++	if (linear_id != 0)
++		SMC_RET1(handle, SMC_UNK);
++
++	/* Get a reference to the non-secure context */
++	ns_cpu_context = cm_get_context(NON_SECURE);
++	assert(ns_cpu_context);
++
++	sw_cpu_context = cm_get_context(SECURE);
++	assert(sw_cpu_context);
++
++	switch (smc_fid) {
++	case MARVELL_SPD_TW_SMC:
++		if (initialized != 1) {
++			initialized = 1;
++			uint64_t rc;
++
++			/*
++			 * Register an interrupt handler for S-EL1 interrupts
++			 * when generated during code executing in the
++			 * non-secure state.
++			 */
++			flags = 0;
++			set_interrupt_rm_flag(flags, NON_SECURE);
++			rc = register_interrupt_type_handler(INTR_TYPE_S_EL1,
++						marvell_spd_sel1_interrupt_handler,
++						flags);
++			if (rc)
++				panic();
++
++			marvell_spd_synchronous_sp_exit(marvell_spd_ctx, x1);
++		} else {
++			marvell_spd_switch_to(NON_SECURE);
++			SMC_RET0(ns_cpu_context);
++		}
++		break;
++
++	case MARVELL_SPD_NTW_NEW_REQ:
++#ifdef CONFIG_GICV3
++		write_icc_sgi1r_el1(0xE000001);
++		isb();
++#else
++		gicd_write_sgir(PLAT_MARVELL_GICD_BASE, 0x0200000E);
++#endif /* CONFIG_GICV3 */
++		/* fall through */
++	case MARVELL_SPD_NTW_SMC:
++		marvell_spd_switch_to(SECURE);
++		SMC_RET0(sw_cpu_context);
++		break;
++	}
++	SMC_RET1(handle, SMC_UNK);
++}
++
++/* Define a MARVELL_SPD runtime service descriptor */
++DECLARE_RT_SVC(
++	marvell_spd,
++	OEN_TOS_START,
++	OEN_TOS_END,
++	SMC_TYPE_STD,
++	marvell_spd_setup,
++	marvell_spd_smc_handler
++);
+diff --git a/services/spd/marvell_spd/marvell_spd_private.h b/services/spd/marvell_spd/marvell_spd_private.h
+new file mode 100644
+index 0000000..a56be14
+--- /dev/null
++++ b/services/spd/marvell_spd/marvell_spd_private.h
+@@ -0,0 +1,106 @@
++/*
++ * ***************************************************************************
++ * Copyright (C) 2017 Marvell International Ltd.
++ * ***************************************************************************
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *
++ * Redistributions of source code must retain the above copyright notice, this
++ * list of conditions and the following disclaimer.
++ *
++ * Redistributions in binary form must reproduce the above copyright notice,
++ * this list of conditions and the following disclaimer in the documentation
++ * and/or other materials provided with the distribution.
++ *
++ * Neither the name of Marvell nor the names of its contributors may be used
++ * to endorse or promote products derived from this software without specific
++ * prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
++ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++ * POSSIBILITY OF SUCH DAMAGE.
++ *
++ ***************************************************************************
++ */
++
++#ifndef __MARVELL_SPD_PRIVATE_H__
++#define __MARVELL_SPD_PRIVATE_H__
++
++#include <arch.h>
++#include <context.h>
++#include <interrupt_mgmt.h>
++#include <platform_def.h>
++
++/*******************************************************************************
++ * Secure Payload execution state information i.e. aarch32 or aarch64
++ ******************************************************************************/
++#define MARVELL_SPD_AARCH32		MODE_RW_32
++#define MARVELL_SPD_AARCH64		MODE_RW_64
++
++/*******************************************************************************
++ * Number of cpus that the present on this platform. TODO: Rely on a topology
++ * tree to determine this in the future to avoid assumptions about mpidr
++ * allocation
++ ******************************************************************************/
++#define MARVELL_SPD_CORE_COUNT		PLATFORM_CORE_COUNT
++
++#define MARVELL_SPD_C_RT_CTX_X19		0x0
++#define MARVELL_SPD_C_RT_CTX_X20		0x8
++#define MARVELL_SPD_C_RT_CTX_X21		0x10
++#define MARVELL_SPD_C_RT_CTX_X22		0x18
++#define MARVELL_SPD_C_RT_CTX_X23		0x20
++#define MARVELL_SPD_C_RT_CTX_X24		0x28
++#define MARVELL_SPD_C_RT_CTX_X25		0x30
++#define MARVELL_SPD_C_RT_CTX_X26		0x38
++#define MARVELL_SPD_C_RT_CTX_X27		0x40
++#define MARVELL_SPD_C_RT_CTX_X28		0x48
++#define MARVELL_SPD_C_RT_CTX_X29		0x50
++#define MARVELL_SPD_C_RT_CTX_X30		0x58
++#define MARVELL_SPD_C_RT_CTX_SIZE		0x60
++#define MARVELL_SPD_C_RT_CTX_ENTRIES		(MARVELL_SPD_C_RT_CTX_SIZE >> DWORD_SHIFT)
++
++#ifndef __ASSEMBLY__
++
++/*******************************************************************************
++ * Structure which helps the SPD to maintain the per-cpu state of the SP.
++ * 'mpidr'          - mpidr to associate a context with a cpu
++ * 'c_rt_ctx' - spaces to restore C runtime context from after returning
++ *              from a synchronous entry into the SP.
++ * 'cpu_ctx'  - space to maintain SP architectural state
++ ******************************************************************************/
++struct marvell_spd_context {
++	uint32_t state;
++	uint64_t mpidr;
++	uint64_t c_rt_ctx;
++	cpu_context_t cpu_ctx;
++};
++
++
++/*******************************************************************************
++ * Function & Data prototypes
++ ******************************************************************************/
++uint64_t marvell_spd_enter_sp(uint64_t *c_rt_ctx);
++void __dead2 marvell_spd_exit_sp(uint64_t c_rt_ctx, uint64_t ret);
++uint64_t marvell_spd_synchronous_sp_entry(struct marvell_spd_context *marvell_spd_ctx);
++void __dead2 marvell_spd_synchronous_sp_exit(struct marvell_spd_context *marvell_spd_ctx, uint64_t ret);
++void marvell_spd_init_marvell_spd_ep_state(struct entry_point_info *marvell_spd_entry_point,
++				uint32_t rw,
++				uint64_t pc,
++				struct marvell_spd_context *marvell_spd_ctx);
++uint64_t marvell_spd_smc_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2,
++			 uint64_t x3, uint64_t x4, void *cookie, void *handle,
++			 uint64_t flags);
++void marvell_spd_switch_to(uint64_t dst_world);
++struct marvell_spd_context marvell_spd_sp_context;
++#endif /*__ASSEMBLY__*/
++
++#endif /* __MARVELL_SPD_PRIVATE_H__ */
+--
+2.7.4
+
