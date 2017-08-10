@@ -111,6 +111,8 @@ Special Build Flags
 	- PALLADIUM: Enables building ATF for palladium target. This mainly involves changing the UART baud rate
 		and the timer frequency to a lower values to match palladium's setup.
 
+	- ARO_ENABLE: Enables ARO and switch to it from PLL (default enabled).
+
 (for more information about build options, please refer to section 'Summary of build options' in  ATF user-guide:
  https://github.com/ARM-software/arm-trusted-firmware/blob/master/docs/user-guide.md)
 
