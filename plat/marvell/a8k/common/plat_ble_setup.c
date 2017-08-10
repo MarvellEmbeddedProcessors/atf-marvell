@@ -485,7 +485,9 @@ int ble_plat_setup(int *skip)
 	/* Setup AVS */
 	ble_plat_svc_config();
 
+#if ARO_ENABLE
 	init_aro();
+#endif
 
 	/* Get dram data from platform */
 	cfg = (struct dram_config *)plat_get_dram_data();

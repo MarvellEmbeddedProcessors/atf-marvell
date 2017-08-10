@@ -121,6 +121,8 @@ SEPARATE_CODE_AND_RODATA	:= 0
 LOAD_IMAGE_V2		:= 0
 # Enable compilation for Palladium emulation platform
 PALLADIUM			:= 0
+# flag to switch from PLL to ARO
+ARO_ENABLE			:= 1
 # Disable LLC in A8K family of SoCs
 LLC_DISABLE			:= 0
 # Make non-trusted image by default
