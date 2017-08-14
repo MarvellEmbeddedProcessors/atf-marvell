@@ -39,8 +39,9 @@
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#ifndef IMAGE_BLE
 #include <plat_def.h>
+#ifndef IMAGE_BLE
+
 
 /*******************************************************************************
  * GPIO Configuration
@@ -218,17 +219,9 @@ int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size)
  * SKIP IMAGE Configuration
  ******************************************************************************/
 
-struct skip_image skip_im = {
-	.detection_method = GPIO,
-	.info.gpio.num = 33,
-	.info.gpio.button_state = HIGH,
-	.info.test.cp_ap = CP,
-	.info.test.cp_index = 0,
-};
-
 void *plat_get_skip_image_data(void)
 {
-	/* Return the skip_image configurations */
-	return &skip_im;
+	/* No recovery button on A8k-MCBIN board */
+	return NULL;
 }
 #endif
