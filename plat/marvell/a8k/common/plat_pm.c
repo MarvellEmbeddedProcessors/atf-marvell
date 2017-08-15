@@ -63,6 +63,27 @@
 #define MVEBU_MPP_MASK(index)		(0xF << (4 * (index % 8)))
 #define MVEBU_GPIO_VALUE(index, value)	(value << (index % 32))
 
+#define MVEBU_USER_CMD_0_REG		(MVEBU_DRAM_MAC_BASE + 0x20)
+#define MVEBU_USER_CMD_CH0_OFFSET	28
+#define MVEBU_USER_CMD_CH0_MASK		(1 << MVEBU_USER_CMD_CH0_OFFSET)
+#define MVEBU_USER_CMD_CH0_EN		(1 << MVEBU_USER_CMD_CH0_OFFSET)
+#define MVEBU_USER_CMD_CS_OFFSET	24
+#define MVEBU_USER_CMD_CS_MASK		(0xF << MVEBU_USER_CMD_CS_OFFSET)
+#define MVEBU_USER_CMD_CS_ALL		(0xF << MVEBU_USER_CMD_CS_OFFSET)
+#define MVEBU_USER_CMD_SR_OFFSET	6
+#define MVEBU_USER_CMD_SR_MASK		(0x3 << MVEBU_USER_CMD_SR_OFFSET)
+#define MVEBU_USER_CMD_SR_ENTER		(0x1 << MVEBU_USER_CMD_SR_OFFSET)
+#define MVEBU_MC_PWR_CTRL_REG		(MVEBU_DRAM_MAC_BASE + 0x54)
+#define MVEBU_MC_AC_ON_DLY_OFFSET	8
+#define MVEBU_MC_AC_ON_DLY_MASK		(0xF << MVEBU_MC_AC_ON_DLY_OFFSET)
+#define MVEBU_MC_AC_ON_DLY_DEF_VAR	(8 << MVEBU_MC_AC_ON_DLY_OFFSET)
+#define MVEBU_MC_AC_OFF_DLY_OFFSET	4
+#define MVEBU_MC_AC_OFF_DLY_MASK	(0xF << MVEBU_MC_AC_OFF_DLY_OFFSET)
+#define MVEBU_MC_AC_OFF_DLY_DEF_VAR	(0xC << MVEBU_MC_AC_OFF_DLY_OFFSET)
+#define MVEBU_MC_PHY_AUTO_OFF_OFFSET	0
+#define MVEBU_MC_PHY_AUTO_OFF_MASK	(1 << MVEBU_MC_PHY_AUTO_OFF_OFFSET)
+#define MVEBU_MC_PHY_AUTO_OFF_EN	(1 << MVEBU_MC_PHY_AUTO_OFF_OFFSET)
+
 #ifdef SCP_IMAGE
 /* this lock synchronize AP multiple cores execution with MSS */
 DEFINE_BAKERY_LOCK(pm_sys_lock);
@@ -526,6 +547,42 @@ static void plat_marvell_power_off_prepare(struct power_off_method *pm_cfg)
 }
 
 /*
+ * Enable DDR self-refresh
+ */
+static inline void plat_marvell_ddr_self_refresh_en(void)
+{
+	dsb();
+
+	/* Put DRAM in self-refresh state */
+	mmio_clrsetbits_32(MVEBU_MC_PWR_CTRL_REG,
+			MVEBU_MC_AC_ON_DLY_MASK | MVEBU_MC_AC_OFF_DLY_MASK | MVEBU_MC_PHY_AUTO_OFF_MASK,
+			MVEBU_MC_AC_ON_DLY_DEF_VAR | MVEBU_MC_AC_OFF_DLY_DEF_VAR | MVEBU_MC_PHY_AUTO_OFF_EN);
+
+	mmio_clrsetbits_32(MVEBU_USER_CMD_0_REG,
+			MVEBU_USER_CMD_CH0_MASK | MVEBU_USER_CMD_CS_MASK | MVEBU_USER_CMD_SR_MASK,
+			MVEBU_USER_CMD_CH0_EN | MVEBU_USER_CMD_CS_ALL | MVEBU_USER_CMD_SR_ENTER);
+
+	isb();
+
+	/*
+	 * Wait for DRAM is done using registers access only.
+	 * At this stage any access to DRAM (procedure call) will
+	 * release it from the self-refresh mode
+	 */
+	__asm__ volatile (
+		/* Align to a cache line */
+		"	.balign 64\n\t"
+		/*
+		* Wait 100 cycles for DDR to enter self refresh, by
+		* doing 50 times two instructions.
+		*/
+		"	mov	x1, #50\n\t"
+		"1:	subs	x1, x1, #1\n\t"
+		"	bne	1b\n\t"
+		: : : "x1");
+}
+
+/*
  * Trigger the power off of the system, no DRAM access is allowed in this routine.
  * It should be inline function so that no return at the end of the routine and
  * it can be adjacent to previous handling such as enabling the DDR self-refresh,
@@ -549,6 +606,9 @@ void plat_marvell_system_power_off(void)
 
 	/* Prepare for power off */
 	plat_marvell_power_off_prepare(pm_cfg);
+
+	/* Enable DDR self-refresh to keep the data during suspend */
+	plat_marvell_ddr_self_refresh_en();
 
 	/* Issue the power off */
 	plat_marvell_power_off_trigger();
