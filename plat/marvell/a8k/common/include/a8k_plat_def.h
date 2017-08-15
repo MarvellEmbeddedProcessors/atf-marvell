@@ -62,6 +62,12 @@
 #define MVEBU_SMMU_BASE			(MVEBU_REGS_BASE + 0x100000)
 #define MVEBU_CP_MPP_REGS(cp_index, n)	(MVEBU_CP_REGS_BASE(cp_index) + \
 							0x440000 + ((n) << 2))
+#define MVEBU_PM_MPP_REGS(cp_index, n)	(MVEBU_CP_REGS_BASE(cp_index) + \
+							0x440000 + ((n / 8) << 2))
+#define MVEBU_CP_GPIO_DATA_OUT(cp_index, n) \
+					(MVEBU_CP_REGS_BASE(cp_index) + 0x440100 + ((n > 32) ? 0x40 : 0x00))
+#define MVEBU_CP_GPIO_DATA_OUT_EN(cp_index, n) \
+					(MVEBU_CP_REGS_BASE(cp_index) + 0x440104 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_CP_GPIO_DATA_IN(cp_index, n) (MVEBU_CP_REGS_BASE(cp_index) + \
 					0x440110 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_ICU_REG_BASE(cp_index)	(MVEBU_CP_REGS_BASE(cp_index) + \

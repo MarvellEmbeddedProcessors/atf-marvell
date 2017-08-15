@@ -86,6 +86,49 @@ struct skip_image {
 	} info;
 };
 
+/*
+ * This struct supports SoC power off method
+ * type: the method used to power off the SoC
+ * cfg:
+ *	PMIC_GPIO:
+ *		pin_count: current GPIO pin number used for toggling the GPIO to notify PMIC
+ *		info: hold the GPIOs information, CP GPIO should be used and the GPIOs should be within
+ *		       same GPIO register
+ *		step_count: current step number to toggle the GPIO for PMIC
+ *		seq: GPIO toggling values in sequence, each bit represents a GPIO
+ *		       for exmaple, bit0 represents first GPIO used for toggling the GPIO
+ *		       the last step is used to trigger the power off finnally
+ *		delay_ms: transition interval for the GPIO setting to take effect in unit of ms
+ */
+#define PMIC_GPIO_MAX_NUMBER		8 /* Max GPIO number used to notify PMIC to power off the SoC */
+#define PMIC_GPIO_MAX_TOGGLE_STEP	8 /* Max GPIO toggling steps in sequence to power off the SoC */
+
+enum gpio_output_state {
+	GPIO_LOW = 0,
+	GPIO_HIGH
+};
+
+typedef struct gpio_info {
+	int cp_index;
+	int gpio_index;
+} gpio_info_t;
+
+struct power_off_method {
+	enum {
+		PMIC_GPIO,
+	} type;
+
+	struct {
+		struct {
+			int pin_count;
+			struct gpio_info info[PMIC_GPIO_MAX_NUMBER];
+			int step_count;
+			uint32_t seq[PMIC_GPIO_MAX_TOGGLE_STEP];
+			int delay_ms;
+		} gpio;
+	} cfg;
+};
+
 int marvell_gpio_config(void);
 uintptr_t marvell_get_amb_reg_offs(int cp_index);
 uintptr_t marvell_get_rfu_reg_offs(void);

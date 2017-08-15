@@ -99,6 +99,9 @@ void marvell_bl31_platform_setup(void);
 void marvell_bl31_plat_runtime_setup(void);
 void marvell_bl31_plat_arch_setup(void);
 
+/* Power management config to power off the SoC */
+void *plat_get_pm_cfg(void);
+
 /* Bootrom image recovery utility functions */
 void *plat_get_skip_image_data(void);
 

@@ -37,10 +37,12 @@
 #include <console.h>
 #include <gicv2.h>
 #include <mmio.h>
+#include <assert.h>
 #include <debug.h>
 #include <delay_timer.h>
 #include <cache_llc.h>
 #include <marvell_pm.h>
+#include <plat_config.h>
 
 #ifdef SCP_IMAGE
 #include <bakery_lock.h>
@@ -57,10 +59,17 @@
 #define MPIDR_CPU_GET(mpidr)		((mpidr) & MPIDR_CPU_MASK)
 #define MPIDR_CLUSTER_GET(mpidr)	MPIDR_AFFLVL1_VAL((mpidr))
 
+#define MVEBU_GPIO_MASK(index)		(1 << (index % 32))
+#define MVEBU_MPP_MASK(index)		(0xF << (4 * (index % 8)))
+#define MVEBU_GPIO_VALUE(index, value)	(value << (index % 32))
+
 #ifdef SCP_IMAGE
 /* this lock synchronize AP multiple cores execution with MSS */
 DEFINE_BAKERY_LOCK(pm_sys_lock);
 #endif
+
+/* Weak definitions may be overridden in specific board */
+#pragma weak plat_get_pm_cfg
 
 /* AP806 CPU power down /power up definitions */
 enum CPU_ID {
@@ -433,6 +442,118 @@ static void plat_exit_bootrom(void)
 }
 #endif
 
+/* Get PM config to power off the SoC */
+void *plat_get_pm_cfg(void)
+{
+	return NULL;
+}
+
+/*
+ * Prepare for the power off of the system via GPIO
+ */
+static void plat_marvell_power_off_gpio(struct power_off_method *pm_cfg)
+{
+	unsigned int gpio;
+	unsigned int idx;
+	unsigned int shift;
+	unsigned int reg;
+	unsigned int addr;
+	gpio_info_t *info;
+	unsigned int tog_bits;
+
+	assert((pm_cfg->cfg.gpio.pin_count < PMIC_GPIO_MAX_NUMBER) &&
+	       (pm_cfg->cfg.gpio.step_count < PMIC_GPIO_MAX_TOGGLE_STEP));
+
+	/* Prepare GPIOs for PMIC */
+	for (gpio = 0; gpio < pm_cfg->cfg.gpio.pin_count; gpio++) {
+		info = &pm_cfg->cfg.gpio.info[gpio];
+		/* Set PMIC GPIO to output mode */
+		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT_EN(info->cp_index, info->gpio_index));
+		mmio_write_32(MVEBU_CP_GPIO_DATA_OUT_EN(info->cp_index, info->gpio_index),
+			      reg & ~MVEBU_GPIO_MASK(info->gpio_index));
+
+		/* Set the appropriate MPP to GPIO mode */
+		reg = mmio_read_32(MVEBU_PM_MPP_REGS(info->cp_index, info->gpio_index));
+		mmio_write_32(MVEBU_PM_MPP_REGS(info->cp_index, info->gpio_index),
+			reg & ~MVEBU_MPP_MASK(info->gpio_index));
+	}
+
+	/* Wait for MPP & GPIO pre-configurations done */
+	mdelay(pm_cfg->cfg.gpio.delay_ms);
+
+	/* Toggle the GPIO values, and leave final step to be triggered after  DDR self-refresh is enabled */
+	for (idx = 0; idx < pm_cfg->cfg.gpio.step_count; idx++) {
+		tog_bits = pm_cfg->cfg.gpio.seq[idx];
+
+		/* The GPIOs must be within same GPIO register, thus could get the original value by first GPIO */
+		info = &pm_cfg->cfg.gpio.info[0];
+		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index));
+		addr = MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index);
+
+		for (gpio = 0; gpio < pm_cfg->cfg.gpio.pin_count; gpio++) {
+			shift = pm_cfg->cfg.gpio.info[gpio].gpio_index % 32;
+			if (GPIO_LOW == (tog_bits & (1 << gpio)))
+				reg &= ~(1 << shift);
+			else
+				reg |= (1 << shift);
+		}
+
+		/* Set the GPIO register, for last step just store register address and values to system registers */
+		if (idx < pm_cfg->cfg.gpio.step_count - 1) {
+			mmio_write_32(MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index), reg);
+			mdelay(pm_cfg->cfg.gpio.delay_ms);
+		} else {
+			/* Save GPIO register value to X17, and address to X18 */
+			__asm__ volatile (
+				"mov	x17, %0\n\t"
+				"mov	x18, %1\n\t"
+				: : "r" (reg), "r" (addr));
+		}
+	}
+}
+
+/*
+ * Prepare for the power off of the system
+ */
+static void plat_marvell_power_off_prepare(struct power_off_method *pm_cfg)
+{
+	switch (pm_cfg->type) {
+	case PMIC_GPIO:
+		plat_marvell_power_off_gpio(pm_cfg);
+	default:
+		break;
+	}
+}
+
+/*
+ * Trigger the power off of the system, no DRAM access is allowed in this routine.
+ * It should be inline function so that no return at the end of the routine and
+ * it can be adjacent to previous handling such as enabling the DDR self-refresh,
+ * which make sure they are executed in the cache and no DRAM access is needed.
+ * The X17 stores GPIO output value while X18 stores GPIO register address
+ */
+static inline void plat_marvell_power_off_trigger(void)
+{
+	__asm__ volatile ("str	w17, [x18]\n\t");
+}
+
+/* Trigger the power off of the system */
+void plat_marvell_system_power_off(void)
+{
+	struct power_off_method *pm_cfg;
+
+	/* Check if there is valid PM config */
+	pm_cfg = (struct power_off_method *)plat_get_pm_cfg();
+	if (!pm_cfg)
+		return;
+
+	/* Prepare for power off */
+	plat_marvell_power_off_prepare(pm_cfg);
+
+	/* Issue the power off */
+	plat_marvell_power_off_trigger();
+}
+
 /*******************************************************************************
  * A8K handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
@@ -477,6 +598,12 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
 			   2 * sizeof(uintptr_t));
 #endif
+
+	/*
+	 * Power off whole system, it should be guaranteed that CPU has enough time to finish
+	 * remained tasks before the power off takes effect.
+	 */
+	plat_marvell_system_power_off();
 
 	isb();
 	/*
