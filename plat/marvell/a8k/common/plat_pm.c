@@ -62,9 +62,6 @@
 DEFINE_BAKERY_LOCK(pm_sys_lock);
 #endif
 
-/* Weak definitions may be overridden in specific board */
-#pragma weak plat_marvell_power_off_trigger
-
 /* AP806 CPU power down /power up definitions */
 enum CPU_ID {
 	CPU0,
@@ -296,65 +293,6 @@ int plat_marvell_cpu_on(u_register_t mpidr)
 	return 0;
 }
 
-void plat_marvell_system_reset(void)
-{
-	mmio_write_32(MVEBU_RFU_BASE + MVEBU_RFU_GLOBL_SW_RST, 0x0);
-}
-
-/*
- * This function should be called on restore from
- * "suspend to RAM" state when the execution flow
- * has to bypass BootROM image to RAM copy and speed up
- * the system recovery
- *
- */
-static void plat_exit_bootrom(void)
-{
-	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
-}
-
-/* Trigger the power off of the system */
-void plat_marvell_power_off_trigger(void)
-{
-
-}
-
-/*
- * Send a command to external PMIC to cut off the power rail
- */
-void plat_marvell_power_suspend_to_ram(void)
-{
-	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
-
-	INFO("Suspending to RAM\n");
-
-	/* Prevent interrupts from spuriously waking up this cpu */
-	gicv2_cpuif_disable();
-
-	mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
-	mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
-
-#if PLAT_MARVELL_SHARED_RAM_CACHED
-	flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
-			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
-			   2 * sizeof(uintptr_t));
-#endif
-
-	/*
-	 * Trigger to enter power off state, it should be guaranteed that CPU has enough time to
-	 * finish remained tasks before the power off takes effect.
-	 */
-	plat_marvell_power_off_trigger();
-
-	isb();
-	/*
-	 * Do not halt here!
-	 * The function must return for allowing the caller function
-	 * psci_power_up_finish() to do the proper context saving and
-	 * to release the CPU lock.
-	*/
-}
-
 /*******************************************************************************
  * A8K handler called to check the validity of the power state
  * parameter.
@@ -481,6 +419,20 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 #endif /* SCP_IMAGE */
 }
 
+#ifndef SCP_IMAGE
+/*
+ * This function should be called on restore from
+ * "suspend to RAM" state when the execution flow
+ * has to bypass BootROM image to RAM copy and speed up
+ * the system recovery
+ *
+ */
+static void plat_exit_bootrom(void)
+{
+	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
+}
+#endif
+
 /*******************************************************************************
  * A8K handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
@@ -510,8 +462,30 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND);
 #else
-	/* Suspend to RAM */
-	plat_marvell_power_suspend_to_ram();
+	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+
+	INFO("Suspending to RAM\n");
+
+	/* Prevent interrupts from spuriously waking up this cpu */
+	gicv2_cpuif_disable();
+
+	mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
+	mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
+
+#if PLAT_MARVELL_SHARED_RAM_CACHED
+	flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+			   2 * sizeof(uintptr_t));
+#endif
+
+	isb();
+	/*
+	 * Do not halt here!
+	 * The function must return for allowing the caller function
+	 * psci_power_up_finish() to do the proper context saving and
+	 * to release the CPU lock.
+	*/
+
 #endif /* SCP_IMAGE */
 }
 
@@ -602,6 +576,11 @@ static void __dead2 a8k_system_off(void)
 	wfi();
 	ERROR("A8K System Off: operation not handled.\n");
 	panic();
+}
+
+void plat_marvell_system_reset(void)
+{
+	mmio_write_32(MVEBU_RFU_BASE + MVEBU_RFU_GLOBL_SW_RST, 0x0);
 }
 
 static void __dead2 a8k_system_reset(void)
