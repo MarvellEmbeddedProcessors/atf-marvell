@@ -176,6 +176,26 @@ int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size)
 
 	return 0;
 }
+
+/*******************************************************************************
+ * SoC PM configuration
+ ******************************************************************************/
+/* CP GPIO should be used and the GPIOs should be within same GPIO register */
+struct power_off_method pm_cfg = {
+	.type = PMIC_GPIO,
+	.cfg.gpio.pin_count = 1,
+	.cfg.gpio.info = {{0, 35} },
+	.cfg.gpio.step_count = 5,
+	.cfg.gpio.seq = {1, 0, 1, 0, 1},
+	.cfg.gpio.delay_ms = 10,
+};
+
+void *plat_get_pm_cfg(void)
+{
+	/* Return the PM configurations */
+	return &pm_cfg;
+}
+
 /* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
 #else
 /*******************************************************************************
