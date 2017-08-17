@@ -34,7 +34,7 @@
 
 #include <plat_def.h>
 #include <apn806_setup.h>
-#include <rfu.h>
+#include <io_win.h>
 #include <ccu.h>
 #include <mci.h>
 #include <cache_llc.h>
@@ -213,8 +213,8 @@ void apn806_init(void)
 	/* configure MCI mapping */
 	mci_remap_indirect_access_base();
 
-	/* configure RFU windows */
-	init_rfu();
+	/* configure IO_WIN windows */
+	init_io_win();
 
 	/* configure CCU windows */
 	init_ccu();

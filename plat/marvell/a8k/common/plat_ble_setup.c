@@ -40,7 +40,6 @@
 #include <dram_if.h>
 #include <ccu.h>
 #include <aro.h>
-#include <rfu.h>
 #include <apn806_setup.h>
 #include <cp110_setup.h>
 
@@ -182,7 +181,7 @@ static void ble_plat_mmap_config(int restore)
 	static uint32_t io_win_regs[CP_COUNT];
 	static uint32_t ccu_gcr, iow_gcr;
 	uintptr_t ccu_base = MVEBU_CCU_BASE;
-	uintptr_t iow_base = MVEBU_RFU_BASE;
+	uintptr_t iow_base = MVEBU_IO_WIN_BASE;
 	uint32_t reg_val, win_num;
 
 	if (restore == MMAP_RESTORE_SAVED) {

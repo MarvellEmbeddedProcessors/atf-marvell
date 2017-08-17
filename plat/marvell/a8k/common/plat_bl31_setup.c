@@ -95,7 +95,7 @@ void bl31_plat_arch_setup(void)
 
 	/* In marvell_bl31_plat_arch_setup, el3 mmu is configured.
 	 * el3 mmu configuration MUST be called after apn806_init, if not,
-	 * this will cause an hang in init_rfu
+	 * this will cause an hang in init_io_win
 	 * (after setting the IO windows GCR values).
 	 */
 	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||

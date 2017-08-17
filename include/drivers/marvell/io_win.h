@@ -32,12 +32,12 @@
 ***************************************************************************
 */
 
-#ifndef _RFU_H_
-#define _RFU_H_
+#ifndef _IO_WIN_H_
+#define _IO_WIN_H_
 
 #include <stdint.h>
 
-struct rfu_win {
+struct io_win {
 	uint32_t base_addr_high;
 	uint32_t base_addr_low;
 	uint32_t win_size_high;
@@ -45,7 +45,7 @@ struct rfu_win {
 	uint32_t target_id;
 };
 
-enum rfu_target_ids {
+enum io_win_target_ids {
 	MCI_0_TID	 = 0x0,
 	MCI_1_TID	 = 0x1,
 	MCI_2_TID	 = 0x2,
@@ -53,12 +53,12 @@ enum rfu_target_ids {
 	SPI_TID		 = 0x4,
 	STM_TID		 = 0x5,
 	BOOTROM_TID	 = 0x6,
-	RFU_MAX_TID
+	IO_WIN_MAX_TID
 };
 
-#define RFU_MAX_WIN_ID	7
+#define IO_WIN_MAX_NUM		7
 
-int init_rfu(void);
+int init_io_win(void);
 
-#endif /* _RFU_H_ */
+#endif /* _IO_WIN_H_ */
 
