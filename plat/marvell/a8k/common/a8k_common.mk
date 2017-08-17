@@ -83,7 +83,7 @@ endif
 BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 				lib/cpus/aarch64/cortex_a72.S
 
-MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/rfu.c	\
+MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/io_win.c	\
 				$(MARVELL_DRV_BASE)/iob.c	\
 				$(MARVELL_DRV_BASE)/mci.c	\
 				$(MARVELL_DRV_BASE)/amb_adec.c	\

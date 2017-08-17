@@ -95,10 +95,10 @@ int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
 }
 
 /*******************************************************************************
- * RFU Configuration
+ * IO WIN Configuration
  ******************************************************************************/
 
-struct rfu_win rfu_memory_map[] = {
+struct io_win io_win_memory_map[] = {
 	/* CP1 (MCI0) internal regs */
 	{0x0,	0xf4000000,			0x0,	0x2000000,  MCI_0_TID},
 	/* PCIe0 on CP1*/
@@ -113,18 +113,18 @@ struct rfu_win rfu_memory_map[] = {
 	{0x0,	MVEBU_MCI_REG_BASE_REMAP(1),	0x0,	0x100000,   MCI_1_TID},
 };
 
-uintptr_t marvell_get_rfu_reg_offs(void)
+uintptr_t marvell_get_io_win_reg_offs(void)
 {
-	return MVEBU_RFU_BASE;
+	return MVEBU_IO_WIN_BASE;
 }
 
-int marvell_get_rfu_memory_map(struct rfu_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(struct io_win **win, uint32_t *size)
 {
-	*win = rfu_memory_map;
+	*win = io_win_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(rfu_memory_map)/sizeof(struct rfu_win);
+		*size = sizeof(io_win_memory_map)/sizeof(struct io_win);
 
 	return 0;
 }

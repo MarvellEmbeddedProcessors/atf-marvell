@@ -20,13 +20,13 @@ Files that require porting are located at "plat/marvell/<soc family>/<soc>_cust"
 A7K/A8K specific:
 
   - SoC Physical Address Map (marvell_plat_config.c):
-	- This file describes the SoC physical memory mapping to be used for the CCU, RFU, AXI-MBUS and IOB
+	- This file describes the SoC physical memory mapping to be used for the CCU, IO WIN, AXI-MBUS and IOB
 	  address decode units (Refer to the functional spec for more details).
 	- In most cases, using the default address decode windows should work OK.
 	- In cases where a special physical address map is needed (e.g. Special size for PCIe MEM windows,
 	  large memory mapped SPI flash...), then porting of the SoC memory map is required.
-	- Note: For a detailed information on how CCU, RFU, AXI-MBUS & IOB work, please refer to the SoC functional spec,
-	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/rfu].txt" files.
+	- Note: For a detailed information on how CCU, IO WIN, AXI-MBUS & IOB work, please refer to the SoC functional spec,
+	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/io-win].txt" files.
 
   - booloader recovery (marvell_plat_config.c):
 	- Background:

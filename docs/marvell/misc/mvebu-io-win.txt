@@ -1,7 +1,7 @@
-Marvell RFU address decoding bindings
+Marvell IO WIN address decoding bindings
 =====================================
 
-The RFU includes a description of the address decoding configuration.
+The IO WIN includes a description of the address decoding configuration.
 
 Transactions that are decoded by CCU windows as IO peripheral, have an additional
 layer of decoding. This additional address decoding layer defines one of the
@@ -14,13 +14,13 @@ following targets:
 	0x5 = PCIe port
 
 Mandatory functions:
-	- marvell_get_rfu_reg_offs
-		returns the base address of the RFU unit
-	- marvell_get_rfu_memory_map
-		returns the RFU windows configuration and the number of windows
+	- marvell_get_io_win_reg_offs
+		returns the base address of the IO WIN unit
+	- marvell_get_io_win_memory_map
+		returns the IO windows configuration and the number of windows
 
 Mandatory structures:
-	rfu_memory_map - Array that include the configuration of the windows
+	io_win_memory_map - Array that include the configuration of the windows
 	  every window/entry is a struct which has 5 parameters:
 	  - High base address of the window
 	  - Low base address of the window
@@ -41,7 +41,7 @@ Note: if the base address is more than 32 bits, it divided into high and low.
 		size low: 0x00F00000
 
 Example:
-	struct rfu_win rfu_memory_map[] = {
+	struct io_win io_win_memory_map[] = {
 		{0x0,	0xfe000000,	0x0,	0x1f00000,	PCIE_PORT_TID}, /* PCIe window 31Mb for PCIe port*/
 		{0x0,	0xffe00000,	0x0,	0x100000,	PCIE_REGS_TID}, /* PCI-REG window 64Kb for PCIe-reg*/
 		{0x0,	0xf6000000,	0x0,	0x100000,	MCIPHY_TID},	/* MCI window  1Mb for PHY-reg*/

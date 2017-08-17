@@ -35,7 +35,7 @@
 #define __BOARD_CONFIG_H__
 
 #include <amb_adec.h>
-#include <rfu.h>
+#include <io_win.h>
 #include <iob.h>
 #include <ccu.h>
 #include <pci_ep.h>
@@ -131,7 +131,7 @@ struct power_off_method {
 
 int marvell_gpio_config(void);
 uintptr_t marvell_get_amb_reg_offs(int cp_index);
-uintptr_t marvell_get_rfu_reg_offs(void);
+uintptr_t marvell_get_io_win_reg_offs(void);
 uintptr_t marvell_get_iob_reg_offs(int cp_index);
 int marvell_get_iob_max_win(void);
 uintptr_t marvell_get_ccu_reg_offs(void);
@@ -143,7 +143,7 @@ int marvell_get_ccu_max_win(void);
  * in specific Marvell standard platform
  */
 int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size);
-int marvell_get_rfu_memory_map(struct rfu_win **win, uint32_t *size);
+int marvell_get_io_win_memory_map(struct io_win **win, uint32_t *size);
 int marvell_get_iob_memory_map(struct iob_win **win,
 			       uint32_t *size, int cp_index);
 int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size);
