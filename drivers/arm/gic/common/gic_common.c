@@ -93,16 +93,6 @@ unsigned int gicd_read_ipriorityr(uintptr_t base, unsigned int id)
 }
 
 /*
- * Accessor to read the GIC Distributor ITARGETSR corresponding to the
- * interrupt `id`, 4 interrupt IDs at a time.
- */
-unsigned int gicd_read_itargetsr(uintptr_t base, unsigned int id)
-{
-	unsigned n = id >> ITARGETSR_SHIFT;
-	return mmio_read_32(base + GICD_ITARGETSR + (n << 2));
-}
-
-/*
  * Accessor to read the GIC Distributor ICGFR corresponding to the
  * interrupt `id`, 16 interrupt IDs at a time.
  */
@@ -206,16 +196,6 @@ void gicd_write_ipriorityr(uintptr_t base, unsigned int id, unsigned int val)
 }
 
 /*
- * Accessor to write the GIC Distributor ITARGETSR corresponding to the
- * interrupt `id`, 4 interrupt IDs at a time.
- */
-void gicd_write_itargetsr(uintptr_t base, unsigned int id, unsigned int val)
-{
-	unsigned n = id >> ITARGETSR_SHIFT;
-	mmio_write_32(base + GICD_ITARGETSR + (n << 2), val);
-}
-
-/*
  * Accessor to write the GIC Distributor ICFGR corresponding to the
  * interrupt `id`, 16 interrupt IDs at a time.
  */
@@ -310,14 +290,4 @@ void gicd_set_icactiver(uintptr_t base, unsigned int id)
 void gicd_set_ipriorityr(uintptr_t base, unsigned int id, unsigned int pri)
 {
 	mmio_write_8(base + GICD_IPRIORITYR + id, pri & GIC_PRI_MASK);
-}
-
-void gicd_write_sgir(uintptr_t base, unsigned int val)
-{
-	mmio_write_32(base + GICD_SGIR, val);
-}
-
-unsigned int gicd_read_sgir(uintptr_t base)
-{
-	return mmio_read_32(base + GICD_SGIR);
 }

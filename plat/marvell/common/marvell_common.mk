@@ -42,15 +42,13 @@ PLAT_INCLUDES		+=	-I.	-Iinclude/common/tbbr		       \
 PLAT_BL_COMMON_SOURCES  +=      lib/xlat_tables/xlat_tables_common.c			\
 				lib/xlat_tables/aarch64/xlat_tables.c			\
 				$(MARVELL_PLAT_BASE)/common/aarch64/marvell_common.c	\
-				$(MARVELL_PLAT_BASE)/common/aarch64/marvell_helpers.S	\
-				plat/common/aarch64/plat_common.c
+				$(MARVELL_PLAT_BASE)/common/aarch64/marvell_helpers.S
 
 BL1_SOURCES		+=	drivers/io/io_fip.c					\
 				drivers/io/io_memmap.c					\
 				drivers/io/io_storage.c					\
 				$(MARVELL_PLAT_BASE)/common/marvell_bl1_setup.c		\
-				$(MARVELL_PLAT_BASE)/common/marvell_io_storage.c	\
-				plat/common/aarch64/platform_up_stack.S
+				$(MARVELL_PLAT_BASE)/common/marvell_io_storage.c
 ifdef EL3_PAYLOAD_BASE
 # Need the arm_program_trusted_mailbox() function to release secondary CPUs from
 # their holding pen
@@ -60,13 +58,11 @@ BL2_SOURCES		+=	drivers/io/io_fip.c					\
 				drivers/io/io_memmap.c					\
 				drivers/io/io_storage.c					\
 				$(MARVELL_PLAT_BASE)/common/marvell_bl2_setup.c		\
-				$(MARVELL_PLAT_BASE)/common/marvell_io_storage.c	\
-				plat/common/aarch64/platform_up_stack.S
+				$(MARVELL_PLAT_BASE)/common/marvell_io_storage.c
 
 BL31_SOURCES		+=	$(MARVELL_PLAT_BASE)/common/marvell_bl31_setup.c	\
 				$(MARVELL_PLAT_BASE)/common/marvell_pm.c		\
 				$(MARVELL_PLAT_BASE)/common/marvell_topology.c		\
-				plat/common/aarch64/platform_mp_stack.S			\
 				plat/common/plat_psci_common.c				\
 				$(MARVELL_PLAT_BASE)/common/plat_delay_timer.c		\
 				drivers/delay_timer/delay_timer.c
