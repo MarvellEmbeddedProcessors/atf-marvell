@@ -57,7 +57,7 @@ unsigned int platform_core_pos_helper(unsigned long mpidr)
 #if !ERROR_DEPRECATED
 unsigned int plat_get_syscnt_freq2(void)
 {
-	unsigned long long freq = plat_get_syscnt_freq();
+	unsigned long long freq = 0 /*plat_get_syscnt_freq()*/;
 
 	assert(freq >> 32 == 0);
 

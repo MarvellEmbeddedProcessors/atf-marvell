@@ -79,7 +79,8 @@ void *cm_get_context_by_mpidr(uint64_t mpidr, uint32_t security_state)
 {
 	assert(sec_state_is_valid(security_state));
 
-	return cm_get_context_by_index(platform_get_core_pos(mpidr), security_state);
+	return cm_get_context_by_index(plat_core_pos_by_mpidr(mpidr),
+				       security_state);
 }
 
 /*******************************************************************************
@@ -90,7 +91,7 @@ void cm_set_context_by_mpidr(uint64_t mpidr, void *context, uint32_t security_st
 {
 	assert(sec_state_is_valid(security_state));
 
-	cm_set_context_by_index(platform_get_core_pos(mpidr),
+	cm_set_context_by_index(plat_core_pos_by_mpidr(mpidr),
 						 context, security_state);
 }
 
@@ -105,6 +106,6 @@ void cm_init_context(unsigned long mpidr, const entry_point_info_t *ep)
 			(read_mpidr_el1() & MPIDR_AFFINITY_MASK))
 		cm_init_my_context(ep);
 	else
-		cm_init_context_by_index(platform_get_core_pos(mpidr), ep);
+		cm_init_context_by_index(plat_core_pos_by_mpidr(mpidr), ep);
 }
 #endif
