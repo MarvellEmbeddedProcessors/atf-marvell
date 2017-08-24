@@ -90,14 +90,14 @@ Build Instructions
 	- PARTNUM: For Armada37x0 only, the boot partition number, default is 0. To boot from eMMC, the value
 		should be aligned with the parameter in U-Boot with name of CONFIG_SYS_MMC_ENV_PART, whose
 		value by default is 1.
-		For detail about CONFIG_SYS_MMC_ENV_PART, please refer to U-Boot build instructions.
+		For details about CONFIG_SYS_MMC_ENV_PART, please refer to the U-Boot build instructions.
 
-	- WTMI_IMG: For Armada37x0 only, the path of the WTMI image can point to a image which does
-		nothing, a image which supports EFUSE or a customized CM3 firmware image, the default is
-		"tools/wtp/wtmi/build/wtmi.bin" which supports EFUSE.
-
+	- WTMI_IMG: For Armada37x0 only, the path of the WTMI image can point to an image which does
+		nothing, an image which supports EFUSE or a customized CM3 firmware binary. The default image
+		is wtmi.bin that built from sources in WTP folder, which is the next option. If the default
+		image is OK, then this option should be skipped.
 	- WTP: For Armada37x0 only, use this parameter to point to wtptools source code directory, which
-		could be found as a3700_utils.zip in the release.
+		can be found as a3700_utils.zip in the release.
 		Usage example: WTP=/path/to/a3700_utils
 
 	For example, in order to build the image in debug mode with log level up to 'notice' level run::
