@@ -481,7 +481,6 @@ DDR_TOPOLOGY		?= 0
 
 BOOTDEV			?= SPINOR
 PARTNUM			?= 0
->>>>>>> makefile: mvebu: update makefile for a3700 build
 
 TIM_IMAGE		:= $$(grep "Image Filename:" -m 1 $(DOIMAGE_CFG) | cut -c 17-)
 TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
