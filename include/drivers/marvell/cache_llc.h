@@ -19,15 +19,15 @@
 #ifndef _CACHE_LLC_H_
 #define _CACHE_LLC_H_
 
-void llc_cache_sync(void);
-void llc_flush_all(void);
-void llc_clean_all(void);
-void llc_inv_all(void);
-void llc_disable(void);
-void llc_enable(int excl_mode);
-int llc_is_exclusive(void);
-void llc_save(void);
-void llc_resume(void);
+void llc_cache_sync(int);
+void llc_flush_all(int);
+void llc_clean_all(int);
+void llc_inv_all(int);
+void llc_disable(int);
+void llc_enable(int, int excl_mode);
+int llc_is_exclusive(int);
+void llc_save(int);
+void llc_resume(int);
 
 #endif /* _CACHE_LLC_H_ */
 
