@@ -205,7 +205,7 @@ struct wake_up_src_func_map {
 	wake_up_src_func func;
 };
 
-void psci_arch_init(void)
+void psci_arch_init(int die_index)
 {
 	return;
 }
@@ -655,7 +655,7 @@ void a3700_pwr_domain_suspend(const psci_power_state_t *target_state)
 void a3700_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	/* arch specific configuration */
-	psci_arch_init();
+	psci_arch_init(0);
 
 	/* Per-CPU interrupt initialization */
 	plat_marvell_gic_pcpu_init();
@@ -680,7 +680,7 @@ void a3700_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	struct dram_win_map dram_wins_map;
 
 	/* arch specific configuration */
-	psci_arch_init();
+	psci_arch_init(0);
 
 	/* Interrupt initialization */
 	plat_marvell_gic_init();

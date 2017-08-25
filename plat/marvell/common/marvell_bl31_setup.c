@@ -227,7 +227,12 @@ void marvell_bl31_platform_setup(void)
 	plat_marvell_gic_driver_init();
 	plat_marvell_gic_init();
 
-	psci_arch_init();
+	/* For Armada-8k-plus family, the SoC includes more than
+	** a single AP die, but the default die that boots is AP #0.
+	** For other families there is only one die (#0).
+	** Initialize psci arch from die 0
+	** */
+	psci_arch_init(0);
 }
 
 /*******************************************************************************
