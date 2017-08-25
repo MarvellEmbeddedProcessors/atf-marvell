@@ -99,7 +99,7 @@ int marvell_io_is_toc_valid(void);
 /*
  * PSCI functionality
  */
-void psci_arch_init(void);
+void psci_arch_init(int);
 void plat_marvell_system_reset(void);
 
 /*

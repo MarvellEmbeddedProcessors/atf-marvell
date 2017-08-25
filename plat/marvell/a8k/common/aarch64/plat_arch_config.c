@@ -57,7 +57,7 @@ void plat_enable_affinity(void)
 	__asm__ volatile("isb");
 }
 
-void psci_arch_init(void)
+void psci_arch_init(int die_index)
 {
 #if !LLC_DISABLE
 	/* check if LLC is in exclusive mode

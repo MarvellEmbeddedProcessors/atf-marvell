@@ -686,7 +686,7 @@ static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	/* arch specific configuration */
-	psci_arch_init();
+	psci_arch_init(0);
 
 	/* Interrupt initialization */
 	gicv2_pcpu_distif_init();
@@ -709,7 +709,7 @@ static void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state
 {
 #ifdef SCP_IMAGE
 	/* arch specific configuration */
-	psci_arch_init();
+	psci_arch_init(0);
 
 	/* Interrupt initialization */
 	gicv2_cpuif_enable();
