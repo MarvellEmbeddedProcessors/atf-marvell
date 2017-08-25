@@ -214,7 +214,7 @@ void apn806_init(void)
 	mci_remap_indirect_access_base();
 
 	/* configure IO_WIN windows */
-	init_io_win();
+	init_io_win(0);
 
 	/* configure CCU windows */
 	init_ccu(0);

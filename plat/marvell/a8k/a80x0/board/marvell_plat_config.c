@@ -80,12 +80,12 @@ struct io_win io_win_memory_map[] = {
 	{0x0,	MVEBU_MCI_REG_BASE_REMAP(1),	0x0,	0x100000,  MCI_1_TID},
 };
 
-uintptr_t marvell_get_io_win_reg_offs(void)
+uintptr_t marvell_get_io_win_reg_offs(int ap_index)
 {
 	return MVEBU_IO_WIN_BASE;
 }
 
-int marvell_get_io_win_memory_map(struct io_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *size)
 {
 	*win = io_win_memory_map;
 	if (*win == NULL)

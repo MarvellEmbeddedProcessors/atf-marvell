@@ -147,7 +147,7 @@ static void dump_io_win(void)
 }
 #endif
 
-int init_io_win(void)
+int init_io_win(int ap_index)
 {
 	struct io_win *win;
 	uint32_t win_id, win_reg;
@@ -156,10 +156,10 @@ int init_io_win(void)
 	INFO("Initializing IO WIN Address decoding\n");
 
 	/* Get the base address of the address decoding MBUS */
-	io_win_base = marvell_get_io_win_reg_offs();
+	io_win_base = marvell_get_io_win_reg_offs(ap_index);
 
 	/* Get the array of the windows and its size */
-	marvell_get_io_win_memory_map(&win, &win_count);
+	marvell_get_io_win_memory_map(ap_index, &win, &win_count);
 	if (win_count <= 0)
 		INFO("no windows configurations found\n");
 

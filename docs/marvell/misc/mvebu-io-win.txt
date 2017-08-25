@@ -16,8 +16,10 @@ following targets:
 Mandatory functions:
 	- marvell_get_io_win_reg_offs
 		returns the base address of the IO WIN unit
+		in the specific AP.
 	- marvell_get_io_win_memory_map
 		returns the IO windows configuration and the number of windows
+		of the specific AP.
 
 Mandatory structures:
 	io_win_memory_map - Array that include the configuration of the windows

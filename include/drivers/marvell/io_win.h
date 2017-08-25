@@ -58,7 +58,7 @@ enum io_win_target_ids {
 
 #define IO_WIN_MAX_NUM		7
 
-int init_io_win(void);
+int init_io_win(int);
 
 #endif /* _IO_WIN_H_ */
 
