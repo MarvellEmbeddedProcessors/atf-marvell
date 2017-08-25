@@ -366,7 +366,7 @@ int a8k_validate_power_state(unsigned int power_state,
  ******************************************************************************/
 void a8k_cpu_standby(plat_local_state_t cpu_state)
 {
-	ERROR("a8k_cpu_standby needs to be implemented\n");
+	ERROR("%s: needs to be implemented\n", __func__);
 	panic();
 }
 
@@ -442,7 +442,7 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 	/* trace message */
 	PM_TRACE(TRACE_PWR_DOMAIN_OFF);
 #else
-	INFO("a8k_pwr_domain_off is not supported without SCP\n");
+	INFO("%s: is not supported without SCP\n", __func__);
 	return;
 #endif /* SCP_IMAGE */
 }
@@ -759,10 +759,10 @@ void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
  ******************************************************************************/
 static void __dead2 a8k_system_off(void)
 {
-	ERROR("a8k_system_off needs to be implemented\n");
+	ERROR("%s:  needs to be implemented\n", __func__);
 	panic();
 	wfi();
-	ERROR("A8K System Off: operation not handled.\n");
+	ERROR("%s: operation not handled.\n", __func__);
 	panic();
 }
 
