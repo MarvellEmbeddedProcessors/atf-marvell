@@ -134,7 +134,7 @@ uintptr_t marvell_get_amb_reg_offs(int cp_index);
 uintptr_t marvell_get_io_win_reg_offs(void);
 uintptr_t marvell_get_iob_reg_offs(int cp_index);
 int marvell_get_iob_max_win(void);
-uintptr_t marvell_get_ccu_reg_offs(void);
+uintptr_t marvell_get_ccu_reg_offs(int);
 int marvell_get_ccu_max_win(void);
 
 
@@ -146,6 +146,6 @@ int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size);
 int marvell_get_io_win_memory_map(struct io_win **win, uint32_t *size);
 int marvell_get_iob_memory_map(struct iob_win **win,
 			       uint32_t *size, int cp_index);
-int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size);
+int marvell_get_ccu_memory_map(int, struct ccu_win **win, uint32_t *size);
 
 #endif /* __BOARD_CONFIG_H__ */

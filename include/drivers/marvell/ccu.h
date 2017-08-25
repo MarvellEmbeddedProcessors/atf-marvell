@@ -57,7 +57,7 @@ enum ccu_target_ids {
 	INVALID_TID     = 0xFF
 };
 
-int init_ccu(void);
+int init_ccu(int);
 void ccu_win_check(struct ccu_win *win, uint32_t win_num);
 void ccu_enable_win(struct ccu_win *win, uint32_t win_id);
 

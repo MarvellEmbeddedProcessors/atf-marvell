@@ -194,7 +194,7 @@ static int skip_ccu_window(uint32_t win_reg)
 	return 0;
 }
 
-int init_ccu(void)
+int init_ccu(int ap_index)
 {
 	struct ccu_win *win;
 	uint32_t win_id, win_reg;
@@ -203,7 +203,7 @@ int init_ccu(void)
 	INFO("Initializing CCU Address decoding\n");
 
 	/* Get the base address of the address decoding CCU */
-	ccu_info->ccu_base = marvell_get_ccu_reg_offs();
+	ccu_info->ccu_base = marvell_get_ccu_reg_offs(ap_index);
 
 	/* Get the maximum number of CCU windows supported */
 	ccu_info->max_win = marvell_get_ccu_max_win();
@@ -213,7 +213,7 @@ int init_ccu(void)
 	}
 
 	/* Get the array of the windows and fill the map data */
-	marvell_get_ccu_memory_map(&win, &win_count);
+	marvell_get_ccu_memory_map(ap_index, &win, &win_count);
 	if (win_count <= 0) {
 		INFO("no windows configurations found\n");
 		return 0;

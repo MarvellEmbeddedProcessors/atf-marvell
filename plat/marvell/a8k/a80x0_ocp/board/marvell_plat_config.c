@@ -140,7 +140,7 @@ struct ccu_win ccu_memory_map[] = {
 	{0x80,	0x00000000,	0x80,	0x0000000,   IO_0_TID}, /* IO window */
 };
 
-uintptr_t marvell_get_ccu_reg_offs(void)
+uintptr_t marvell_get_ccu_reg_offs(int ap_index)
 {
 	return MVEBU_CCU_BASE;
 }
@@ -150,13 +150,14 @@ int marvell_get_ccu_max_win(void)
 	return MARVELL_CCU_MAX_WIN;
 }
 
-int marvell_get_ccu_memory_map(struct ccu_win **win, uint32_t *size)
+int marvell_get_ccu_memory_map(int ap_index, struct ccu_win **win, uint32_t *size)
 {
 	*win = ccu_memory_map;
 	*size = sizeof(ccu_memory_map)/sizeof(struct ccu_win);
 
 	return 0;
 }
+
 /* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
 #else
 /*******************************************************************************
