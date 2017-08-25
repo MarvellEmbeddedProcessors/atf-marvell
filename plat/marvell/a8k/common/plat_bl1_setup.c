@@ -37,12 +37,11 @@
 #include <apn806_setup.h>
 #include <cp110_setup.h>
 
-#define MVEBU_MPP_REGS(n)	(0x6F4000 + ((n) << 2))
 void marvell_bl1_setup_mpps(void)
 {
 	/* Enable UART MPPs.
 	 ** In a normal system, this is done by Bootrom.
 	 */
-	mmio_write_32(MVEBU_REGS_BASE + MVEBU_MPP_REGS(1), 0x3000);
-	mmio_write_32(MVEBU_REGS_BASE + MVEBU_MPP_REGS(2), 0x3000);
+	mmio_write_32(MVEBU_AP_MPP_REGS(1), 0x3000);
+	mmio_write_32(MVEBU_AP_MPP_REGS(2), 0x3000);
 }
