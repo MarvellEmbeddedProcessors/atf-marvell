@@ -6,10 +6,12 @@ The CCU node includes a description of the address decoding configuration.
 Mandatory functions:
 	- marvell_get_ccu_reg_offs
 		returns the base address of the CCU unit
+		in the specific AP.
 	- marvell_get_ccu_max_win
 		returns the number of the max mbus windows
 	- marvell_get_ccu_memory_map
 		return the CCU windows configuration and the number of windows
+		of the specific AP.
 
 Mandatory structures:
 	ccu_memory_map - Array that includes the configuration of the windows

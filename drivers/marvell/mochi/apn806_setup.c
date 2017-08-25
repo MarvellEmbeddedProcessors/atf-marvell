@@ -217,7 +217,7 @@ void apn806_init(void)
 	init_io_win();
 
 	/* configure CCU windows */
-	init_ccu();
+	init_ccu(0);
 
 	/* configure DSS */
 	dss_setup();
