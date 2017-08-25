@@ -113,7 +113,7 @@ static void io_win_enable_window(struct io_win *win, uint32_t win_num)
 }
 
 #ifdef DEBUG_ADDR_MAP
-static void dump_io(void)
+static void dump_io_win(void)
 {
 	uint32_t trgt_id, win_id;
 	uint32_t alr, ahr;
