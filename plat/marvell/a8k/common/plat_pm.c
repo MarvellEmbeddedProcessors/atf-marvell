@@ -123,7 +123,7 @@ enum CPU_ID {
  * Power down CPU:
  * Used to reduce power consumption, and avoid SoC unnecessary temperature rise.
  */
-int plat_marvell_cpu_powerdown(int cpu_id)
+static int plat_marvell_cpu_powerdown(int cpu_id)
 {
 	uint32_t	reg_val;
 	int		exit_loop = REG_WR_VALIDATE_TIMEOUT;
@@ -225,7 +225,7 @@ int plat_marvell_early_cpu_powerdown(void)
 /*
  * Power up CPU - part of Linux boot stage
  */
-int plat_marvell_cpu_powerup(u_register_t mpidr)
+static int plat_marvell_cpu_powerup(u_register_t mpidr)
 {
 	uint32_t	reg_val;
 	int	cpu_id = MPIDR_CPU_GET(mpidr), cluster = MPIDR_CLUSTER_GET(mpidr);
@@ -294,8 +294,8 @@ cpu_poweron_error:
 	return -1;
 }
 
-
-int plat_marvell_cpu_on(u_register_t mpidr)
+#ifndef SCP_IMAGE
+static int plat_marvell_cpu_on(u_register_t mpidr)
 {
 	int cpu_id;
 	int cluster;
@@ -320,12 +320,13 @@ int plat_marvell_cpu_on(u_register_t mpidr)
 
 	return 0;
 }
+#endif /* SCP_IMAGE */
 
 /*******************************************************************************
  * A8K handler called to check the validity of the power state
  * parameter.
  ******************************************************************************/
-int a8k_validate_power_state(unsigned int power_state,
+static int a8k_validate_power_state(unsigned int power_state,
 			    psci_power_state_t *req_state)
 {
 	int pstate = psci_get_pstate_type(power_state);
@@ -364,7 +365,7 @@ int a8k_validate_power_state(unsigned int power_state,
 /*******************************************************************************
  * A8K handler called when a CPU is about to enter standby.
  ******************************************************************************/
-void a8k_cpu_standby(plat_local_state_t cpu_state)
+static void a8k_cpu_standby(plat_local_state_t cpu_state)
 {
 	ERROR("%s: needs to be implemented\n", __func__);
 	panic();
@@ -374,7 +375,7 @@ void a8k_cpu_standby(plat_local_state_t cpu_state)
  * A8K handler called when a power domain is about to be turned on. The
  * mpidr determines the CPU to be turned on.
  ******************************************************************************/
-int a8k_pwr_domain_on(u_register_t mpidr)
+static int a8k_pwr_domain_on(u_register_t mpidr)
 {
 	/* Power up CPU (CPUs 1-3 are powered off at start of BLE) */
 	plat_marvell_cpu_powerup(mpidr);
@@ -410,7 +411,7 @@ int a8k_pwr_domain_on(u_register_t mpidr)
 /*******************************************************************************
  * A8K handler called to validate the entry point.
  ******************************************************************************/
-int a8k_validate_ns_entrypoint(uintptr_t entrypoint)
+static int a8k_validate_ns_entrypoint(uintptr_t entrypoint)
 {
 	return PSCI_E_SUCCESS;
 }
@@ -419,7 +420,7 @@ int a8k_validate_ns_entrypoint(uintptr_t entrypoint)
  * A8K handler called when a power domain is about to be turned off. The
  * target_state encodes the power state that each level should transition to.
  ******************************************************************************/
-void a8k_pwr_domain_off(const psci_power_state_t *target_state)
+static void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 {
 #ifdef SCP_IMAGE
 	unsigned int idx = plat_my_core_pos();
@@ -447,6 +448,12 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 #endif /* SCP_IMAGE */
 }
 
+/* Get PM config to power off the SoC */
+void *plat_get_pm_cfg(void)
+{
+	return NULL;
+}
+
 #ifndef SCP_IMAGE
 /*
  * This function should be called on restore from
@@ -458,13 +465,6 @@ void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 static void plat_exit_bootrom(void)
 {
 	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
-}
-#endif
-
-/* Get PM config to power off the SoC */
-void *plat_get_pm_cfg(void)
-{
-	return NULL;
 }
 
 /*
@@ -593,7 +593,7 @@ static inline void plat_marvell_power_off_trigger(void)
 }
 
 /* Trigger the power off of the system */
-void plat_marvell_system_power_off(void)
+static void plat_marvell_system_power_off(void)
 {
 	struct power_off_method *pm_cfg;
 
@@ -611,12 +611,13 @@ void plat_marvell_system_power_off(void)
 	/* Issue the power off */
 	plat_marvell_power_off_trigger();
 }
+#endif /* SCP_IMAGE */
 
 /*******************************************************************************
  * A8K handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
  ******************************************************************************/
-void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
+static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
 #ifdef SCP_IMAGE
 	unsigned int idx;
@@ -682,7 +683,7 @@ void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
  * being turned off earlier. The target_state encodes the low power state that
  * each level has woken up from.
  ******************************************************************************/
-void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
+static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	/* arch specific configuration */
 	psci_arch_init();
@@ -704,7 +705,7 @@ void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
  * TODO: At the moment we reuse the on finisher and reinitialize the secure
  * context. Need to implement a separate suspend finisher.
  ******************************************************************************/
-void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
+static void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 {
 #ifdef SCP_IMAGE
 	/* arch specific configuration */
@@ -747,7 +748,7 @@ void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
  * the appropriate State-ID field within the `power_state` parameter which can
  * be utilized in `pwr_domain_suspend()` to suspend to system affinity level.
  ******************************************************************************/
-void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
+static void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
 {
 	/* lower affinities use PLAT_MAX_OFF_STATE */
 	for (int i = MPIDR_AFFLVL0; i <= PLAT_MAX_PWR_LVL; i++)
