@@ -145,6 +145,11 @@ uintptr_t marvell_get_ccu_reg_offs(int ap_index)
 	return MVEBU_CCU_BASE;
 }
 
+uint32_t marvell_get_ccu_gcr_target(int ap)
+{
+	return DRAM_0_TID;
+}
+
 int marvell_get_ccu_max_win(void)
 {
 	return MARVELL_CCU_MAX_WIN;

@@ -169,6 +169,11 @@ int marvell_get_ccu_max_win(void)
 	return MARVELL_CCU_MAX_WIN;
 }
 
+uint32_t marvell_get_ccu_gcr_target(int ap)
+{
+	return DRAM_0_TID;
+}
+
 int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
 {
 	*win = ccu_memory_map;

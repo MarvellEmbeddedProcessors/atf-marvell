@@ -220,7 +220,7 @@ int init_ccu(int ap_index)
 	}
 
 	/* Set the default target ID to DRAM 0 */
-	win_reg = (DRAM_0_TID & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
+	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET, win_reg);
 
 	/* disable AP windows */

@@ -135,6 +135,7 @@ uintptr_t marvell_get_io_win_reg_offs(int);
 uintptr_t marvell_get_iob_reg_offs(int cp_index);
 int marvell_get_iob_max_win(void);
 uintptr_t marvell_get_ccu_reg_offs(int);
+uint32_t marvell_get_ccu_gcr_target(int);
 int marvell_get_ccu_max_win(void);
 
 
