@@ -35,6 +35,7 @@ PLAT_FAMILY_BASE	:= plat/marvell/$(PLAT_FAMILY)
 PLAT_INCLUDE_BASE	:= include/plat/marvell/$(PLAT_FAMILY)
 PLAT_COMMON_BASE	:= $(PLAT_FAMILY_BASE)/common
 MARVELL_DRV_BASE	:= drivers/marvell
+MARVELL_COMMON_BASE	:= plat/marvell/common
 
 CALL_DOIMAGE		:= y
 
@@ -62,8 +63,8 @@ PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a8k_common.c \
 BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 			$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
-BLE_SOURCES		:=	plat/marvell/common/sys_info.c		 	\
-				plat/marvell/a8k/common/plat_ble_setup.c 	\
+BLE_SOURCES		:=	$(MARVELL_COMMON_BASE)/sys_info.c		 	\
+				$(PLAT_COMMON_BASE)/plat_ble_setup.c 	\
 				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c	 	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		 	\
@@ -71,7 +72,7 @@ BLE_SOURCES		:=	plat/marvell/common/sys_info.c		 	\
 				$(BLE_PORTING_SOURCES)
 
 ifeq (${PCI_EP_SUPPORT}, 1)
-BLE_SOURCES		+=	plat/marvell/common/pci_ep_setup.c	 \
+BLE_SOURCES		+=	$(MARVELL_COMMON_BASE)/pci_ep_setup.c	 \
 				$(MARVELL_DRV_BASE)/dw-pcie-ep.c	 \
 				$(MARVELL_DRV_BASE)/pcie-comphy-cp110.c
 endif
@@ -101,7 +102,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S		       \
 				$(PLAT_COMMON_BASE)/aarch64/plat_arch_config.c \
 				$(PLAT_COMMON_BASE)/plat_pm.c		       \
 				$(PLAT_COMMON_BASE)/plat_bl31_setup.c	       \
-				plat/marvell/common/marvell_gicv2.c	       \
+				$(MARVELL_COMMON_BASE)/marvell_gicv2.c	       \
 				$(BL31_PORTING_SOURCES)			       \
 				$(MARVELL_DRV)				       \
 				$(MARVELL_MOCHI_DRV)			       \
@@ -119,5 +120,5 @@ ENABLE_PLAT_COMPAT	:= 	0
 
 # MSS (SCP) build
 ifneq (${SCP_BL2},)
-include plat/marvell/a8k/common/mss/mss_common.mk
+include $(PLAT_COMMON_BASE)/mss/mss_common.mk
 endif
