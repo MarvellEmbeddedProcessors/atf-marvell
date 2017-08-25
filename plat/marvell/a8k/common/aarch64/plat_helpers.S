@@ -40,9 +40,9 @@
 #define CCU_WIN_CR(x)		(MVEBU_CCU_BASE + (0x10 * x))
 #define	CCU_SRAM_WIN_CR		CCU_WIN_CR(1)
 
-#define	LLC_CR			(MVEBU_LLC_BASE + 0x100)
-#define LLC_TC0_LOCK		(MVEBU_LLC_BASE + 0x920)
-#define	LLC_MNT_IW		(MVEBU_LLC_BASE + 0x77c)
+#define	LLC_CR			(MVEBU_LLC_BASE(0) + 0x100)
+#define LLC_TC0_LOCK		(MVEBU_LLC_BASE(0) + 0x920)
+#define	LLC_MNT_IW		(MVEBU_LLC_BASE(0) + 0x77c)
 #define LLC_WAYS		8
 #define	LLC_WAY_MASK		((1 << LLC_WAYS) - 1)
 

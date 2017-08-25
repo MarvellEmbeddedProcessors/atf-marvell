@@ -130,8 +130,8 @@ void init_aurora2(void)
 	mmio_write_32(CCU_GSPMU_CR, reg);
 
 #if !LLC_DISABLE
-	/* Enable LLC in exclusive mode */
-	llc_enable(1);
+	/* Enable LLC for AP806 in exclusive mode */
+	llc_enable(0, 1);
 
 	/* Set point of coherency to DDR.
 	   This is required by units which have

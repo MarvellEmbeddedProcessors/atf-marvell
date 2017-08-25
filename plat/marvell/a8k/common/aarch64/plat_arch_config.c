@@ -64,7 +64,7 @@ void psci_arch_init(void)
 	 * as L2 is configured to UniqueClean eviction
 	 * (in a8k reset handler)
 	 */
-	if (llc_is_exclusive() == 0)
+	if (llc_is_exclusive(0) == 0)
 		ERROR("LLC should be configured to exclusice mode\n");
 #endif
 
