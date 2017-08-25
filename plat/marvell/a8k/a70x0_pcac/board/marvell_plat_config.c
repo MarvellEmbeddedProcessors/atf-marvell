@@ -78,6 +78,11 @@ uintptr_t marvell_get_io_win_reg_offs(int ap_index)
 	return MVEBU_IO_WIN_BASE;
 }
 
+uint32_t marvell_get_io_win_gcr_target(int ap_index)
+{
+	return PIDI_TID;
+}
+
 int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *size)
 {
 	*win = io_win_memory_map;
