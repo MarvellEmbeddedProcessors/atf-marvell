@@ -53,8 +53,8 @@
 
 #define MVEBU_PRIVATE_UID_REG		0x30
 #define MVEBU_RFU_GLOBL_SW_RST		0x84
-#define MVEBU_CCU_RVBAR(i)		(MVEBU_REGS_BASE + 0x640 + (i * 4))
-#define MVEBU_CCU_CPU_UN_RESET		(MVEBU_REGS_BASE + 0x650)
+#define MVEBU_CCU_RVBAR(cpu)		(MVEBU_REGS_BASE + 0x640 + (cpu * 4))
+#define MVEBU_CCU_CPU_UN_RESET(cpu)	(MVEBU_REGS_BASE + 0x650 + (cpu * 4))
 
 #define MPIDR_CPU_GET(mpidr)		((mpidr) & MPIDR_CPU_MASK)
 #define MPIDR_CLUSTER_GET(mpidr)	MPIDR_AFFLVL1_VAL((mpidr))
@@ -313,11 +313,10 @@ int plat_marvell_cpu_on(u_register_t mpidr)
 	mmio_write_32(MVEBU_REGS_BASE + MVEBU_PRIVATE_UID_REG, cluster + 0x4);
 
 	/* Set the cpu start address to BL1 entry point (align to 0x10000) */
-	mmio_write_32(MVEBU_CCU_RVBAR(0) + (cpu_id << 2),
-		      PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
+	mmio_write_32(MVEBU_CCU_RVBAR(cpu_id), PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
 
 	/* Get the cpu out of reset */
-	mmio_write_32(MVEBU_CCU_CPU_UN_RESET + (cpu_id << 2), 0x10001);
+	mmio_write_32(MVEBU_CCU_CPU_UN_RESET(cpu_id), 0x10001);
 
 	return 0;
 }
