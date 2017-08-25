@@ -168,8 +168,8 @@ int init_io_win(int ap_index)
 		return 0;
 	}
 
-	/* set the default target id to PIDI */
-	win_reg = PIDI_TID;
+	/* Get the default target id to set the GCR */
+	win_reg = marvell_get_io_win_gcr_target(ap_index);
 	mmio_write_32(IO_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all IO windows */
