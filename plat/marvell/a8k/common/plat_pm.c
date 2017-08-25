@@ -100,7 +100,6 @@ enum CPU_ID {
 	CPU3
 };
 
-#define CPUS_PER_CLUSTER		2
 #define REG_WR_VALIDATE_TIMEOUT		(2000)
 
 #define FEATURE_DISABLE_STATUS_REG			(MVEBU_REGS_BASE + 0x6F8230)
@@ -233,7 +232,7 @@ int plat_marvell_cpu_powerup(u_register_t mpidr)
 	int	exit_loop = REG_WR_VALIDATE_TIMEOUT;
 
 	/* calculate absolute CPU ID */
-	cpu_id = cluster * CPUS_PER_CLUSTER + cpu_id;
+	cpu_id = cluster * PLAT_MARVELL_CLUSTER_CORE_COUNT + cpu_id;
 
 	INFO("Powering on CPU%d\n", cpu_id);
 
