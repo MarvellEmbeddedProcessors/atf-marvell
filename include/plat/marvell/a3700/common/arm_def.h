@@ -77,6 +77,8 @@
 /* Special value used to verify platform parameters from BL2 to BL31 */
 #define MARVELL_BL31_PLAT_PARAM_VAL		0x0f1e2d3c4b5a6978ULL
 
+#define PLAT_MARVELL_NORTHB_COUNT	1
+
 #define PLAT_MARVELL_CLUSTER_COUNT	1
 
 #define MARVELL_CACHE_WRITEBACK_SHIFT	6

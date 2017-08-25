@@ -97,15 +97,20 @@ const unsigned char *plat_get_power_domain_tree_desc(void)
  ******************************************************************************/
 int marvell_check_mpidr(u_register_t mpidr)
 {
-	unsigned int cluster_id, cpu_id;
+	unsigned int nb_id, cluster_id, cpu_id;
 
 	mpidr &= MPIDR_AFFINITY_MASK;
 
-	if (mpidr & ~(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK))
+	if (mpidr & ~(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK | MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))
 		return -1;
 
-	cluster_id = (mpidr >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK;
-	cpu_id = (mpidr >> MPIDR_AFF0_SHIFT) & MPIDR_AFFLVL_MASK;
+	/* Get north bridge ID */
+	nb_id = MPIDR_AFFLVL3_VAL(mpidr);
+	cluster_id = MPIDR_AFFLVL1_VAL(mpidr);
+	cpu_id = MPIDR_AFFLVL0_VAL(mpidr);
+
+	if (nb_id >= PLAT_MARVELL_CLUSTER_COUNT)
+		return -1;
 
 	if (cluster_id >= PLAT_MARVELL_CLUSTER_COUNT)
 		return -1;
