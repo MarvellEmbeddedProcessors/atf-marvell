@@ -356,7 +356,136 @@ int comphy_pcie_power_up(uint32_t lane, struct pci_hw_cfg *hw)
 	data = 0x1 << HPIPE_G3_FFE_DEG_RES_LEVEL_OFFSET;
 	mask |= HPIPE_G3_FFE_LOAD_RES_LEVEL_MASK;
 	data |= 0x3 << HPIPE_G3_FFE_LOAD_RES_LEVEL_OFFSET;
+
+#ifdef OCP_COMPHY_TUNE
+	/* FFE-res tuning and cap select  */
+	mask |= HPIPE_G3_FFE_CAP_SEL_MASK;
+	data |= 0xf << HPIPE_G3_FFE_CAP_SEL_OFFSET;
+	mask |= HPIPE_G3_FFE_CAP_SEL_MASK;
+	data |= 0x4 << HPIPE_G3_FFE_RES_SEL_OFFSET;
+	mask |= HPIPE_G3_FFE_SETTING_FORCE_MASK;
+	data |= 0x1 << HPIPE_G3_FFE_SETTING_FORCE_OFFSET;
+#endif
 	reg_set(hpipe_addr + HPIPE_G3_SETTING_3_REG, data, mask);
+
+#ifdef OCP_COMPHY_TUNE
+	/* preset0,1 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET0_MASK;
+	data = 0x23 << HPIPE_CFG_CURSOR_PRESET0_OFFSET;
+	mask |= HPIPE_CFG_CURSOR_PRESET1_MASK;
+	data |= 0x28 << HPIPE_CFG_CURSOR_PRESET1_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG0_REG, data, mask);
+
+	/* preset2,3 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET2_MASK;
+	data = 0x26 << HPIPE_CFG_CURSOR_PRESET2_OFFSET;
+	mask |= HPIPE_CFG_CURSOR_PRESET3_MASK;
+	data |= 0x2a << HPIPE_CFG_CURSOR_PRESET3_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG1_REG, data, mask);
+
+	/* preset4,5 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET4_MASK;
+	data = 0x30 << HPIPE_CFG_CURSOR_PRESET4_OFFSET;
+	mask |= HPIPE_CFG_CURSOR_PRESET5_MASK;
+	data |= 0x2c << HPIPE_CFG_CURSOR_PRESET5_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG2_REG, data, mask);
+
+	/* preset6,7 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET6_MASK;
+	data = 0x2a << HPIPE_CFG_CURSOR_PRESET6_OFFSET;
+	mask |= HPIPE_CFG_CURSOR_PRESET7_MASK;
+	data |= 0x22 << HPIPE_CFG_CURSOR_PRESET7_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG3_REG, data, mask);
+
+	/* preset8,9 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET8_MASK;
+	data = 0x24 << HPIPE_CFG_CURSOR_PRESET8_OFFSET;
+	mask |= HPIPE_CFG_CURSOR_PRESET9_MASK;
+	data |= 0x28 << HPIPE_CFG_CURSOR_PRESET9_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG4_REG, data, mask);
+
+	/* preset10,11 main cursor fine Tune*/
+	mask = HPIPE_CFG_CURSOR_PRESET10_MASK;
+	data = 0x21 << HPIPE_CFG_CURSOR_PRESET10_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG5_REG, data, mask);
+
+	/* preset0 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET0_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET0_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET0_MASK;
+	data |= 0xd << HPIPE_CFG_POST_CURSOR_PRESET0_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG6_REG, data, mask);
+
+	/* preset1 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET1_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET1_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET1_MASK;
+	data |= 0x8 << HPIPE_CFG_POST_CURSOR_PRESET1_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG7_REG, data, mask);
+
+	/* preset2 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET2_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET2_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET2_MASK;
+	data |= 0xa << HPIPE_CFG_POST_CURSOR_PRESET2_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG8_REG, data, mask);
+
+	/* preset3 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET3_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET3_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET3_MASK;
+	data |= 0x6 << HPIPE_CFG_POST_CURSOR_PRESET3_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG9_REG, data, mask);
+
+	/* preset4 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET4_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET4_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET4_MASK;
+	data |= 0x0 << HPIPE_CFG_POST_CURSOR_PRESET4_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG10_REG, data, mask);
+
+	/* preset5 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET5_MASK;
+	data = 0x4 << HPIPE_CFG_PRE_CURSOR_PRESET5_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET5_MASK;
+	data |= 0x0 << HPIPE_CFG_POST_CURSOR_PRESET5_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG11_REG, data, mask);
+
+	/* preset6 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET6_MASK;
+	data = 0x6 << HPIPE_CFG_PRE_CURSOR_PRESET6_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET6_MASK;
+	data |= 0x0 << HPIPE_CFG_POST_CURSOR_PRESET6_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG12_REG, data, mask);
+
+	/* preset7 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET7_MASK;
+	data = 0x4 << HPIPE_CFG_PRE_CURSOR_PRESET7_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET7_MASK;
+	data |= 0xa << HPIPE_CFG_POST_CURSOR_PRESET7_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG13_REG, data, mask);
+
+	/* preset8 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET8_MASK;
+	data = 0x6 << HPIPE_CFG_PRE_CURSOR_PRESET8_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET8_MASK;
+	data |= 0x6 << HPIPE_CFG_POST_CURSOR_PRESET8_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG14_REG, data, mask);
+
+	/* preset9 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET9_MASK;
+	data = 0x8 << HPIPE_CFG_PRE_CURSOR_PRESET9_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET9_MASK;
+	data |= 0x0 << HPIPE_CFG_POST_CURSOR_PRESET9_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG15_REG, data, mask);
+
+	/* preset10 pre and post cursor fine Tune*/
+	mask = HPIPE_CFG_PRE_CURSOR_PRESET10_MASK;
+	data = 0x0 << HPIPE_CFG_PRE_CURSOR_PRESET10_OFFSET;
+	mask |= HPIPE_CFG_POST_CURSOR_PRESET10_MASK;
+	data |= 0xf << HPIPE_CFG_POST_CURSOR_PRESET10_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_PRESET_CFG16_REG, data, mask);
+#endif /* OCP_COMPHY_TUNE */
 
 	/* Pattern lock lost timeout disable */
 	mask = HPIPE_FRAME_DET_LOCK_LOST_TO_MASK;
@@ -420,8 +549,15 @@ int comphy_pcie_power_up(uint32_t lane, struct pci_hw_cfg *hw)
 		reg_set(hpipe_addr + HPIPE_LANE_EQU_CONFIG_0_REG, data, mask);
 	}
 
-	INFO("stage: Comphy power up\n");
+#ifdef OCP_COMPHY_TUNE
+	mask = HPIPE_CFG_EQ_FS_MASK;
+	data = 0x30 << HPIPE_CFG_EQ_FS_OFFSET;
+	mask |= HPIPE_CFG_EQ_LF_MASK;
+	data |= 0x10 << HPIPE_CFG_EQ_LF_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_EQU_CONFIG_0_REG, data, mask);
+#endif /* OCP_COMPHY_TUNE */
 
+	INFO("stage: Comphy power up\n");
 	/* for PCIe by4 or by2 - release from reset only after finish to configure all lanes */
 	if ((hw->lane_width == 1) || (lane == (hw->lane_width - 1))) {
 		uint32_t i, start_lane, end_lane;
