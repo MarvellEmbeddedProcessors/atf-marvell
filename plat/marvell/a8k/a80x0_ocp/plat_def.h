@@ -38,6 +38,7 @@
 #include <a8k_plat_def.h>
 
 #define CP_COUNT		2	/* A80x0 has both CP0 & CP1 */
+#define OCP_COMPHY_TUNE
 
 /* Force disable of LLC, regardless of LLC_DISABLE compilation flag
  * this is due to an issue observed while running iperf with
