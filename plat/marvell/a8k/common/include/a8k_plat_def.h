@@ -50,6 +50,8 @@
 #define MVEBU_CP_REGS_BASE(cp_index)	(0xF2000000 + (cp_index) * 0x2000000)
 #define MVEBU_RFU_BASE			(MVEBU_REGS_BASE + 0x6F0000)
 #define MVEBU_IO_WIN_BASE		(MVEBU_RFU_BASE)
+#define MVEBU_IO_WIN_GCR_OFFSET		(0x70)
+
 #define MVEBU_CCU_BASE			(MVEBU_REGS_BASE + 0x4000)
 #define MVEBU_LLC_BASE(ap_index)	(MVEBU_REGS_BASE + 0x8000)
 #define MVEBU_IOB_BASE(cp_index)	(MVEBU_CP_REGS_BASE(cp_index) + \
