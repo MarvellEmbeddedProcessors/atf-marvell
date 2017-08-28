@@ -55,7 +55,6 @@
 #define IO_WIN_ALR_OFFSET(win)		(io_win_base + 0x0 + (0x10 * win))
 #define IO_WIN_AHR_OFFSET(win)		(io_win_base + 0x8 + (0x10 * win))
 #define IO_WIN_CR_OFFSET(win)		(io_win_base + 0xC + (0x10 * win))
-#define IO_WIN_GCR_OFFSET		(io_win_base + 0x70)
 
 uintptr_t io_win_base;
 
@@ -170,7 +169,7 @@ int init_io_win(int ap_index)
 
 	/* Get the default target id to set the GCR */
 	win_reg = marvell_get_io_win_gcr_target(ap_index);
-	mmio_write_32(IO_WIN_GCR_OFFSET, win_reg);
+	mmio_write_32(io_win_base + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all IO windows */
 	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++) {
