@@ -195,8 +195,8 @@ struct power_off_method pm_cfg = {
 	.type = PMIC_GPIO,
 	.cfg.gpio.pin_count = 1,
 	.cfg.gpio.info = {{0, 35} },
-	.cfg.gpio.step_count = 5,
-	.cfg.gpio.seq = {1, 0, 1, 0, 1},
+	.cfg.gpio.step_count = 7,
+	.cfg.gpio.seq = {1, 0, 1, 0, 1, 0, 1},
 	.cfg.gpio.delay_ms = 10,
 };
 
