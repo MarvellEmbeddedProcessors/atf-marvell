@@ -101,7 +101,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 
 struct iob_win iob_memory_map[] = {
 	/* PEX0_X4 window */
-	{0x0,	0xf6000000,	0x0,	0x4000000,	PEX0_TID},
+	{0x0,	0xf6000000,	0x0,	0x6000000,	PEX0_TID},
 };
 
 uintptr_t marvell_get_iob_reg_offs(int cp_index)
