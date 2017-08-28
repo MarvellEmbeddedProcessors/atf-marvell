@@ -178,22 +178,6 @@ void ccu_enable_win(struct ccu_win *win, uint32_t win_id)
 	mmio_write_32(CCU_WIN_CR_OFFSET(win_id), ccu_win_reg);
 }
 
-static int skip_ccu_window(uint32_t win_reg)
-{
-	uint8_t target_id;
-
-	/* avoid overriding internal register and SRAM windows
-	   At SPL stage BootROM open the SRAM window and close it
-	   at the end of the SPL stage */
-	if (win_reg & WIN_ENABLE_BIT) {
-		target_id = (win_reg >> CCU_TARGET_ID_OFFSET) & CCU_TARGET_ID_MASK;
-		if (((target_id) == SRAM_TID) || ((target_id) == CFG_REG_TID))
-			return 1;
-	}
-
-	return 0;
-}
-
 int init_ccu(int ap_index)
 {
 	struct ccu_win *win;
@@ -223,11 +207,9 @@ int init_ccu(int ap_index)
 	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET, win_reg);
 
-	/* disable AP windows */
-	for (win_id = 0; win_id < ccu_info->max_win; win_id++) {
+	/* disable all AP windows, start from 1 to avoid overriding internal registers */
+	for (win_id = 1; win_id < ccu_info->max_win; win_id++) {
 		win_reg = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
-		if (skip_ccu_window(win_reg))
-				continue;
 
 		win_reg &= ~WIN_ENABLE_BIT;
 		mmio_write_32(CCU_WIN_CR_OFFSET(win_id), win_reg);
@@ -237,15 +219,10 @@ int init_ccu(int ap_index)
 		mmio_write_32(CCU_WIN_SCR_OFFSET(win_id), win_reg);
 	}
 
-	for (win_id = 0, array_id = 0;
+	/* win_id is the index of the current ccu window
+	** array_id is the index of the current memory map window entry */
+	for (win_id = 1, array_id = 0;
 		  ((win_id < ccu_info->max_win) && (array_id < win_count)); win_id++) {
-		/* win_id is the index of the current ccu window
-			array_id is the index of the current FDT window entry */
-
-		win_reg = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
-		if (skip_ccu_window(win_reg))
-				continue;
-
 		ccu_win_check(win, win_id);
 		ccu_enable_win(win, win_id);
 
