@@ -40,6 +40,8 @@
 #define MVEBU_IO_WIN_GCR_OFFSET			(0xF0)
 
 #define MVEBU_AP_MPP_REGS(ap, n)		(MVEBU_AR_RFU_BASE(ap) + 0x4000 + ((n) << 2))
+#define MVEBU_AP_MISC_SOC_BASE(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4300)
+#define MVEBU_AP_AXI_ATTR_REGS(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4580)
 #define MVEBU_AP_GPIO_REGS(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x5040)
 #define MVEBU_AP_GPIO_DATA_IN(ap)		(MVEBU_AP_GPIO_REGS(ap) + 0x10)
 
@@ -88,6 +90,8 @@
 /*******************************************************************************
  * AXI Configuration
  ******************************************************************************/
+#define MVEBU_AP_AXI_ATTR_REG(ap, index)	(MVEBU_AP_AXI_ATTR_REGS(ap) + 0x4 * index)
+
 #define MVEBU_AXI_ATTR_ARCACHE_OFFSET		4
 #define MVEBU_AXI_ATTR_ARCACHE_MASK		(0xF << \
 						 MVEBU_AXI_ATTR_ARCACHE_OFFSET)
