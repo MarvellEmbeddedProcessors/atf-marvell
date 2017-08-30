@@ -44,12 +44,10 @@
 #include <marvell_pm.h>
 #include <plat_config.h>
 
-#ifdef SCP_IMAGE
 #include <bakery_lock.h>
 #include <platform.h>
 #include <mss_pm_ipc.h>
 #include <plat_pm_trace.h>
-#endif
 
 #define MVEBU_PRIVATE_UID_REG		0x30
 #define MVEBU_RFU_GLOBL_SW_RST		0x84
@@ -84,10 +82,8 @@
 #define MVEBU_MC_PHY_AUTO_OFF_MASK	(1 << MVEBU_MC_PHY_AUTO_OFF_OFFSET)
 #define MVEBU_MC_PHY_AUTO_OFF_EN	(1 << MVEBU_MC_PHY_AUTO_OFF_OFFSET)
 
-#ifdef SCP_IMAGE
 /* this lock synchronize AP multiple cores execution with MSS */
 DEFINE_BAKERY_LOCK(pm_sys_lock);
-#endif
 
 /* Weak definitions may be overridden in specific board */
 #pragma weak plat_get_pm_cfg
@@ -294,7 +290,6 @@ cpu_poweron_error:
 	return -1;
 }
 
-#ifndef SCP_IMAGE
 static int plat_marvell_cpu_on(u_register_t mpidr)
 {
 	int cpu_id;
@@ -320,7 +315,6 @@ static int plat_marvell_cpu_on(u_register_t mpidr)
 
 	return 0;
 }
-#endif /* SCP_IMAGE */
 
 /*******************************************************************************
  * A8K handler called to check the validity of the power state
@@ -380,30 +374,30 @@ static int a8k_pwr_domain_on(u_register_t mpidr)
 	/* Power up CPU (CPUs 1-3 are powered off at start of BLE) */
 	plat_marvell_cpu_powerup(mpidr);
 
-#ifdef SCP_IMAGE
-	unsigned int target = ((mpidr & 0xFF) + (((mpidr >> 8) & 0xFF) * 2));
+	if (is_pm_fw_running()) {
+		unsigned int target = ((mpidr & 0xFF) + (((mpidr >> 8) & 0xFF) * 2));
 
-	/*
-	 * pm system synchronization - used to synchronize
-	 * multiple core access to MSS
-	 */
-	bakery_lock_get(&pm_sys_lock);
+		/*
+		 * pm system synchronization - used to synchronize
+		 * multiple core access to MSS
+		 */
+		bakery_lock_get(&pm_sys_lock);
 
-	/* send CPU ON IPC Message to MSS */
-	mss_pm_ipc_msg_send(target, PM_IPC_MSG_CPU_ON, 0);
+		/* send CPU ON IPC Message to MSS */
+		mss_pm_ipc_msg_send(target, PM_IPC_MSG_CPU_ON, 0);
 
-	/* trigger IPC message to MSS */
-	mss_pm_ipc_msg_trigger();
+		/* trigger IPC message to MSS */
+		mss_pm_ipc_msg_trigger();
 
-	/* pm system synchronization */
-	bakery_lock_release(&pm_sys_lock);
+		/* pm system synchronization */
+		bakery_lock_release(&pm_sys_lock);
 
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_ON | target);
-#else
-	/* proprietary CPU ON exection flow */
-	plat_marvell_cpu_on(mpidr);
-#endif /* SCP_IMAGE */
+		/* trace message */
+		PM_TRACE(TRACE_PWR_DOMAIN_ON | target);
+	} else {
+		/* proprietary CPU ON exection flow */
+		plat_marvell_cpu_on(mpidr);
+	}
 
 	return 0;
 }
@@ -422,30 +416,32 @@ static int a8k_validate_ns_entrypoint(uintptr_t entrypoint)
  ******************************************************************************/
 static void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 {
-#ifdef SCP_IMAGE
-	unsigned int idx = plat_my_core_pos();
+	if (is_pm_fw_running()) {
+		unsigned int idx = plat_my_core_pos();
 
-	/* Prevent interrupts from spuriously waking up this cpu */
-	gicv2_cpuif_disable();
+		/* Prevent interrupts from spuriously waking up this cpu */
+		gicv2_cpuif_disable();
 
-	/* pm system synchronization - used to synchronize multiple core access to MSS */
-	bakery_lock_get(&pm_sys_lock);
+		/* pm system synchronization - used to synchronize multiple
+		 * core access to MSS
+		 */
+		bakery_lock_get(&pm_sys_lock);
 
-	/* send CPU OFF IPC Message to MSS */
-	mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_OFF, target_state);
+		/* send CPU OFF IPC Message to MSS */
+		mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_OFF, target_state);
 
-	/* trigger IPC message to MSS */
-	mss_pm_ipc_msg_trigger();
+		/* trigger IPC message to MSS */
+		mss_pm_ipc_msg_trigger();
 
-	/* pm system synchronization */
-	bakery_lock_release(&pm_sys_lock);
+		/* pm system synchronization */
+		bakery_lock_release(&pm_sys_lock);
 
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_OFF);
-#else
-	INFO("%s: is not supported without SCP\n", __func__);
-	return;
-#endif /* SCP_IMAGE */
+		/* trace message */
+		PM_TRACE(TRACE_PWR_DOMAIN_OFF);
+	} else {
+		INFO("%s: is not supported without SCP\n", __func__);
+		return;
+	}
 }
 
 /* Get PM config to power off the SoC */
@@ -454,7 +450,6 @@ void *plat_get_pm_cfg(void)
 	return NULL;
 }
 
-#ifndef SCP_IMAGE
 /*
  * This function should be called on restore from
  * "suspend to RAM" state when the execution flow
@@ -611,7 +606,6 @@ static void plat_marvell_system_power_off(void)
 	/* Issue the power off */
 	plat_marvell_power_off_trigger();
 }
-#endif /* SCP_IMAGE */
 
 /*******************************************************************************
  * A8K handler called when a power domain is about to be suspended. The
@@ -619,63 +613,65 @@ static void plat_marvell_system_power_off(void)
  ******************************************************************************/
 static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
-#ifdef SCP_IMAGE
-	unsigned int idx;
+	if (is_pm_fw_running()) {
+		unsigned int idx;
 
-	/* Prevent interrupts from spuriously waking up this cpu */
-	gicv2_cpuif_disable();
+		/* Prevent interrupts from spuriously waking up this cpu */
+		gicv2_cpuif_disable();
 
-	idx = plat_my_core_pos();
+		idx = plat_my_core_pos();
 
-	/* pm system synchronization -used to synchronize multiple core access to MSS */
-	bakery_lock_get(&pm_sys_lock);
+		/* pm system synchronization - used to synchronize multiple
+		 * core access to MSS
+		 */
+		bakery_lock_get(&pm_sys_lock);
 
-	/* send CPU Suspend IPC Message to MSS */
-	mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_SUSPEND, target_state);
+		/* send CPU Suspend IPC Message to MSS */
+		mss_pm_ipc_msg_send(idx, PM_IPC_MSG_CPU_SUSPEND, target_state);
 
-	/* trigger IPC message to MSS */
-	mss_pm_ipc_msg_trigger();
+		/* trigger IPC message to MSS */
+		mss_pm_ipc_msg_trigger();
 
-	/* pm system synchronization */
-	bakery_lock_release(&pm_sys_lock);
+		/* pm system synchronization */
+		bakery_lock_release(&pm_sys_lock);
 
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND);
-#else
-	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+		/* trace message */
+		PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND);
+	} else {
+		uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
 
-	INFO("Suspending to RAM\n");
+		INFO("Suspending to RAM\n");
 
-	/* Prevent interrupts from spuriously waking up this cpu */
-	gicv2_cpuif_disable();
+		/* Prevent interrupts from spuriously waking up this cpu */
+		gicv2_cpuif_disable();
 
-	mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
-	mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
+		mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
+		mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
 
 #if PLAT_MARVELL_SHARED_RAM_CACHED
-	flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
-			   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
-			   2 * sizeof(uintptr_t));
+		flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+		    MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+		    2 * sizeof(uintptr_t));
 #endif
 
-	/* Flush and disable LLC before going off-power */
-	llc_disable(0);
+		/* Flush and disable LLC before going off-power */
+		llc_disable(0);
 
-	/*
-	 * Power off whole system, it should be guaranteed that CPU has enough time to finish
-	 * remained tasks before the power off takes effect.
-	 */
-	plat_marvell_system_power_off();
+		/*
+		 * Power off whole system, it should be guaranteed that CPU has
+		 * enough time to finish remained tasks before the power off
+		 * takes effect.
+		 */
+		plat_marvell_system_power_off();
 
-	isb();
-	/*
-	 * Do not halt here!
-	 * The function must return for allowing the caller function
-	 * psci_power_up_finish() to do the proper context saving and
-	 * to release the CPU lock.
-	*/
-
-#endif /* SCP_IMAGE */
+		isb();
+		/*
+		 * Do not halt here!
+		 * The function must return for allowing the caller function
+		 * psci_power_up_finish() to do the proper context saving and
+		 * to release the CPU lock.
+		 */
+	}
 }
 
 /*******************************************************************************
@@ -692,10 +688,10 @@ static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	gicv2_pcpu_distif_init();
 	gicv2_cpuif_enable();
 
-#ifdef SCP_IMAGE
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_ON_FINISH);
-#endif /* SCP_IMAGE */
+	if (is_pm_fw_running()) {
+		/* trace message */
+		PM_TRACE(TRACE_PWR_DOMAIN_ON_FINISH);
+	}
 }
 
 /*******************************************************************************
@@ -707,39 +703,39 @@ static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
  ******************************************************************************/
 static void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 {
-#ifdef SCP_IMAGE
-	/* arch specific configuration */
-	psci_arch_init(0);
+	if (is_pm_fw_running()) {
+		/* arch specific configuration */
+		psci_arch_init(0);
 
-	/* Interrupt initialization */
-	gicv2_cpuif_enable();
+		/* Interrupt initialization */
+		gicv2_cpuif_enable();
 
-	/* trace message */
-	PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH);
-#else
-	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+		/* trace message */
+		PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH);
+	} else {
+		uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
 
-	/* Only primary CPU requres platform init */
-	if (!plat_my_core_pos()) {
-		/* Initialize the console to provide early debug support */
-		console_init(PLAT_MARVELL_BOOT_UART_BASE,
-			     PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
-			     MARVELL_CONSOLE_BAUDRATE);
-		bl31_plat_arch_setup();
-		marvell_bl31_platform_setup();
-		/*
-		 * Remove suspend to RAM marker from the mailbox
-		 * for treating a regular reset as a cold boot
-		 */
-		mailbox[MBOX_IDX_SUSPEND_MAGIC] = 0;
-		mailbox[MBOX_IDX_ROM_EXIT_ADDR] = 0;
+		/* Only primary CPU requres platform init */
+		if (!plat_my_core_pos()) {
+			/* Initialize the console to provide early debug support */
+			console_init(PLAT_MARVELL_BOOT_UART_BASE,
+			    PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
+			    MARVELL_CONSOLE_BAUDRATE);
+			bl31_plat_arch_setup();
+			marvell_bl31_platform_setup();
+			/*
+			 * Remove suspend to RAM marker from the mailbox
+			 * for treating a regular reset as a cold boot
+			 */
+			mailbox[MBOX_IDX_SUSPEND_MAGIC] = 0;
+			mailbox[MBOX_IDX_ROM_EXIT_ADDR] = 0;
 #if PLAT_MARVELL_SHARED_RAM_CACHED
-		flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
-				   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
-				   2 * sizeof(uintptr_t));
+			flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+			    MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+			    2 * sizeof(uintptr_t));
 #endif
+		}
 	}
-#endif /* SCP_IMAGE */
 }
 
 /*******************************************************************************

@@ -96,7 +96,7 @@ struct pm_trace_ctrl {
 
 #define TRACE_PWR_DOMAIN_ON_MASK	(0xFF)
 
-#if defined(SCP_IMAGE) && defined(PM_TRACE_ENABLE)
+#ifdef PM_TRACE_ENABLE
 
 /* trace API definition */
 void pm_core_0_trace(unsigned int trace);
