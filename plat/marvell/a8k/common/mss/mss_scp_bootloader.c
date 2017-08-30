@@ -215,10 +215,8 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size)
 
 	/* check that the image was loaded successfully */
 	ret = mss_check_image_ready(mss_pm_crtl);
-	if (ret != 0) {
-		ERROR("SCP Image check failed\n");
-		return -1;
-	}
+	if (ret != 0)
+		NOTICE("SCP Image doesn't contain PM firmware\n");
 
 	return 0;
 }

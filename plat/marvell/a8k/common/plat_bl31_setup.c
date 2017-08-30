@@ -42,10 +42,10 @@
 #include <mci.h>
 #include <debug.h>
 
-#ifdef SCP_IMAGE
 #include <mss_ipc_drv.h>
 #include <mss_mem.h>
-#endif
+
+static _Bool pm_fw_running;
 
 /* Set a weak stub for platforms that don't need to configure GPIO */
 #pragma weak marvell_gpio_config
@@ -69,17 +69,27 @@ void marvell_bl31_mpp_init(void)
 
 void marvell_bl31_mss_init(void)
 {
-#ifdef SCP_IMAGE
 	struct mss_pm_ctrl_block *mss_pm_crtl =
 			(struct mss_pm_ctrl_block *)MSS_SRAM_PM_CONTROL_BASE;
+
+	/* Check that the image was loaded successfully */
+	if (mss_pm_crtl->handshake != HOST_ACKNOWLEDGEMENT) {
+		NOTICE("MSS PM is not supported in this build\n");
+		return;
+	}
+
+	/* If we got here it means that the PM firmware is running */
+	pm_fw_running = 1;
 
 	INFO("MSS IPC init\n");
 
 	if (mss_pm_crtl->ipc_state == IPC_INITIALIZED)
 		mv_pm_ipc_init(mss_pm_crtl->ipc_base_address | MVEBU_REGS_BASE);
-#else
-	INFO("MSS is not supported in this build\n");
-#endif
+}
+
+_Bool is_pm_fw_running(void)
+{
+	return pm_fw_running;
 }
 
 /* This function overruns the same function in marvell_bl31_setup.c */
