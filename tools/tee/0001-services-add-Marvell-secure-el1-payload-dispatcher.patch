@@ -1,4 +1,4 @@
-From ec6b55e5ba7ea417c3c518f9a79e03c43c3b82a7 Mon Sep 17 00:00:00 2001
+From 28edc5075a676b2e085260966b903cba0990acfe Mon Sep 17 00:00:00 2001
 From: Kevin Peng <kevinp@marvell.com>
 Date: Wed, 8 Mar 2017 13:42:43 +0800
 Subject: [PATCH] services: add Marvell secure-el1 payload dispatcher
@@ -16,14 +16,14 @@ make DEBUG=0 USE_COHERENT_MEN=0 LOG_LEVEL=30 PLAT=a80x0 all fip SPD=marvell_spd
 Change-Id: Icf973e820a474d0bf723bfd81769447df0041293
 Signed-off-by: Kevin Peng <kevinp@marvell.com>
 ---
- docs/marvell/build.txt                         |   8 +
+ docs/marvell/build.txt                         |  12 ++
  include/bl32/payloads/marvell_spd.h            |  45 +++++
  services/spd/marvell_spd/marvell_spd.mk        |  41 ++++
  services/spd/marvell_spd/marvell_spd_common.c  | 143 ++++++++++++++
  services/spd/marvell_spd/marvell_spd_helpers.S |  95 +++++++++
  services/spd/marvell_spd/marvell_spd_main.c    | 259 +++++++++++++++++++++++++
  services/spd/marvell_spd/marvell_spd_private.h | 106 ++++++++++
- 7 files changed, 697 insertions(+)
+ 7 files changed, 701 insertions(+)
  create mode 100644 include/bl32/payloads/marvell_spd.h
  create mode 100644 services/spd/marvell_spd/marvell_spd.mk
  create mode 100644 services/spd/marvell_spd/marvell_spd_common.c
@@ -32,29 +32,33 @@ Signed-off-by: Kevin Peng <kevinp@marvell.com>
  create mode 100644 services/spd/marvell_spd/marvell_spd_private.h
 
 diff --git a/docs/marvell/build.txt b/docs/marvell/build.txt
-index 86e813d..ddabb3d 100644
+index c9e635c..c356e6b 100644
 --- a/docs/marvell/build.txt
 +++ b/docs/marvell/build.txt
-@@ -86,11 +86,19 @@ Build Instructions
+@@ -99,11 +99,23 @@ Build Instructions
  	- WTP: For Armada37x0 only, use this parameter to point to wtptools source code directory, which
  		could be found as a3700_utils.zip in the release.
  		Usage example: WTP=/path/to/a3700_utils
++		
 +	- SPD: To add secure-EL1 payload and the coresponding dispatcher
 +		marvell_spd - the SPD for Marvell TEE
++		
 +		Usage example:
-+			# export BL32=path/to/marvell_tee/tee_tw.bin
-+			SPD=marvell_spd
-
- 	For example: in order to build the image in debug mode with log level up to 'notice' level run:
-
- 		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
-
++		
++			> export BL32=path/to/marvell_tee/tee_tw.bin
++			> make ... ... ... SPD=marvell_spd
+ 
+ 	For example, in order to build the image in debug mode with log level up to 'notice' level run::
+ 
+ 		> make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
+ 
 +	if you want to build the image with Marvell TEE integrated:
-+		# make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip SPD=marvell_spd
++	
++		> make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip SPD=marvell_spd
 +
  	And if we want to build a Armada37x0 image in debug mode with log level up to 'notice' level,
  	the image has the preset CPU at 1000 MHz, preset DDR3 at 800 MHz, the DDR topology of DDR3 2CS,
-         the image boot from SPI NOR flash partition 0, and the image is non trusted in WTP, the command
+ 	the image boot from SPI NOR flash partition 0, and the image is non trusted in WTP, the command
 diff --git a/include/bl32/payloads/marvell_spd.h b/include/bl32/payloads/marvell_spd.h
 new file mode 100644
 index 0000000..b940ed8
@@ -780,6 +784,6 @@ index 0000000..a56be14
 +#endif /*__ASSEMBLY__*/
 +
 +#endif /* __MARVELL_SPD_PRIVATE_H__ */
---
+-- 
 2.7.4
 
