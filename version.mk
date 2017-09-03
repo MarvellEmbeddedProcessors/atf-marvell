@@ -1,1 +1,1 @@
-SUBVERSION = devel-17.08.1
+SUBVERSION = armada-17.10.0
