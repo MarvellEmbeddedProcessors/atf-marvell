@@ -20,13 +20,13 @@ Armada-70x0/Armada-80x0 Porting
 -------------------------------
 
   - SoC Physical Address Map (marvell_plat_config.c):
-	- This file describes the SoC physical memory mapping to be used for the CCU, RFU, AXI-MBUS and IOB
+	- This file describes the SoC physical memory mapping to be used for the CCU, IOWIN, AXI-MBUS and IOB
 	  address decode units (Refer to the functional spec for more details).
 	- In most cases, using the default address decode windows should work OK.
 	- In cases where a special physical address map is needed (e.g. Special size for PCIe MEM windows,
 	  large memory mapped SPI flash...), then porting of the SoC memory map is required.
-	- Note: For a detailed information on how CCU, RFU, AXI-MBUS & IOB work, please refer to the SoC functional spec,
-	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/rfu].txt" files.
+	- Note: For a detailed information on how CCU, IOWIN, AXI-MBUS & IOB work, please refer to the SoC functional spec,
+	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/io-win].txt" files.
 
   - bootloader recovery (marvell_plat_config.c):
 	- Background:
@@ -61,7 +61,7 @@ Armada-70x0/Armada-80x0 Porting
 	- The BLE and consequently, the DDR init code is executed at the early stage of the boot process.
 	- Each supported platform of the ATF has its own DDR porting file called dram_port.c located at
 	  ``atf/plat/marvell/a8k/<platform>/board`` directory.
-	- Please refer to 'mv_ddr/doc/porting_guide.txt' for detailed porting description.
+	- Please refer to '<path_to_mv_ddr_sources>/doc/porting_guide.txt' for detailed porting description.
 	- The build target directory is "build/<platform>/release/ble".
 
 
