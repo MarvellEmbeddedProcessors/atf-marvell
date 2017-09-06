@@ -28,7 +28,7 @@ Armada-70x0/Armada-80x0 Porting
 	- Note: For a detailed information on how CCU, RFU, AXI-MBUS & IOB work, please refer to the SoC functional spec,
 	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/rfu].txt" files.
 
-  - booloader recovery (marvell_plat_config.c):
+  - bootloader recovery (marvell_plat_config.c):
 	- Background:
 		bootrom can skip the current image and choose to boot from next position if a specific value
 		(0xDEADB002) is returned by the ble main function. This feature is used for bootloader recovery
@@ -41,6 +41,7 @@ Armada-70x0/Armada-80x0 Porting
 
 	- Porting:
 		Under marvell_plat_config.c, implement struct skip_image that includes specific board parameters.
+		.. warning:: to disable this feature make sure the struct skip_image is not implemented.
 
 	- Example:
 		In A7040-DB specific implementation (marvell/plat/a8k/a70x0/board/marvell_plat_config.c),
