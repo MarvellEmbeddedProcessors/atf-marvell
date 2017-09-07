@@ -328,7 +328,9 @@ static int split_and_load_bl2_image(void *image)
 
 int scp_bootloader_transfer(void *image, unsigned int image_size)
 {
+#ifdef SCP_BL2_BASE
 	assert((uintptr_t) image == SCP_BL2_BASE);
+#endif
 
 	VERBOSE("Concatenated img size %d\n", image_size);
 
