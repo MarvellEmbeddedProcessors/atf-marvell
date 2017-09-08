@@ -73,5 +73,6 @@
 /* UART Control Register bits */
 #define UART_CTRL_RXFIFO_RESET	(1 << 14)
 #define UART_CTRL_TXFIFO_RESET	(1 << 15)
+#define UARTLSR_TXFIFOEMPTY	(1 << 6)
 
 #endif	/* __A3700_CONSOLE_H__ */

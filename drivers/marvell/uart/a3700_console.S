@@ -72,6 +72,31 @@ func console_core_init
 	mov	w3, #0
 	str	w3, [x0, #UART_POSSR_REG]
 
+	/*
+	 * Wait for the TX FIFO to be empty. If wait for 20ms, the TX FIFO is
+	 * still not empty, TX FIFO will reset by all means.
+	 */
+	mov	w1, #20				/* max time out 20ms */
+2:
+	/* Check whether TX FIFO is empty */
+	ldr	w3, [x0, #UART_STATUS_REG]
+	and	w3, w3, #UARTLSR_TXFIFOEMPTY
+	cmp	w3, #0
+	b.ne	4f
+
+	/* Delay */
+	mov	w2, #30000
+3:
+	sub     w2, w2, #1
+	cmp	w2, #0
+	b.ne	3b
+
+	/* Check whether 10ms is waited */
+	sub     w1, w1, #1
+	cmp	w1, #0
+	b.ne	2b
+
+4:
 	/* Reset FIFO */
 	mov	w3, #UART_CTRL_RXFIFO_RESET
 	orr	w3, w3, #UART_CTRL_TXFIFO_RESET
