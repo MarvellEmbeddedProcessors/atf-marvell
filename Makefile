@@ -450,7 +450,7 @@ endif
 ifeq ($(PLAT),a3700)
 #*********** A3700 *************
 DOIMAGEPATH	:= $(WTP)
-DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp/linux/TBB_linux
+DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp/linux/tbb_linux
 
 ifeq ($(MARVELL_SECURE_BOOT),1)
 DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-tim.txt
