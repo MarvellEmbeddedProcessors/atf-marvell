@@ -62,7 +62,9 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size)
 
 struct addr_map_win io_win_memory_map[] = {
 	/* SB (MCi0) internal regs */
-	{0x00000000f9000000,		0x1000000,	MCI_0_TID},
+	{0x00000000f9000000,		0x800000,	MCI_0_TID},
+	/* SB (MCi1) internal regs */
+	{0x00000000f9800000,		0x800000,	MCI_1_TID},
 	/* MCI 0 indirect window */
 	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,	MCI_0_TID},
 	/* MCI 1 indirect window */
