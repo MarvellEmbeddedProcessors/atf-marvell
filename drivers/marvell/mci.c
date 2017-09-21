@@ -482,6 +482,48 @@ int mci_enable_simultaneous_transactions(int mci_index)
 	return ret;
 }
 
+/* Check if MCI simultaneous transaction was already enabled.
+ * Currently bootrom does this mci configuration only when the boot source is
+ * SAR_MCIX4, in other cases it should be done at this stage.
+ * It is worth noticing that in case of booting from uart, the bootrom
+ * flow is different and this mci initialization is skipped even if boot
+ * source is SAR_MCIX4. Therefore new verification bases on appropriate mci's
+ * register content: if the appropriate reg contains 0x0 it means that the
+ * bootrom didn't perform required mci configuration.
+ *
+ * Returns:
+ * 0 - configuration already done
+ * 1 - configuration missing
+ */
+static _Bool mci_simulatenous_trans_missing(int mci_index)
+{
+	uint32_t reg, ret;
+
+	/* read 'Window 0 Destination ID assignment' from HB register 0x3
+	 * (TX_CFG_W0_DST_ID) to check whether ID assignment was already
+	  * performed by BootROM.
+	 */
+	mci_mmio_write_32(MCI_ACCESS_CMD_REG(0),
+			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_HB_CTRL_WIN0_DESTINATION_REG_NUM) |
+			  MCI_INDIRECT_CTRL_HOPID(GID_AXI_HB) |
+			  MCI_INDIRECT_CTRL_LOCAL_PKT |
+			  MCI_INDIRECT_CTRL_READ_CMD);
+	ret = mci_poll_command_completion(mci_index, MCI_CMD_READ);
+
+	reg = mci_mmio_read_32(MCI_WRITE_READ_DATA_REG(mci_index));
+
+	if (ret)
+		ERROR("Failed to verify if MCI simultaneous read/write was enabled\n");
+
+	/* default ID assignment is 0, so if register doesn't contain zeros
+	 * it means that bootrom already performed required configuration.
+	 */
+	if (reg != 0)
+		return 0;
+
+	return 1;
+}
+
 /* For A1 revision, configure the MCI link for performance improvement:
  * - set MCI to support read/write transactions to arrive at the same time
  * - Switch AXI to PCIe mode
@@ -497,18 +539,18 @@ int mci_configure_a1(int mci_index)
 {
 	int rval;
 
-	/* When boot source is from MCI, then bootROM is already enabling MCI
-	 * simultaneous transactions (ID assignment), so in that case we must avoid
-	 * enabling it for the 2nd time.
+	/* According to design guidelines the MCI simultaneous transaction
+	 * shouldn't be enabled more then once - therefore make sure that it
+	 * wasn't already enabled in bootrom.
 	 */
-	if (apn806_sar_get_bootsrc() != SAR_MCIX4) {
-		VERBOSE("MCI is not used for boot source: configuring MCI ID assignment\n");
+	if (mci_simulatenous_trans_missing(mci_index)) {
+		VERBOSE("Enabling MCI simultaneous transaction\n");
 		/* set MCI to support read/write transactions to arrive at the same time */
 		rval = mci_enable_simultaneous_transactions(mci_index);
 		if (rval)
 			ERROR("Failed to set MCI for simultaneous read/write transactions\n");
 	} else
-		VERBOSE("MCI is used for boot source: skipping MCI ID assignment\n");
+		VERBOSE("Skipping MCI ID assignment - already done by bootrom\n");
 
 	/* Configure MCI for more consistent behavior with AXI protocol */
 	rval = mci_axi_set_pcie_mode(mci_index);
