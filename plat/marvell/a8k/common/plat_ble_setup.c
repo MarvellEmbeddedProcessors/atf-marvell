@@ -84,9 +84,8 @@
 #define SAR_PIDI_LOW_SPEED_SET		(1 << SAR_PIDI_LOW_SPEED_SHIFT)
 
 #define FREQ_MODE_AP_SAR_REG_NUM	(0)
-#define SAR_CLOCK_FREQ_MODE(v)		(((v) & SAR_CLOCK_FREQ_MODE_MASK) | \
-					(((v) & SAR_PIDI_LOW_SPEED_MASK) >> \
-					SAR_PIDI_LOW_SPEED_SHIFT))
+#define SAR_CLOCK_FREQ_MODE(v)		(((v) & SAR_CLOCK_FREQ_MODE_MASK) >> \
+					SAR_CLOCK_FREQ_MODE_OFFSET)
 
 #define AVS_EN_CTRL_REG			(MVEBU_AP_GEN_MGMT_BASE + 0x130)
 #define AVS_ENABLE_OFFSET		(0)
@@ -115,33 +114,42 @@
 
 /*
  - AVS work points in the LD0 eFuse:
-	2Ghz/1.8Ghz work point: LD0[89:82]
-	1.6Ghz work point:      LD0[97:90]
-	1.3Ghz work point:      LD0[105:98]
+	SVC1 work point:     LD0[88:81]
+	SVC2 work point:     LD0[96:89]
+	SVC3 work point:     LD0[104:97]
+	SVC4 work point:     LD0[112:105]
  - Identification information in the LD-0 eFuse:
-	DRO:      LD0[75:66]
-	Revision: LD0[79:76]
-	Bin:      LD0[81:80]
+	DRO:           LD0[74:65] - Not used by the SW
+	Revision:      LD0[78:75] - Not used by the SW
+	Bin:           LD0[80:79] - Not used by the SW
+	SW Revision:   LD0[115:113]
+	Cluster 1 PWR: LD0[193] - if set to 1, power down CPU Cluster-1
+				  resulting in 2 CPUs active only (7020)
 */
 #define MVEBU_AP_LD_EFUSE_BASE		(MVEBU_AP_GEN_MGMT_BASE + 0xF00)
 /* Bits [94:63] - 32 data bits total */
 #define MVEBU_AP_LD0_94_63_EFUSE_OFFS	(MVEBU_AP_LD_EFUSE_BASE + 0x8)
 /* Bits [125:95] - 31 data bits total, 32nd bit is parity for bits [125:63] */
 #define MVEBU_AP_LD0_125_95_EFUSE_OFFS	(MVEBU_AP_LD_EFUSE_BASE + 0xC)
+/* Bits [220:189] - 32 data bits total */
+#define MVEBU_AP_LD0_220_189_EFUSE_OFFS	(MVEBU_AP_LD_EFUSE_BASE + 0x18)
 /* Offsets for the above 2 fields combined into single 64-bit value [125:63] */
-#define EFUSE_AP_LD0_DRO_OFFS		3
+#define EFUSE_AP_LD0_DRO_OFFS		2		/* LD0[74:65] */
 #define EFUSE_AP_LD0_DRO_MASK		0x3FF
-#define EFUSE_AP_LD0_REVID_OFFS		13
+#define EFUSE_AP_LD0_REVID_OFFS		12		/* LD0[78:75] */
 #define EFUSE_AP_LD0_REVID_MASK		0xF
-#define EFUSE_AP_LD0_BIN_OFFS		17
+#define EFUSE_AP_LD0_BIN_OFFS		16		/* LD0[80:79] */
 #define EFUSE_AP_LD0_BIN_MASK		0x3
-#define EFUSE_AP_LD0_2_0_GHZ_WP_OFFS	19
-#define EFUSE_AP_LD0_1_6_GHZ_WP_OFFS	27
-#define EFUSE_AP_LD0_1_3_GHZ_WP_OFFS	35
+#define EFUSE_AP_LD0_SWREV_OFFS		50		/* LD0[115:113] */
+#define EFUSE_AP_LD0_SWREV_MASK		0x7
+
+#define EFUSE_AP_LD0_SVC1_OFFS		18		/* LD0[88:81] */
+#define EFUSE_AP_LD0_SVC2_OFFS		26		/* LD0[96:89] */
+#define EFUSE_AP_LD0_SVC3_OFFS		34		/* LD0[104:97] */
+#define EFUSE_AP_LD0_SVC4_OFFS		42		/* LD0[112:105] */
 #define EFUSE_AP_LD0_WP_MASK		0xFF
 
-#define EFUSE_SVC_REVISION_ID_0		0x8
-#define EFUSE_SVC_BIN_PREMIUM		0x1
+#define EFUSE_AP_LD0_CLUSTER_DOWN_OFFS	4
 
 /* Notify bootloader on DRAM setup */
 void pass_dram_sys_info(struct dram_config *cfg)
@@ -306,20 +314,21 @@ static void ble_plat_avs_config(void)
 }
 
 /******************************************************************************
- * SVC flow - v0.4
+ * SVC flow - v0.6
  * The feature is inteded  to configure AVS value according to eFuse values
  * that are burned individually for each SoC during the test process.
  * Primary AVS value is stored in HD efuse and processed on power on by the HW engine
- * Secondary AVS value is located in LD efuse and contains 3 work points for
+ * Secondary AVS value is located in LD efuse and contains 4 work points for
  * various CPU frequencies.
- * The Secondary AVS value is only taken into account if the Revision ID stored
- * in the efuse matches the expected value, the CPU is running in a certain speed
- * and the SoC Bin matches the value selected for the AVS update.
+ * The Secondary AVS value is only taken into account if the SW Revision stored
+ * in the efuse is greater than 0 and the CPU is running in a certain speed.
  *****************************************************************************/
 static void ble_plat_svc_config(void)
 {
-	uint32_t reg_val, avs_workpoint = 0, freq_pidi_mode;
+	uint32_t reg_val, avs_workpoint, freq_pidi_mode;
 	uint64_t efuse;
+	uint32_t device_id, single_cluster;
+	uint8_t  svc[4];
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
@@ -331,50 +340,119 @@ static void ble_plat_svc_config(void)
 	efuse <<= 32;
 	efuse |= mmio_read_32(MVEBU_AP_LD0_94_63_EFUSE_OFFS);
 
-	/* TODO - DRO usage is undefined in v0.4 */
-	/* Revision ID */
-	reg_val = (efuse >> EFUSE_AP_LD0_REVID_OFFS) & EFUSE_AP_LD0_REVID_MASK;
-	if (reg_val != EFUSE_SVC_REVISION_ID_0) {
-		INFO("Revision 0x%x. Update to SVC is not supported\n", reg_val);
+	/* SW Revision:
+	 * Starting from SW revision 1 the SVC flow is supported.
+	 * SW version 0 (efuse not programmed) should follow the
+	 * regular AVS update flow.
+	 */
+	reg_val = (efuse >> EFUSE_AP_LD0_SWREV_OFFS) & EFUSE_AP_LD0_SWREV_MASK;
+	if (reg_val < 1) {
+		NOTICE("SVC: SW Revision 0x%x. SVC is not supported\n", reg_val);
 		ble_plat_avs_config();
 		return;
 	}
 
 	/* Frequency mode from SAR */
-	reg_val = mmio_read_32(MVEBU_AP_SAR_REG_BASE(FREQ_MODE_AP_SAR_REG_NUM));
-	freq_pidi_mode = SAR_CLOCK_FREQ_MODE(reg_val);
+	freq_pidi_mode = SAR_CLOCK_FREQ_MODE(
+				mmio_read_32(
+					MVEBU_AP_SAR_REG_BASE(
+						FREQ_MODE_AP_SAR_REG_NUM)));
 
-	/* Bin */
-	reg_val = (efuse >> EFUSE_AP_LD0_BIN_OFFS) & EFUSE_AP_LD0_BIN_MASK;
-	if (reg_val == EFUSE_SVC_BIN_PREMIUM) {
-		INFO("Premium Bin, freq&pidi mode 0x%x\n", freq_pidi_mode);
-		/* Premium bin */
-		if (freq_pidi_mode == CPU_1600_DDR_1050_RCLK_1050) {
-			/* Modify AVS according to 1.6GHz eFuse work point */
-			avs_workpoint = (efuse >> EFUSE_AP_LD0_1_6_GHZ_WP_OFFS) &
-				  EFUSE_AP_LD0_WP_MASK;
+	/* Decode all SVC work points */
+	svc[0] = (efuse >> EFUSE_AP_LD0_SVC1_OFFS) & EFUSE_AP_LD0_WP_MASK;
+	svc[1] = (efuse >> EFUSE_AP_LD0_SVC2_OFFS) & EFUSE_AP_LD0_WP_MASK;
+	svc[2] = (efuse >> EFUSE_AP_LD0_SVC3_OFFS) & EFUSE_AP_LD0_WP_MASK;
+	svc[3] = (efuse >> EFUSE_AP_LD0_SVC4_OFFS) & EFUSE_AP_LD0_WP_MASK;
+	INFO("SVC: Efuse WP: [0]=0x%x, [1]=0x%x, [2]=0x%x, [3]=0x%x\n",
+	     svc[0], svc[1], svc[2], svc[3]);
+
+	single_cluster = mmio_read_32(MVEBU_AP_LD0_220_189_EFUSE_OFFS);
+	single_cluster = (single_cluster >> EFUSE_AP_LD0_CLUSTER_DOWN_OFFS) & 1;
+
+	device_id = cp110_device_id_get();
+	if (device_id == MVEBU_80X0_DEV_ID) {
+		/* A8040/A8020 */
+		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",
+			single_cluster == 0 ? "8040" : "8020", freq_pidi_mode);
+		switch (freq_pidi_mode) {
+		case CPU_2000_DDR_1200_RCLK_1200:
+		case CPU_2000_DDR_1050_RCLK_1050:
+			avs_workpoint = svc[0];
+			/* MAX speed is already in HD efuse,
+			 * the AVS should not be updated
+			 */
+			if (avs_workpoint != 0) {
+				NOTICE("SVC: AVS work point was not changed\n");
+				return;
+			}
+			break;
+		case CPU_1800_DDR_1200_RCLK_1200:
+		case CPU_1800_DDR_1050_RCLK_1050:
+			avs_workpoint = svc[1];
+			break;
+		case CPU_1600_DDR_1050_RCLK_1050:
+		case CPU_1600_DDR_900_RCLK_900_2:
+			avs_workpoint = svc[2];
+			break;
+		case CPU_1300_DDR_800_RCLK_800:
+		case CPU_1300_DDR_650_RCLK_650:
+			avs_workpoint = svc[3];
+			break;
+		default:
+			avs_workpoint = 0;
+			break;
+		}
+	} else if (device_id == MVEBU_70X0_DEV_ID) {
+		/* A7040/A7020/A6040 */
+		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",
+			single_cluster == 0 ? "7040" : "7020", freq_pidi_mode);
+		switch (freq_pidi_mode) {
+		case CPU_1400_DDR_800_RCLK_800:
+			avs_workpoint = svc[0];
+			if (avs_workpoint == 0)
+				break;
+			/* MAX speed is already in HD efuse,
+			 * the AVS should not be updated for 7040/6040
+			 */
+			if (!single_cluster) {
+				NOTICE("SVC: AVS work point was not changed\n");
+				return;
+			}
+			break;
+		case CPU_1200_DDR_800_RCLK_800:
+			avs_workpoint = svc[1];
+			break;
+		case CPU_800_DDR_800_RCLK_800:
+		case CPU_1000_DDR_800_RCLK_800:
+			avs_workpoint = svc[2];
+			break;
+		case CPU_600_DDR_800_RCLK_800:
+			avs_workpoint = svc[3];
+			break;
+		default:
+			avs_workpoint = 0;
+			break;
 		}
 	} else {
-		INFO("Non-premium Bin, freq&pidi mode 0x%x\n", freq_pidi_mode);
-		/* Non-premium bin */
-		if (freq_pidi_mode ==
-		    (SAR_PIDI_LOW_SPEED_SET | CPU_1300_DDR_800_RCLK_800)) {
-			/* Modify AVS according to 1.3GHz eFuse work point */
-			avs_workpoint = (efuse >> EFUSE_AP_LD0_1_3_GHZ_WP_OFFS) &
-				  EFUSE_AP_LD0_WP_MASK;
-		}
+		ERROR("SVC: Unsupported Device ID 0x%x\n", device_id);
+		return;
 	}
 
 	/* Set AVS control if needed */
-	if (avs_workpoint != 0) {
-		INFO("AVS work point changed to 0x%x\n", avs_workpoint);
-		reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
-		reg_val &= ~(AVS_VDD_LOW_LIMIT_MASK | AVS_VDD_HIGH_LIMIT_MASK);
-		reg_val |= 0x1 << AVS_ENABLE_OFFSET;
-		reg_val |= avs_workpoint << AVS_HIGH_VDD_LIMIT_OFFSET;
-		reg_val |= avs_workpoint << AVS_LOW_VDD_LIMIT_OFFSET;
-		mmio_write_32(AVS_EN_CTRL_REG, reg_val);
+	if (avs_workpoint == 0) {
+		ERROR("SVC: Wrong SAR 0x%x for this BIN\n", freq_pidi_mode);
+		return;
 	}
+
+	reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
+	NOTICE("SVC: AVS work point changed from 0x%x to 0x%x\n",
+		(reg_val & AVS_VDD_LOW_LIMIT_MASK) >> AVS_LOW_VDD_LIMIT_OFFSET,
+		avs_workpoint);
+	reg_val &= ~(AVS_VDD_LOW_LIMIT_MASK | AVS_VDD_HIGH_LIMIT_MASK);
+	reg_val |= 0x1 << AVS_ENABLE_OFFSET;
+	reg_val |= avs_workpoint << AVS_HIGH_VDD_LIMIT_OFFSET;
+	reg_val |= avs_workpoint << AVS_LOW_VDD_LIMIT_OFFSET;
+	mmio_write_32(AVS_EN_CTRL_REG, reg_val);
 }
 
 static int ble_skip_image_i2c(struct skip_image *skip_im)
