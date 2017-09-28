@@ -468,13 +468,24 @@ endif #MARVELL_SECURE_BOOT
 
 TIMBUILD		:= $(DOIMAGEPATH)/script/buildtim.sh
 TIM2IMG			:= $(DOIMAGEPATH)/script/tim2img.pl
-WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
+
+# WTMI_IMG is used to specify the customized RTOS image runing over CM3 processor. By default, it
+# points to a baremetal binary of fuse programming in A3700_utils.
+WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/fuse/build/fuse.bin
+
+# WTMI_SYSINIT_IMG is used for the system early initialization, such as AVS settings, clock-tree
+# setup and dynamic DDR PHY training. After the initialization is done, this image will be wiped out
+# from the memory and CM3 will continue with RTOS image or other application.
+WTMI_SYSINIT_IMG	:= $(DOIMAGEPATH)/wtmi/sys_init/build/sys_init.bin
+
+# WTMI_MULTI_IMG is composed of CM3 RTOS image (WTMI_IMG) and sys-init image (WTMI_SYSINIT_IMG).
+WTMI_MULTI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
+
 WTMI_ENC_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi-enc.bin
 BUILD_UART		:= uart-images
 
 SRCPATH			:= $(dir $(BL33))
 
-CLOCKSPATH		:= $(DOIMAGEPATH)/ddr/tim_ddr
 CLOCKSPRESET		?= CPU_800_DDR_800
 
 DDR_TOPOLOGY		?= 0
@@ -483,9 +494,9 @@ BOOTDEV			?= SPINOR
 PARTNUM			?= 0
 
 TIM_IMAGE		:= $$(grep "Image Filename:" -m 1 $(DOIMAGE_CFG) | cut -c 17-)
-TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
+TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(DOIMAGEPATH) $(CLOCKSPRESET) \
 				$(DDR_TOPOLOGY) $(PARTNUM) $(DEBUG) $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 1
-TIMBLDUARTARGS		:= $(MARVELL_SECURE_BOOT) UART $(IMAGESPATH) $(CLOCKSPATH) $(CLOCKSPRESET) \
+TIMBLDUARTARGS		:= $(MARVELL_SECURE_BOOT) UART $(IMAGESPATH) $(DOIMAGEPATH) $(CLOCKSPRESET) \
 				$(DDR_TOPOLOGY) 0 0 $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 0
 DOIMAGE_FLAGS		:= -r $(DOIMAGE_CFG) -v -D
 
@@ -793,10 +804,10 @@ fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL}
 	@echo
 	@echo "Building uart images"
 	$(TIMBUILD) $(TIMBLDUARTARGS)
-	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(DOIMAGE_CFG)
+	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(DOIMAGE_CFG)
 	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
 ifeq ($(MARVELL_SECURE_BOOT),1)
-	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(TIMNCFG)
+	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(TIMNCFG)
 	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
 endif
 	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
@@ -805,21 +816,21 @@ endif
 	@mkdir $(BUILD_PLAT)/$(BUILD_UART)
 	@mv -t $(BUILD_PLAT)/$(BUILD_UART) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG)
 	@find . -name "*_h.*" |xargs cp -ut $(BUILD_PLAT)/$(BUILD_UART)
-	@mv $(subst .bin,_h.bin,$(WTMI_IMG)) $(BUILD_PLAT)/$(BUILD_UART)/wtmi_h.bin
+	@mv $(subst .bin,_h.bin,$(WTMI_MULTI_IMG)) $(BUILD_PLAT)/$(BUILD_UART)/wtmi_h.bin
 	@tar czf $(BUILD_PLAT)/$(BUILD_UART).tgz -C $(BUILD_PLAT) ./$(BUILD_UART)
 	@echo
 	@echo "Building flash image"
 	$(TIMBUILD) $(TIMBLDARGS)
-	sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(DOIMAGE_CFG)
+	sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(DOIMAGE_CFG)
 	sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
 ifeq ($(MARVELL_SECURE_BOOT),1)
-	@sed -i 's|WTMI_IMG|$(WTMI_IMG)|1' $(TIMNCFG)
+	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(TIMNCFG)
 	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
 	@echo -e "\n\t=======================================================\n";
 	@echo -e "\t  Secure boot. Encrypting wtmi and boot-image \n";
 	@echo -e "\t=======================================================\n";
-	@truncate -s %16 $(WTMI_IMG)
-	@openssl enc -aes-256-cbc -e -in $(WTMI_IMG) -out $(WTMI_ENC_IMG) \
+	@truncate -s %16 $(WTMI_MULTI_IMG)
+	@openssl enc -aes-256-cbc -e -in $(WTMI_MULTI_IMG) -out $(WTMI_ENC_IMG) \
 	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
 	-iv `cat $(IMAGESPATH)/iv.txt` -p
 	@truncate -s %16 $(BUILD_PLAT)/$(BOOT_IMAGE);
@@ -829,9 +840,9 @@ ifeq ($(MARVELL_SECURE_BOOT),1)
 endif
 	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
 	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
-	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then sed -i 's|$(WTMI_IMG)|$(WTMI_ENC_IMG)|1;s|$(BOOT_IMAGE)|$(BOOT_ENC_IMAGE)|1;' $(TIMNCFG); fi
+	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then sed -i 's|$(WTMI_MULTI_IMG)|$(WTMI_ENC_IMG)|1;s|$(BOOT_IMAGE)|$(BOOT_ENC_IMAGE)|1;' $(TIMNCFG); fi
 	$(TIM2IMG) $(TIM2IMGARGS) -o $(BUILD_PLAT)/$(FLASH_IMAGE)
-	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG) $(WTMI_IMG)
+	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG) $(WTMI_IMG) $(WTMI_SYSINIT_IMG) $(WTMI_MULTI_IMG)
 	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then mv -t $(BUILD_PLAT) $(WTMI_ENC_IMG) OtpHash.txt; fi
 	@find . -name "*.txt" | grep -E "CSK[[:alnum:]]_KeyHash.txt|Tim_msg.txt|TIMHash.txt" | xargs rm -f
 else
@@ -852,7 +863,7 @@ ${FIPTOOL}:
 .PHONY: ${DOIMAGETOOL}
 ${DOIMAGETOOL}:
 	@$(DOIMAGE_LIBS_CHECK)
-	${Q}${MAKE} --no-print-directory -C ${DOIMAGEPATH}
+	${Q}${MAKE} --no-print-directory -C ${DOIMAGEPATH} WTMI_IMG=$(WTMI_IMG)
 
 cscope:
 	@echo "  CSCOPE"
