@@ -76,7 +76,10 @@ int marvell_gpio_config(void)
 /*******************************************************************************
  * AMB Configuration
  ******************************************************************************/
-struct amb_win *amb_memory_map;
+struct amb_win amb_memory_map[] = {
+	/* CP1 SPI1 CS0 Direct Mode access */
+	{0xf900,	0x1000000,	AMB_SPI1_CS0_ID},
+};
 
 uintptr_t marvell_get_amb_reg_offs(int cp_index)
 {
@@ -101,8 +104,8 @@ int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
 struct io_win io_win_memory_map[] = {
 	/* CP1 (MCI0) internal regs */
 	{0x0,	0xf4000000,			0x0,	0x2000000,  MCI_0_TID},
-	/* PCIe0 on CP1*/
-	{0x0,	0xfa000000,			0x0,	0x1000000,  MCI_0_TID},
+	/* PCIe0 and SPI1_CS0 (RUNIT) on CP1*/
+	{0x0,	0xf9000000,			0x0,	0x2000000,  MCI_0_TID},
 	/* PCIe1 on CP1*/
 	{0x0,	0xfb000000,			0x0,	0x1000000,  MCI_0_TID},
 	/* PCIe2 on CP1*/
@@ -153,6 +156,8 @@ struct iob_win iob_memory_map_cp0[] = {
 
 struct iob_win iob_memory_map_cp1[] = {
 	/* CP1 */
+	/* SPI1_CS0 (RUNIT) window */
+	{0x0,	0xf9000000,	0x0,	0x1000000,	RUNIT_TID},
 	/* PEX1_X1 window */
 	{0x0,	0xfb000000,	0x0,	0x1000000,	PEX1_TID},
 	/* PEX2_X1 window */
