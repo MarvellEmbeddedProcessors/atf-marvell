@@ -25,7 +25,7 @@ uintptr_t marvell_get_io_win_reg_offs(int ap_index)
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
 {
-	return PIDI_TID;
+	return MCI_2_TID;
 }
 
 int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *size)
@@ -44,9 +44,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
  ******************************************************************************/
 #define MARVELL_CCU_MAX_WIN	8
 
-struct ccu_win ccu_memory_map[] = {
-	{0x0,	0xf2000000,	0x0,	0xe000000,  0x9}, /* IO window */
-};
+struct ccu_win *ccu_memory_map = NULL;
 
 uintptr_t marvell_get_ccu_reg_offs(int ap)
 {
