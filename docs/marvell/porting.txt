@@ -44,7 +44,7 @@ Armada-70x0/Armada-80x0 Porting
 		.. warning:: to disable this feature make sure the struct skip_image is not implemented.
 
 	- Example:
-		In A7040-DB specific implementation (marvell/plat/a8k/a70x0/board/marvell_plat_config.c),
+		In A7040-DB specific implementation (plat/marvell/a8k/a70x0/board/marvell_plat_config.c),
 		the image skip is implemented using GPIO: mpp 33 (SW5).
 
 		Before reseting the board make sure there is a valid image on the next flash address:
