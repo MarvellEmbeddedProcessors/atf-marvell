@@ -21,6 +21,11 @@
 
 #define CCU_B_GIDACR(ap, stop)			(MVEBU_A2_BANKED_STOP_BASE(ap, stop) + 0x34)
 
+#define CCU_B_LTC_CR(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x344)
+#define LTC_MULTI_CHIP_TRAIN_MODE_EN		(1 << 15)
+
+#define MRI_XBAR_PORTx_ROUTING0(ap, port)	(MVEBU_MRI_XBAR_BASE(ap) + 0x10 + 0x8 * port)
+
 #define SMMU_S_ACR(ap)				(MVEBU_SMMU_BASE(ap) + 0x10)
 #define SMMU_S_ACR_PG_64K			(1 << 16)
 
@@ -113,9 +118,78 @@ static void setup_banked_rgf(int ap_id)
 	}
 }
 
+
+/* Configure access between AP, use static configuration */
 static void ap810_enumeration_algo(void)
 {
-	INFO("place holder to implement %s\n", __func__);
+	uint32_t reg;
+
+	/* In case of single AP, no need to configure MRI-xbar */
+	if (get_ap_count() == 1)
+		return;
+
+	setup_banked_rgf(0);
+
+	/* Enable training bit - for AP0 */
+	reg = mmio_read_32(CCU_B_LTC_CR(0));
+	mmio_write_32(CCU_B_LTC_CR(0), reg | LTC_MULTI_CHIP_TRAIN_MODE_EN);
+
+	/* Configure MRI XBar
+	 * MRI XBAR include access configuration for other APs.
+	 * MRI XBAR have 5 ports, port 0 connected to global stop
+	 * in the Aurora, and 4 other ports connected to other APs
+	 * one other port is not connected.
+	 * For every port there's register PORT_%x_ROUTING0, that mean
+	 * every transaction come from port %x with AP-ID 0/1/2/3
+	 * will exit on port number %y that written in register.
+	 * e.g.:
+	 *     AP0.PORT0_ROUTING0: {1,3,4,0}:
+	 *     all transaction comes from port 0, with AP-ID 0 goes to
+	 *     port 0 (return to AP0), AP-ID 1 goes to port 4,
+	 *     AP-ID 2 goes to port 3, AP-ID 3 goes to port 1.
+	 *
+	 * QUAD AP Clique (all AP dies connected to each other)
+	 * AP0: port 1 -> AP3, port 2 -> NA, port 3 -> AP2, port 4 -> AP3
+	 * AP1: port 1 -> AP3, port 2 -> AP0, port 3 -> AP2, port 4 -> NA
+	 * AP2: port 1 -> AP1, port 2 -> NA, port 3 -> AP0, port 4 -> AP3
+	 * AP3: port 1 -> AP2, port 2 -> AP3, port 3 -> AP0, port 4 -> NA
+	 * mri-xbar configurations:
+	 *      AP0.PORT0_ROUTING0: {1,3,4,0}
+	 *      AP1.PORT0_ROUTING0: {1,3,0,2}
+	 *      AP2.PORT0_ROUTING0: {4,0,1,3}
+	 *      AP3.PORT0_ROUTING0: {0,2,1,3}
+	 *
+	 * AP0: port 1 -> NA, port 2 -> NA, port 3 -> AP1, port 4 -> NA
+	 * AP1: port 1 -> AP0, port 2 -> NA, port 3 -> NA, port 4 -> NA
+	 * DUAL AP:
+	 *      AP0.PORT0_ROUTING0: {3,0}
+	 *      AP1.PORT0_ROUTING0: {0,1}
+	 */
+	if (get_ap_count() == 2) {
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(0, 0), 0x30);
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(1, 0), 0x1);
+	} else if (get_ap_count() == 4) {
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(0, 0), 0x1340);
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(1, 0), 0x1302);
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(2, 0), 0x4013);
+		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(3, 0), 0x0213);
+	}
+
+	/* Disable training bit */
+	mmio_write_32(CCU_B_LTC_CR(0), reg);
+
+	/* Test AP access */
+	if (get_ap_count() == 2) {
+		/* Read status from AP1 */
+		INFO("Test AP1: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(1, 0)));
+	} else if (get_ap_count() == 4) {
+		/* Read status from AP1 */
+		INFO("Test AP1: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(1, 0)));
+		/* Read status from AP2 */
+		INFO("Test AP2: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(2, 0)));
+		/* Read status from AP3 */
+		INFO("Test AP3: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(3, 0)));
+	}
 }
 
 static void ap810_dvm_affinity(int ap_id)
