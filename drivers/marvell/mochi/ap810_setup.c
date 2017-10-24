@@ -19,6 +19,8 @@
 #define AP810_MAX_AP_NUM			4
 #define AP810_MAX_AP_MASK			0xf
 
+#define CCU_B_GIDACR(ap, stop)			(MVEBU_A2_BANKED_STOP_BASE(ap, stop) + 0x34)
+
 #define SMMU_S_ACR(ap)				(MVEBU_SMMU_BASE(ap) + 0x10)
 #define SMMU_S_ACR_PG_64K			(1 << 16)
 
@@ -31,6 +33,22 @@
 /* SYSRST_OUTn Config definitions */
 #define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
+
+/* define AP810 stops */
+enum ap810_stations {
+	AP810_S0_SMC0 = 0,	/* Stop memory contoler 0 */
+	AP810_S0_SIO0,		/* Stop IO 0 */
+	AP810_S0_SIO1,		/* Stop IO 1 */
+	AP810_S0_SMC1,		/* Stop memory contoler 1 */
+	AP810_S0_SP0,		/* Stop proccessor 0 */
+	AP810_S0_SP1,		/* Stop proccessor 1 */
+	AP810_S0_SP2,		/* Stop proccessor 2 */
+	AP810_S0_SP3,		/* Stop proccessor 3 */
+	AP810_S0_SMC2,		/* Stop memory contoler 2 */
+	AP810_S0_SG,		/* Stop general */
+	AP810_S0_SIO2,		/* Stop IO 2 */
+	AP810_S_END,
+};
 
 /* Used for Units of AP-810 (e.g. SDIO and etc) */
 enum axi_attr {
@@ -70,6 +88,31 @@ int get_ap_count(void)
 	return g_ap_count;
 }
 
+/* function to open access RGF to access another ring*/
+static void setup_banked_rgf(int ap_id)
+{
+	int val, stop;
+
+	/* Open access for all the banked RGF
+	 * (remote ring access registers)
+	 * 0xf for QUAD - 0x3 for DUAL - 0x1 for single (default)
+	 * Open access for all IO & proccess stops, because MC & SG
+	 * stop can't start transcations to another ring
+	 */
+	val = AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - get_ap_count());
+	for (stop = 0; stop < AP810_S_END; stop++) {
+		switch (stop) {
+		case AP810_S0_SMC0:
+		case AP810_S0_SMC1:
+		case AP810_S0_SMC2:
+		case AP810_S0_SG:
+			continue;
+		default:
+			mmio_write_32(CCU_B_GIDACR(ap_id, stop), val);
+		}
+	}
+}
+
 static void ap810_enumeration_algo(void)
 {
 	INFO("place holder to implement %s\n", __func__);
@@ -83,6 +126,9 @@ static void ap810_dvm_affinity(int ap_id)
 static void ap810_init_aurora2(int ap_id)
 {
 	unsigned int reg;
+
+	/* Open access to another AP configuration */
+	setup_banked_rgf(ap_id);
 
 	/* Enable CPU control over SPMU registers */
 	reg = mmio_read_32(MVEBU_CCU_GSPMU_CR(ap_id));
