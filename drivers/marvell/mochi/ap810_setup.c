@@ -16,6 +16,9 @@
 #include <debug.h>
 #include <types.h>
 
+#define AP810_MAX_AP_NUM			4
+#define AP810_MAX_AP_MASK			0xf
+
 #define SMMU_S_ACR(ap)				(MVEBU_SMMU_BASE(ap) + 0x10)
 #define SMMU_S_ACR_PG_64K			(1 << 16)
 
@@ -36,6 +39,36 @@ enum axi_attr {
 	AXI_EIP197_ATTR,
 	AXI_MAX_ATTR,
 };
+
+/* Global AP count */
+int g_ap_count = -1;
+
+/* Get AP count, by read how many coherent
+ * ports connected to AP0. For now assume
+ * that AP0 is connected to all the APs in the system
+ */
+int get_ap_count(void)
+{
+	uint32_t reg;
+	int count;
+
+	if (g_ap_count != -1)
+		return g_ap_count;
+
+	count = 1; /* start with the local AP */
+	reg = mmio_read_32(MVEBU_DFX_SAR_REG(0, 0));
+	reg = (reg >> MVEBU_SAR_0_COHERENT_EN_OFFSET) & MVEBU_SAR_0_COHERENT_EN_MASK;
+
+	/* Count the coherent ports that enabled */
+	while (reg) {
+		count += reg & 1;
+		reg >>= 1;
+	}
+
+	g_ap_count = count;
+	INFO("Found %d APs\n", g_ap_count);
+	return g_ap_count;
+}
 
 static void ap810_enumeration_algo(void)
 {
@@ -159,7 +192,7 @@ void ap810_init(void)
 
 	ap810_enumeration_algo();
 
-	for (ap_id = 0; ap_id < PLAT_MARVELL_NORTHB_COUNT; ap_id++) {
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
 		/* Setup Aurora2. */
 		ap810_init_aurora2(ap_id);
 		/* configure RFU windows */

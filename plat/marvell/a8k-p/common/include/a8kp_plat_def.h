@@ -39,6 +39,11 @@
 #define MVEBU_IO_WIN_BASE(ap)			(MVEBU_AR_RFU_BASE(ap))
 #define MVEBU_IO_WIN_GCR_OFFSET			(0xF0)
 
+#define MVEBU_DFX_SR_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x8000)
+#define MVEBU_DFX_SAR_REG(ap, sar)		(MVEBU_DFX_SR_BASE(ap) + 0x200 + 0x4 * sar)
+#define MVEBU_SAR_0_COHERENT_EN_OFFSET		15
+#define MVEBU_SAR_0_COHERENT_EN_MASK		0xf
+
 #define MVEBU_AP_MPP_REGS(ap, n)		(MVEBU_AR_RFU_BASE(ap) + 0x4000 + ((n) << 2))
 #define MVEBU_AP_MISC_SOC_BASE(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4300)
 #define MVEBU_AP_AXI_ATTR_REGS(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4580)
