@@ -35,6 +35,8 @@
 #define CCU_HTC_CR(ap)				(MVEBU_CCU_BASE(ap) + 0x200)
 #define CCU_SET_POC_OFFSET			5
 
+#define GEVENT_CR_PORTx_EVENT_MASK(ap, port)	(MVEBU_AR_RFU_BASE(ap) + 0x500 + port * 0x4)
+
 /* SYSRST_OUTn Config definitions */
 #define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
@@ -279,9 +281,83 @@ static void ap810_axi_attr_init(int ap)
 	return;
 }
 
+/* Setup events that controls the propagation
+ * of CPU event between dies.
+ */
 void ap810_setup_events(int ap_id)
 {
-	INFO("place holder to implement %s\n", __func__);
+	INFO("Event propegation setup for AP%d\n", ap_id);
+	/* The index of the register represents the destination port.
+	 * The bit number represents the source to be masked.
+	 * All sources which are unmasked will be ORed and sent to the
+	 * destination port.
+	 *
+	 * For Quad AP the connectios is:
+	 *  AP0: port 0 -> AP3, port 1 -> NC, port 2 -> AP2, port 3 -> AP1
+	 *  AP1: port 0 -> AP3, port 1 -> AP0, port 2 -> AP2, port 3 -> NC
+	 *  AP2: port 0 -> AP1, port 1 -> NC, port 2 -> AP0, port 3 -> AP3
+	 *  AP3: port 0 -> AP2, port 1 -> AP2, port 2 -> AP0, port 3 -> NC
+	 *
+	 * For Dual AP the connection is:
+	 *  AP0: port 2 -> AP1
+	 *  AP1: port 0 -> AP0
+	 */
+	switch (ap_id) {
+	case 0:
+		if (get_ap_count() == 2) {
+			/* Port 2 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
+			/* Port 4 (Local) - unmask Port 2 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x3b);
+		} else {
+			/* Port 0 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
+			/* Port 2 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
+			/* Port 3 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 3), 0x2f);
+			/* Port 4 (Local) - unmask Port 0/2/3 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x32);
+		}
+		break;
+	case 1:
+		if (get_ap_count() == 2) {
+			/* Port 0 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
+			/* Port 4 (Local) - unmask Port 0 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x3e);
+		} else {
+			/* Port 0 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
+			/* Port 1 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 1), 0x2f);
+			/* Port 2 - unmask local GEvent  */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
+			/* Port 4 (Local) - unmask Port 0/1/2 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x38);
+		}
+		break;
+	case 2:
+			/* Port 0 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
+			/* Port 2 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
+			/* Port 3 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 3), 0x2f);
+			/* Port 4 (Local) - unmask Port 0/2/3 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x32);
+		break;
+	case 3:
+			/* Port 0 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
+			/* Port 1 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 1), 0x2f);
+			/* Port 2 - unmask local GEvent */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
+			/* Port 4 (Local) - unmask Port 0/1/2 */
+			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x38);
+		break;
+	}
 }
 
 static void ap810_stream_id_init(int ap_id)
