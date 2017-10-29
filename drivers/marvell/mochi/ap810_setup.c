@@ -26,6 +26,8 @@
 
 #define MRI_XBAR_PORTx_ROUTING0(ap, port)	(MVEBU_MRI_XBAR_BASE(ap) + 0x10 + 0x8 * port)
 
+#define MVEBU_CCU_GUID(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x4808)
+
 #define SMMU_S_ACR(ap)				(MVEBU_SMMU_BASE(ap) + 0x10)
 #define SMMU_S_ACR_PG_64K			(1 << 16)
 
@@ -125,6 +127,7 @@ static void setup_banked_rgf(int ap_id)
 static void ap810_enumeration_algo(void)
 {
 	uint32_t reg;
+	int ap_id;
 
 	/* In case of single AP, no need to configure MRI-xbar */
 	if (get_ap_count() == 1)
@@ -192,6 +195,10 @@ static void ap810_enumeration_algo(void)
 		/* Read status from AP3 */
 		INFO("Test AP3: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(3, 0)));
 	}
+
+	/* Update AP-ID of every AP die in the system */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++)
+		mmio_write_32(MVEBU_CCU_GUID(ap_id), ap_id);
 }
 
 static void ap810_dvm_affinity(int ap_id)
