@@ -36,142 +36,9 @@
 #include <plat_def.h>
 #include <amb_adec.h>
 #include <iob.h>
-#include <icu.h>
 #include <mmio.h>
 #include <delay_timer.h>
 #include <cp110_setup.h>
-
-/*
-  ICU configuration
- */
-/* Multi instance sources, multipllied in dual CP mode */
-static const struct icu_irq irq_map_ns_multi[] = {
-	{22, 0, 0}, /* PCIx4 INT A interrupt */
-	{23, 1, 0}, /* PCIx1 INT A interrupt */
-	{24, 2, 0}, /* PCIx1 INT A interrupt */
-
-	{33, 3, 0}, /* PPv2 DBG AXI monitor */
-	{34, 3, 0}, /* HB1      AXI monitor */
-	{35, 3, 0}, /* AP       AXI monitor */
-	{36, 3, 0}, /* PPv2     AXI monitor */
-
-	{38,  4, 0}, /* PPv2 Misc */
-
-	{39,  5, 0}, /* PPv2 irq */
-	{40,  6, 0}, /* PPv2 irq */
-	{41,  7, 0}, /* PPv2 irq */
-	{42,  8, 0}, /* PPv2 irq */
-	{43,  9, 0}, /* PPv2 irq */
-	{44, 10, 0}, /* PPv2 irq */
-	{45, 11, 0}, /* PPv2 irq */
-	{46, 12, 0}, /* PPv2 irq */
-	{47, 13, 0}, /* PPv2 irq */
-	{48, 14, 0}, /* PPv2 irq */
-	{49, 15, 0}, /* PPv2 irq */
-	{50, 16, 0}, /* PPv2 irq */
-	{51, 17, 0}, /* PPv2 irq */
-	{52, 18, 0}, /* PPv2 irq */
-	{53, 19, 0}, /* PPv2 irq */
-	{54, 20, 0}, /* PPv2 irq */
-
-	{78, 21, 0}, /* MG irq */
-	{88, 22, 0}, /* EIP-197 ring-0 */
-	{89, 23, 0}, /* EIP-197 ring-1 */
-	{90, 24, 0}, /* EIP-197 ring-2 */
-	{91, 25, 0}, /* EIP-197 ring-3 */
-	{92, 26, 0}, /* EIP-197 int */
-	{95, 27, 0}, /* EIP-150 irq */
-	{102, 28, 0}, /* USB3 Device irq */
-	{105, 29, 0}, /* USB3 Host-1 irq */
-	{106, 30, 0}, /* USB3 Host-0 irq */
-	{107, 31, 0}, /* SATA Host-1 irq */
-	{109, 31, 0}, /* SATA Host-0 irq */
-	{126, 33, 0}, /* PTP irq */
-	{127, 34, 0}, /* GOP-3 irq */
-	{128, 35, 0}, /* GOP-2 irq */
-	{129, 36, 0}, /* GOP-0 irq */
-
-	/* PPv2 interrupts which originally assigned as single interrupts.
-	 * To avoid updating Device tree, left original SPI assignment 60-63,
-	 * hence there is a gap between previous multi interrupts */
-	{55, 60, 0}, /* PPv2 irq */
-	{56, 61, 0}, /* PPv2 irq */
-	{57, 62, 0}, /* PPv2 irq */
-	{58, 63, 0}, /* PPv2 irq */
-};
-
-/* Single instance sources, not multiplies in dual CP mode */
-static const struct icu_irq irq_map_ns_single[] = {
-	{27, 37, 0}, /* SD/MMC */
-	{76, 38, 0}, /* Audio */
-	{77, 39, 0}, /* MSS RTC */
-	{79, 40, 0}, /* GPIO 56-63 */
-	{80, 41, 0}, /* GPIO 48-55 */
-	{81, 42, 0}, /* GPIO 40-47 */
-	{82, 43, 0}, /* GPIO 32-39 */
-	{83, 44, 0}, /* GPIO 24-31 */
-	{84, 45, 0}, /* GPIO 16-23 */
-	{85, 46, 0}, /* GPIO  8-15 */
-	{86, 47, 0}, /* GPIO  0-7  */
-	{111, 48, 0}, /* TDM-MC func 1 */
-	{112, 49, 0}, /* TDM-MC func 0 */
-	{113, 50, 0}, /* TDM-MC irq */
-	{115, 51, 0}, /* NAND irq */
-	{117, 52, 0}, /* SPI-1 irq */
-	{118, 53, 0}, /* SPI-0 irq */
-	{120, 54, 0}, /* I2C 0 irq */
-	{121, 55, 0}, /* I2C 1 irq */
-	{122, 56, 0}, /* UART 0 irq */
-	{123, 57, 0}, /* UART 1 irq */
-	{124, 58, 0}, /* UART 2 irq */
-	{125, 59, 0}, /* UART 3 irq */
-};
-
-/* SEI - System Error Interrupts */
-/* Note: SPI ID 0-20 are reserved for North-Bridge */
-static struct icu_irq irq_map_sei[] = {
-	{11, 21, 0}, /* SEI error CP-2-CP */
-	{15, 22, 0}, /* PIDI-64 SOC */
-	{16, 23, 0}, /* D2D error irq */
-	{17, 24, 0}, /* D2D irq */
-	{18, 25, 0}, /* NAND error */
-	{19, 26, 0}, /* PCIx4 error */
-	{20, 27, 0}, /* PCIx1_0 error */
-	{21, 28, 0}, /* PCIx1_1 error */
-	{25, 29, 0}, /* SDIO reg error */
-	{75, 30, 0}, /* IOB error */
-	{94, 31, 0}, /* EIP150 error */
-	{97, 32, 0}, /* XOR-1 system error */
-	{99, 33, 0}, /* XOR-0 system error */
-	{108, 34, 0}, /* SATA-1 error */
-	{110, 35, 0}, /* SATA-0 error */
-	{114, 36, 0}, /* TDM-MC error */
-	{116, 37, 0}, /* DFX server irq */
-	{117, 38, 0}, /* Device bus error */
-	{147, 39, 0}, /* Audio error */
-	{171, 40, 0}, /* PIDI Sync error */
-};
-
-/* REI - RAM Error Interrupts */
-static const struct icu_irq irq_map_rei[] = {
-	{12, 0, 0}, /* REI error CP-2-CP */
-	{26, 1, 0}, /* SDIO memory error */
-	{87, 2, 0}, /* EIP-197 ECC error */
-	{93, 3, 1}, /* EIP-150 RAM error */
-	{96, 4, 0}, /* XOR-1 memory irq */
-	{98, 5, 0}, /* XOR-0 memory irq */
-	{100, 6, 1}, /* USB3 device tx parity */
-	{101, 7, 1}, /* USB3 device rq parity */
-	{103, 8, 1}, /* USB3H-1 RAM error */
-	{104, 9, 1}, /* USB3H-0 RAM error */
-};
-
-static const struct icu_config icu_config = {
-	.ns_multi = { irq_map_ns_multi, ARRAY_SIZE(irq_map_ns_multi) },
-	.ns_single = { irq_map_ns_single, ARRAY_SIZE(irq_map_ns_single) },
-	.sei = { irq_map_sei, ARRAY_SIZE(irq_map_sei) },
-	.rei = { irq_map_rei, ARRAY_SIZE(irq_map_rei) },
-};
 
 /*
  * AXI Configuration.
@@ -518,12 +385,6 @@ void cp110_init(int cp_index)
 
 	/* Confiure pcie clock according to clock direction */
 	cp110_pcie_clk_cfg(cp_index);
-
-	/* configure icu for CP0 */
-	/* ICU - Interrupt Consolidation unit
-	 * CP0: interrupt 0..63 mapped to ID 64..127 in AP
-	 * CP1: interrupt 64..127 mapped to ID 288..351 in AP */
-	icu_init(cp_index, 0, cp_index * 64, &icu_config);
 
 	/* configure stream id for CP0 */
 	cp110_stream_id_init(MVEBU_CP_REGS_BASE(cp_index));
