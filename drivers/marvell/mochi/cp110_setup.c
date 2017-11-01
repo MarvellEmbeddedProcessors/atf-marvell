@@ -51,12 +51,7 @@
 /* AXI Protection bits */
 #define MVEBU_AXI_PROT_BASE(cp_index)		(MVEBU_CP_REGS_BASE(cp_index) + 0x441200)
 
-/* AXI Protection regs for A0 revision */
-#define MVEBU_AXI_PROT_REG_A0(cp_index, index)	((index <= 6) ? (MVEBU_AXI_PROT_BASE(cp_index) + 0x4 * index) : \
-						(MVEBU_AXI_PROT_BASE(cp_index) + 0x20 + 0x4 * (index - 7)))
-#define MVEBU_AXI_PROT_REGS_NUM_A0		(9)
-
-/* AXI Protection regs for A1 revision */
+/* AXI Protection regs */
 #define MVEBU_AXI_PROT_REG(cp_index, index)	((index <= 4) ? (MVEBU_AXI_PROT_BASE(cp_index) + 0x4 * index) : \
 						(MVEBU_AXI_PROT_BASE(cp_index) + 0x18))
 #define MVEBU_AXI_PROT_REGS_NUM			(6)
@@ -275,27 +270,21 @@ void cp110_axi_attr_init(int cp_index)
 		}
 	}
 
-	if (apn806_rev_id_get() == APN806_REV_ID_A1) {
-		/* SATA IOCC supported in A1 rev only:
-		 * Cache attributes for SATA MBUS to AXI configuration */
-		data = mmio_read_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index));
-		data &= ~MVEBU_SATA_M2A_AXI_AWCACHE_MASK;
-		data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-			<< MVEBU_SATA_M2A_AXI_AWCACHE_OFFSET;
-		data &= ~MVEBU_SATA_M2A_AXI_ARCACHE_MASK;
-		data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-			<< MVEBU_SATA_M2A_AXI_ARCACHE_OFFSET;
-		mmio_write_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index), data);
+	/* SATA IOCC supported, cache attributes
+	 * for SATA MBUS to AXI configuration.
+	 */
+	data = mmio_read_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index));
+	data &= ~MVEBU_SATA_M2A_AXI_AWCACHE_MASK;
+	data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
+		<< MVEBU_SATA_M2A_AXI_AWCACHE_OFFSET;
+	data &= ~MVEBU_SATA_M2A_AXI_ARCACHE_MASK;
+	data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
+		<< MVEBU_SATA_M2A_AXI_ARCACHE_OFFSET;
+	mmio_write_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index), data);
 
 	/* Set all IO's AXI attribute to non-secure access. */
-		for (index = 0; index < MVEBU_AXI_PROT_REGS_NUM; index++)
-			mmio_write_32(MVEBU_AXI_PROT_REG(cp_index, index), DOMAIN_SYSTEM_SHAREABLE);
-	} else {
-		/* for A0 rev only set AXI attribute to non-secure access
-		 * (different AXI_PROT reg mapping vs A1) */
-		for (index = 0; index < MVEBU_AXI_PROT_REGS_NUM_A0; index++)
-			mmio_write_32(MVEBU_AXI_PROT_REG_A0(cp_index, index), DOMAIN_SYSTEM_SHAREABLE);
-	}
+	for (index = 0; index < MVEBU_AXI_PROT_REGS_NUM; index++)
+		mmio_write_32(MVEBU_AXI_PROT_REG(cp_index, index), DOMAIN_SYSTEM_SHAREABLE);
 
 	return;
 }
