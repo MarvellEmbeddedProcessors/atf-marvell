@@ -539,74 +539,6 @@ static void plat_marvell_power_off_prepare(struct power_off_method *pm_cfg)
 	}
 }
 
-/*
- * Enable DDR self-refresh
- */
-static inline void plat_marvell_ddr_self_refresh_en(void)
-{
-	dsb();
-
-	/* Put DRAM in self-refresh state */
-	mmio_clrsetbits_32(MVEBU_MC_PWR_CTRL_REG,
-			MVEBU_MC_AC_ON_DLY_MASK | MVEBU_MC_AC_OFF_DLY_MASK | MVEBU_MC_PHY_AUTO_OFF_MASK,
-			MVEBU_MC_AC_ON_DLY_DEF_VAR | MVEBU_MC_AC_OFF_DLY_DEF_VAR | MVEBU_MC_PHY_AUTO_OFF_EN);
-
-	mmio_clrsetbits_32(MVEBU_USER_CMD_0_REG,
-			MVEBU_USER_CMD_CH0_MASK | MVEBU_USER_CMD_CS_MASK | MVEBU_USER_CMD_SR_MASK,
-			MVEBU_USER_CMD_CH0_EN | MVEBU_USER_CMD_CS_ALL | MVEBU_USER_CMD_SR_ENTER);
-
-	isb();
-
-	/*
-	 * Wait for DRAM is done using registers access only.
-	 * At this stage any access to DRAM (procedure call) will
-	 * release it from the self-refresh mode
-	 */
-	__asm__ volatile (
-		/* Align to a cache line */
-		"	.balign 64\n\t"
-		/*
-		* Wait 100 cycles for DDR to enter self refresh, by
-		* doing 50 times two instructions.
-		*/
-		"	mov	x1, #50\n\t"
-		"1:	subs	x1, x1, #1\n\t"
-		"	bne	1b\n\t"
-		: : : "x1");
-}
-
-/*
- * Trigger the power off of the system, no DRAM access is allowed in this routine.
- * It should be inline function so that no return at the end of the routine and
- * it can be adjacent to previous handling such as enabling the DDR self-refresh,
- * which make sure they are executed in the cache and no DRAM access is needed.
- * The X17 stores GPIO output value while X18 stores GPIO register address
- */
-static inline void plat_marvell_power_off_trigger(void)
-{
-	__asm__ volatile ("str	w17, [x18]\n\t");
-}
-
-/* Trigger the power off of the system */
-static void plat_marvell_system_power_off(void)
-{
-	struct power_off_method *pm_cfg;
-
-	/* Check if there is valid PM config */
-	pm_cfg = (struct power_off_method *)plat_get_pm_cfg();
-	if (!pm_cfg)
-		return;
-
-	/* Prepare for power off */
-	plat_marvell_power_off_prepare(pm_cfg);
-
-	/* Enable DDR self-refresh to keep the data during suspend */
-	plat_marvell_ddr_self_refresh_en();
-
-	/* Issue the power off */
-	plat_marvell_power_off_trigger();
-}
-
 /*******************************************************************************
  * A8K handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
@@ -656,13 +588,6 @@ static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 
 		/* Flush and disable LLC before going off-power */
 		llc_disable(0);
-
-		/*
-		 * Power off whole system, it should be guaranteed that CPU has
-		 * enough time to finish remained tasks before the power off
-		 * takes effect.
-		 */
-		plat_marvell_system_power_off();
 
 		isb();
 		/*
@@ -751,6 +676,57 @@ static void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
 		req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
 }
 
+static void
+__dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
+{
+	struct power_off_method *pm_cfg;
+	unsigned int srcmd;
+	unsigned int sdram_reg;
+
+	pm_cfg = (struct power_off_method *)plat_get_pm_cfg();
+
+	/* Prepare for power off */
+	plat_marvell_power_off_prepare(pm_cfg);
+
+	/* First step to enable DDR self-refresh to keep the data during suspend */
+	mmio_write_32(MVEBU_MC_PWR_CTRL_REG, 0x8C1);
+
+	/* Save DDR self-refresh second step register and value to be issued later */
+	sdram_reg = MVEBU_USER_CMD_0_REG;
+	srcmd = mmio_read_32(sdram_reg);
+	srcmd &= ~(MVEBU_USER_CMD_CH0_MASK | MVEBU_USER_CMD_CS_MASK | MVEBU_USER_CMD_SR_MASK);
+	srcmd |= (MVEBU_USER_CMD_CH0_EN | MVEBU_USER_CMD_CS_ALL | MVEBU_USER_CMD_SR_ENTER);
+
+	/*
+	 * Wait for DRAM is done using registers access only.
+	 * At this stage any access to DRAM (procedure call) will
+	 * release it from the self-refresh mode
+	 */
+	__asm__ volatile (
+		/* Align to a cache line */
+		"	.balign 64\n\t"
+
+		/* Enter self refresh */
+		"	str %[srcmd], [%[sdram_reg]]\n\t"
+
+		/*
+		 * Wait 100 cycles for DDR to enter self refresh, by
+		 * doing 50 times two instructions.
+		 */
+		"	mov x1, #50\n\t"
+		"1:	subs x1, x1, #1\n\t"
+		"	bne 1b\n\t"
+
+		/* Issue the command to trigger the SoC power off */
+		"	str	w17, [x18]\n\t"
+
+		/* Trap the processor */
+		"	b .\n\t"
+		: : [srcmd] "r" (srcmd), [sdram_reg] "r" (sdram_reg) : "x1");
+
+	panic();
+}
+
 /*******************************************************************************
  * A8K handlers to shutdown/reboot the system
  ******************************************************************************/
@@ -788,6 +764,7 @@ const plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.pwr_domain_on_finish = a8k_pwr_domain_on_finish,
 	.get_sys_suspend_power_state = a8k_get_sys_suspend_power_state,
 	.pwr_domain_suspend_finish = a8k_pwr_domain_suspend_finish,
+	.pwr_domain_pwr_down_wfi = a8k_pwr_domain_pwr_down_wfi,
 	.system_off = a8k_system_off,
 	.system_reset = a8k_system_reset,
 	.validate_power_state = a8k_validate_power_state,
