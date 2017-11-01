@@ -36,7 +36,6 @@
 #include <debug.h>
 #include <mmio.h>
 #include <mci.h>
-#include <apn806_setup.h>
 #include <delay_timer.h>
 
 enum {
@@ -94,110 +93,6 @@ static int mci_poll_command_completion(int mci_index, int command_type)
 	return 0;
 }
 
-/* Routine to enable register-mode access to PHYs over MCI0 indirect read/write*/
-static void mci_enable_phy_regs_access(int mci_index)
-{
-	uint32_t reg_data = MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE |
-			    MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR;
-
-	/* Enable PHY REG access on remote (CP, device mode, GID=2) */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT));
-	mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
-
-	/* Enable PHY REG access localy (AP, host mode, GID=0) */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  reg_data | MCI_PHY_CTRL_MCI_PHY_MODE_HOST);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-	mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
-}
-
-/* read mci0 PHY/CTRL registers via indirect (local) access */
-static uint32_t mci_indirect_read(int reg_num, enum mci_register_type reg_type, int mci_index)
-{
-	uint32_t indirect_reg_address = MCI_INDIRECT_REG_CTRL_ADDR(reg_num) |
-					MCI_INDIRECT_CTRL_READ_CMD;
-
-	/* Access to PHY registers requires special configuration */
-	if (reg_type == MCI_REG_TYPE_PHY)
-		indirect_reg_address |= MCI_INDIRECT_CTRL_PHY_ACCESS_EN;
-
-	/* Local access - same chip */
-	indirect_reg_address |= MCI_INDIRECT_CTRL_LOCAL_PKT;
-
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index), indirect_reg_address);
-	return mci_mmio_read_32(MCI_WRITE_READ_DATA_REG(mci_index));
-}
-
-/* Force MCI link speed to 8Gbps */
-static void mci_link_force_speed_8g(int mci_index)
-{
-	uint32_t reg_data;
-
-	/* Force link speed localy on AP PHY */
-	reg_data = PWM2_SPEED_V3_8G | PWM2_SPEED_FORCE |
-		   PWM2_RX_LINE_EN | PWM2_TX_LINE_EN;
-
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_PWM2_REG_NUM) |
-			  MCI_INDIRECT_CTRL_PHY_ACCESS_EN |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	/* Force link speed remotely on CP PHY */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_PWM2_REG_NUM) |
-			  MCI_INDIRECT_CTRL_PHY_ACCESS_EN |
-			  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT));
-
-	/* Enable SW power state requests control mode */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_PHY_P0_IDLE_MIN_IDLE_COUNT |
-			  MCI_PHY_P0_IDLE_SW_PWR_REQ_EN |
-			  MCI_PHY_P0_IDLE_SW_RETRAIN_MODE);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_P0_IDLE_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	/* Toggle power state request */
-	reg_data = MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE |
-		   MCI_PHY_CTRL_MCI_PHY_MODE_HOST |
-		   MCI_PHY_CTRL_MCI_SLEEP_REQ |
-		   MCI_PHY_CTRL_MCI_MAJOR |
-		   MCI_PHY_CTRL_MCI_MINOR;
-
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	reg_data &= ~MCI_PHY_CTRL_MCI_SLEEP_REQ;
-
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	/* Return power state requests control mode back to HW */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_PHY_P0_IDLE_MIN_IDLE_COUNT |
-			  MCI_PHY_P0_IDLE_SW_RETRAIN_MODE);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_P0_IDLE_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	/* Reset all fields in link CRC control register */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), 0);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_LINK_CRC_CTRL_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-}
-
 /* Perform 3 configurations in one command: PCI mode, queues separation and cache bit */
 static int mci_axi_set_pcie_mode(int mci_index)
 {
@@ -237,43 +132,8 @@ static int mci_axi_set_pcie_mode(int mci_index)
 	return 1;
 }
 
-/* Reduce sequence FIFO timer expiration threshold */
+/* Reduce sequence FIFO timer expiration threshold, including PIDI workaround */
 static int mci_axi_set_fifo_thresh(int mci_index)
-{
-	uint32_t reg_data;
-
-	/* This configuration reduces sequence FIFO timer expiration threshold (to 0x7 instead of 0xA).
-	 * In MCI 1.6 version this configuration prevents possible functional issues.
-	 * In version 1.82 the configuration prevents performance degradation
-	 */
-	/* Configure local AP side */
-	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL);
-	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_IHB_MODE_CFG_REG_NUM) |
-			  MCI_INDIRECT_CTRL_LOCAL_PKT);
-
-	/* Check the command execution status */
-	reg_data = mci_mmio_read_32(MCI_ACCESS_CMD_REG(mci_index));
-	if (reg_data | MCI_INDIRECT_CTRL_CMD_DONE) {
-		/* Configure remote CP side */
-		mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-				  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL);
-		mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
-				  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_IHB_MODE_CFG_REG_NUM) |
-				  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT));
-
-		/* Check the command execution status */
-		reg_data = mci_mmio_read_32(MCI_ACCESS_CMD_REG(mci_index));
-		if (reg_data | MCI_INDIRECT_CTRL_CMD_DONE)
-			return 0;
-	}
-
-	return 1;
-}
-
-/* Reduce sequence FIFO timer expiration threshold for A1, including PIDI workaround */
-static int mci_axi_set_fifo_thresh_a1(int mci_index)
 {
 	uint32_t reg_data, ret = 0;
 
@@ -286,7 +146,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 	/* PIDI Workaround for entering PIDI mode */
 	reg_data = MCI_PHY_CTRL_PIDI_MODE | MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE
 		| MCI_PHY_CTRL_MCI_PHY_MODE_HOST
-		| MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1;
+		| MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
@@ -294,7 +154,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 
 	/* Reduce the threshold */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL_A1);
+			  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL);
 
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_IHB_MODE_CFG_REG_NUM) |
@@ -303,7 +163,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 
 	/* Exit PIDI mode */
 	reg_data = MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE | MCI_PHY_CTRL_MCI_PHY_MODE_HOST
-		| MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1;
+		| MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
@@ -312,7 +172,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 
 	/* Configure remote CP side */
 	/* PIDI Workaround for entering PIDI mode */
-	reg_data = MCI_PHY_CTRL_PIDI_MODE | MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1 |
+	reg_data = MCI_PHY_CTRL_PIDI_MODE | MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR |
 		   MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
@@ -321,14 +181,14 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
 
 	/* Reduce the threshold */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
-			  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL_A1);
+			  MCI_CTRL_IHB_MODE_CFG_REG_DEF_VAL);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_IHB_MODE_CFG_REG_NUM) |
 			  MCI_INDIRECT_CTRL_HOPID(GID_IHB_EXT));
 	ret |= mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
 
 	/* Exit PIDI mode */
-	reg_data = MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR_A1 | MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE;
+	reg_data = MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_MINOR | MCI_PHY_CTRL_MCI_PHY_REG_IF_MODE;
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index), reg_data);
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_index),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_CTRL_IHB_MODE_FWD_MOD);
@@ -345,7 +205,7 @@ static int mci_axi_set_fifo_thresh_a1(int mci_index)
  * 4. CP AR and AW outstanding
  * 5. AP AR and AW outstanding
  */
-static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
+static int mci_axi_set_fifo_rx_tx_thresh(int mci_index)
 {
 	uint32_t ret = 0;
 
@@ -427,7 +287,7 @@ static int mci_axi_set_fifo_rx_tx_thresh_a1(int mci_index)
  * which arrived simultaneously and will lead to CPU hang.
  * The below will configure MCI to be able to pass transactions from/to CP/AP.
  */
-int mci_enable_simultaneous_transactions(int mci_index)
+static int mci_enable_simultaneous_transactions(int mci_index)
 {
 	uint32_t ret = 0;
 
@@ -535,7 +395,7 @@ static _Bool mci_simulatenous_trans_missing(int mci_index)
  *   complete the MCI configuration.
  *   (If we exit - Bootloader will surely fail to boot)
  */
-int mci_configure_a1(int mci_index)
+int mci_configure(int mci_index)
 {
 	int rval;
 
@@ -558,95 +418,24 @@ int mci_configure_a1(int mci_index)
 		ERROR("Failed to set MCI to AXI PCIe mode\n");
 
 	/* reduce FIFO global threshold */
-	rval = mci_axi_set_fifo_thresh_a1(mci_index);
+	rval = mci_axi_set_fifo_thresh(mci_index);
 	if (rval)
 		ERROR("Failed to set MCI FIFO global threshold\n");
 
 	/* configure RX/TX FIFO thresholds */
-	rval = mci_axi_set_fifo_rx_tx_thresh_a1(mci_index);
+	rval = mci_axi_set_fifo_rx_tx_thresh(mci_index);
 	if (rval)
 		ERROR("Failed to set MCI RX/TX FIFO threshold\n");
 
 	return 1;
 }
 
-/* For A0 revision, Initialize the MCI link and check its status.
- * - Configure MCI indirect access registers for register-mode access
- * - Foce MCI link speed to 8Gbps
- * - Switch AXI to PCIe mode
- * - Reduce sequence FIFO threshold
- * - Check the status of MCI link
- * - Reset SoC on unrecoverable link fail
- */
-int mci_link_init_a0(int mci_index)
-{
-	uint32_t ctrl_status, phy_status, link_error;
-	int rval, n;
-
-	/* enable PHY register mode read/write access */
-	mci_enable_phy_regs_access(mci_index);
-
-	INFO("Force the MCI0 link speed to 8GBps\n");
-	/* APN806-A0: Force link speed to 8Gbps */
-	mci_link_force_speed_8g(mci_index);
-
-	/* Configure MCI for more consistent behavior with AXI protocol */
-	rval = mci_axi_set_pcie_mode(mci_index);
-	if (rval)
-		ERROR("Failed to set AXI PCIe mode\n");
-
-	/* reduce FIFO threshold */
-	rval = mci_axi_set_fifo_thresh(mci_index);
-	if (rval)
-		ERROR("Failed to set FIFO threshold\n");
-
-	for (n = 0; n < LINK_READY_TIMEOUT; n++) {
-		/* MCI Controller link status*/
-		ctrl_status = mci_indirect_read(MCI_CTRL_STATUS_REG_NUM, MCI_REG_TYPE_CTRL, mci_index);
-
-		/* MCI PHY link status: PWM Control #3*/
-		phy_status = mci_indirect_read(MCI_PHY_PWM3_REG_NUM, MCI_REG_TYPE_PHY, mci_index);
-
-		if (ctrl_status == MCI_CTRL_PHY_READY)
-			break;
-	}
-
-	if (ctrl_status != MCI_CTRL_PHY_READY) {
-		ERROR(" Link failed (MCI status: 0x%x, PWM_CTRL #3 = 0x%x)\n",
-		      ctrl_status, phy_status);
-		goto reboot;
-	}
-
-	link_error = (phy_status & PWM3_LINK_ERROR_MASK) >> PWM3_LINK_ERROR_OFFSET;
-	if (link_error) {
-		ERROR(" Link Error #%d: (MCI status: 0%x)\n", link_error, ctrl_status);
-		goto reboot;
-	}
-	INFO("MCI0 link is UP\n");
-
-	return 1;
-
-reboot:
-	/* Unrecoverable error, no WA exists, requires HW reset */
-	ERROR("REBOOTING...");
-	plat_marvell_system_reset();
-	/* Never reached */
-	return 0;
-}
-
-/* Initialize MCI
- * - Performance improvements for A0 & A1
- * - A0 revision configuration include MCI link initialization */
+/* Initialize MCI for performance improvements */
 int mci_initialize(int mci_index)
 {
 	INFO("MCI%d initialization:\n", mci_index);
 
-	if (apn806_rev_id_get() == APN806_REV_ID_A0)
-		return mci_link_init_a0(0);
-
-	/* Else, for A1 configure MCI for improved performance */
-	mci_configure_a1(0);
-	return 1; /* Link is always guaranteed for A1 */
+	return mci_configure(mci_index);
 }
 
 /* MCIx indirect access register are based by default at 0xf4000000/0xf6000000
@@ -658,8 +447,7 @@ void mci_remap_indirect_access_base(void)
 {
 	uint32_t i;
 
-	for (i = 0; i < MCI_MAX_UNIT_ID; ++i) {
+	for (i = 0; i < MCI_MAX_UNIT_ID; ++i)
 		mci_mmio_write_32(MCIX4_REG_START_ADDRESS_REG(i),
 				  MVEBU_MCI_REG_BASE_REMAP(i) >> MCI_REMAP_OFF_SHIFT);
-	}
 }
