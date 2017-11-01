@@ -82,7 +82,13 @@
 #define MVEBU_CP0_I2C_BASE		(MVEBU_CP_REGS_BASE(0) + 0x701000)
 #define MVEBU_AP_EXT_TSEN_BASE		(MVEBU_RFU_BASE + 0x8084)
 
-#define MVEBU_MCI_REG_BASE_REMAP(index) (0xFD000000 + ((index) * 0x1000000))
+/* MCI indirect access definitions */
+#define MCI_MAX_UNIT_ID				2
+/* SoC RFU / IHBx4 Control */
+#define MCIX4_REG_START_ADDRESS_REG(unit_id)	(MVEBU_RFU_BASE + 0x4218 + (unit_id * 0x20))
+#define MCI_REMAP_OFF_SHIFT			8
+
+#define MVEBU_MCI_REG_BASE_REMAP(index)		(0xFD000000 + ((index) * 0x1000000))
 
 #define MVEBU_PCIE_X4_MAC_BASE(x)	(MVEBU_CP_REGS_BASE(x) + 0x600000)
 #define MVEBU_COMPHY_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x441000)

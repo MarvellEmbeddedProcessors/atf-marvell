@@ -437,17 +437,3 @@ int mci_initialize(int mci_index)
 
 	return mci_configure(mci_index);
 }
-
-/* MCIx indirect access register are based by default at 0xf4000000/0xf6000000
- * to avoid conflict of internal registers of units connected via MCIx, which
- * can be based on the same address (i.e CP1 base is also 0xf4000000),
- * the following routines remaps the MCIx indirect bases to another domain
- */
-void mci_remap_indirect_access_base(void)
-{
-	uint32_t i;
-
-	for (i = 0; i < MCI_MAX_UNIT_ID; ++i)
-		mci_mmio_write_32(MCIX4_REG_START_ADDRESS_REG(i),
-				  MVEBU_MCI_REG_BASE_REMAP(i) >> MCI_REMAP_OFF_SHIFT);
-}

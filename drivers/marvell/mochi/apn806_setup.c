@@ -151,6 +151,21 @@ void init_aurora2(void)
 #endif /* !LLC_DISABLE */
 }
 
+
+/* MCIx indirect access register are based by default at 0xf4000000/0xf6000000
+ * to avoid conflict of internal registers of units connected via MCIx, which
+ * can be based on the same address (i.e CP1 base is also 0xf4000000),
+ * the following routines remaps the MCIx indirect bases to another domain
+ */
+static void mci_remap_indirect_access_base(void)
+{
+	uint32_t mci;
+
+	for (mci = 0; mci < MCI_MAX_UNIT_ID; mci++)
+		mmio_write_32(MCIX4_REG_START_ADDRESS_REG(mci),
+				  MVEBU_MCI_REG_BASE_REMAP(mci) >> MCI_REMAP_OFF_SHIFT);
+}
+
 void apn806_axi_attr_init(void)
 {
 	uint32_t index, data;

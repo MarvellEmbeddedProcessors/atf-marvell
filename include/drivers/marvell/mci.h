@@ -35,12 +35,6 @@
 #ifndef _MCI_H_
 #define _MCI_H_
 
-/* MCI indirect access definitions */
-#define MCI_MAX_UNIT_ID				2
-/* SoC RFU / IHBx4 Control */
-#define MCIX4_REG_START_ADDRESS_REG(unit_id)	(MVEBU_REGS_BASE + 0x6F4218 + (unit_id * 0x20))
-#define MCI_REMAP_OFF_SHIFT			8
-
 /* /HB /Units /Direct_regs /Direct regs /Configuration Register Write/Read Data Register */
 #define MCI_WRITE_READ_DATA_REG(mci_index)	MVEBU_MCI_REG_BASE_REMAP(mci_index)
 /* /HB /Units /Direct_regs /Direct regs /Configuration Register Access Command Register */
@@ -253,7 +247,6 @@ enum mci_register_type {
 	MCI_REG_TYPE_CTRL,
 };
 
-void mci_remap_indirect_access_base(void);
 int mci_initialize(int mci_index);
 
 #endif /* _MCI_H_ */
