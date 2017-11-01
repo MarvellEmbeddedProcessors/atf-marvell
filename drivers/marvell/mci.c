@@ -37,6 +37,7 @@
 #include <mmio.h>
 #include <mci.h>
 #include <delay_timer.h>
+#include <mvebu.h>
 
 enum {
 	MCI_CMD_WRITE,
@@ -71,9 +72,10 @@ static uint32_t mci_mmio_read_32(uintptr_t addr)
  */
 static int mci_poll_command_completion(int mci_index, int command_type)
 {
-	uint32_t mci_cmd_value = 0, retry_count = 100;
+	uint32_t mci_cmd_value = 0, retry_count = 100, ret = 0;
 	uint32_t completion_flags = MCI_INDIRECT_CTRL_CMD_DONE;
 
+	debug_enter();
 	/* Read commands require validating that requested data is ready */
 	if (command_type == MCI_CMD_READ)
 		completion_flags |= MCI_INDIRECT_CTRL_DATA_READY;
@@ -87,17 +89,19 @@ static int mci_poll_command_completion(int mci_index, int command_type)
 
 	if (retry_count == 0) {
 		ERROR("%s: MCI command timeout (command status = 0x%x)\n", __func__, mci_cmd_value);
-		return 1;
+		ret = 1;
 	}
 
-	return 0;
+	debug_exit();
+	return ret;
 }
 
 /* Perform 3 configurations in one command: PCI mode, queues separation and cache bit */
 static int mci_axi_set_pcie_mode(int mci_index)
 {
-	uint32_t reg_data;
+	uint32_t reg_data, ret = 1;
 
+	debug_enter();
 	/* This configuration makes MCI IP behave consistently with AXI protocol.
 	 * It should be configured at one side only (for example localy at AP).
 	 * The IP takes care of performing the same configurations at MCI on another
@@ -126,10 +130,12 @@ static int mci_axi_set_pcie_mode(int mci_index)
 		if (mci_poll_command_completion(mci_index, MCI_CMD_READ) == 0) {
 			reg_data = mci_mmio_read_32(MCI_WRITE_READ_DATA_REG(mci_index));
 			if (reg_data & MCI_HB_CTRL_TX_CTRL_PCIE_MODE)
-				return 0;
+				ret = 0;
 		}
 	}
-	return 1;
+
+	debug_exit();
+	return ret;
 }
 
 /* Reduce sequence FIFO timer expiration threshold, including PIDI workaround */
@@ -137,6 +143,7 @@ static int mci_axi_set_fifo_thresh(int mci_index)
 {
 	uint32_t reg_data, ret = 0;
 
+	debug_enter();
 	/* This configuration reduces sequence FIFO timer expiration threshold (to 0x7 instead of 0xA).
 	 * In MCI 1.6 version this configuration prevents possible functional issues.
 	 * In version 1.82 the configuration prevents performance degradation
@@ -195,6 +202,7 @@ static int mci_axi_set_fifo_thresh(int mci_index)
 
 	ret |= mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
 
+	debug_exit();
 	return ret;
 }
 
@@ -209,6 +217,7 @@ static int mci_axi_set_fifo_rx_tx_thresh(int mci_index)
 {
 	uint32_t ret = 0;
 
+	debug_enter();
 	/* AP TX thresholds and delta configurations (IHB_reg 0x1) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_index),
 			  MCI_CTRL_TX_MEM_CFG_REG_DEF_VAL);
@@ -279,6 +288,7 @@ static int mci_axi_set_fifo_rx_tx_thresh(int mci_index)
 			  MCI_INDIRECT_CTRL_HOPID(GID_AXI_HB));
 	ret |= mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
 
+	debug_exit();
 	return ret;
 }
 
@@ -291,6 +301,7 @@ static int mci_enable_simultaneous_transactions(int mci_index)
 {
 	uint32_t ret = 0;
 
+	debug_enter();
 	/* ID assignment (assigning global ID offset to CP) */
 	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(0),
 			  MCI_DID_GLOBAL_ASSIGN_REQ_MCI_LOCAL_ID(2) |
@@ -339,6 +350,7 @@ static int mci_enable_simultaneous_transactions(int mci_index)
 			  MCI_INDIRECT_CTRL_HOPID(GID_AXI_HB));
 	ret |= mci_poll_command_completion(mci_index, MCI_CMD_WRITE);
 
+	debug_exit();
 	return ret;
 }
 
@@ -363,6 +375,7 @@ static _Bool mci_simulatenous_trans_missing(int mci_index)
 	 * (TX_CFG_W0_DST_ID) to check whether ID assignment was already
 	  * performed by BootROM.
 	 */
+	debug_enter();
 	mci_mmio_write_32(MCI_ACCESS_CMD_REG(0),
 			  MCI_INDIRECT_REG_CTRL_ADDR(MCI_HB_CTRL_WIN0_DESTINATION_REG_NUM) |
 			  MCI_INDIRECT_CTRL_HOPID(GID_AXI_HB) |
@@ -375,6 +388,7 @@ static _Bool mci_simulatenous_trans_missing(int mci_index)
 	if (ret)
 		ERROR("Failed to verify if MCI simultaneous read/write was enabled\n");
 
+	debug_exit();
 	/* default ID assignment is 0, so if register doesn't contain zeros
 	 * it means that bootrom already performed required configuration.
 	 */
@@ -399,6 +413,7 @@ int mci_configure(int mci_index)
 {
 	int rval;
 
+	debug_enter();
 	/* According to design guidelines the MCI simultaneous transaction
 	 * shouldn't be enabled more then once - therefore make sure that it
 	 * wasn't already enabled in bootrom.
@@ -427,13 +442,20 @@ int mci_configure(int mci_index)
 	if (rval)
 		ERROR("Failed to set MCI RX/TX FIFO threshold\n");
 
+	debug_exit();
 	return 1;
 }
 
 /* Initialize MCI for performance improvements */
 int mci_initialize(int mci_index)
 {
+	int ret;
+
+	debug_enter();
 	INFO("MCI%d initialization:\n", mci_index);
 
-	return mci_configure(mci_index);
+	ret = mci_configure(mci_index);
+
+	debug_exit();
+	return ret;
 }
