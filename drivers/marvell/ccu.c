@@ -51,30 +51,22 @@
 #define CCU_WIN_ALIGNMENT		(0x100000)
 
 /* AP registers */
-#define CCU_MAX_WIN_NUM			(8)
-#define CCU_WIN_CR_OFFSET(win)		(ccu_info->ccu_base + 0x0 + (0x10 * win))
+#define CCU_WIN_CR_OFFSET(win)		(ccu_base + 0x0 + (0x10 * win))
 #define CCU_TARGET_ID_OFFSET		(8)
 #define CCU_TARGET_ID_MASK		(0x7F)
 
-#define CCU_WIN_SCR_OFFSET(win)		(ccu_info->ccu_base + 0x4 + (0x10 * win))
+#define CCU_WIN_SCR_OFFSET(win)		(ccu_base + 0x4 + (0x10 * win))
 #define CCU_WIN_ENA_WRITE_SECURE	(0x1)
 #define CCU_WIN_ENA_READ_SECURE		(0x2)
 
-#define CCU_WIN_ALR_OFFSET(win)		(ccu_info->ccu_base + 0x8 + (0x10 * win))
-#define CCU_WIN_AHR_OFFSET(win)		(ccu_info->ccu_base + 0xC + (0x10 * win))
+#define CCU_WIN_ALR_OFFSET(win)		(ccu_base + 0x8 + (0x10 * win))
+#define CCU_WIN_AHR_OFFSET(win)		(ccu_base + 0xC + (0x10 * win))
 
-#define CCU_WIN_GCR_OFFSET		(ccu_info->ccu_base + 0xD0)
+#define CCU_WIN_GCR_OFFSET		(ccu_base + 0xD0)
 #define CCU_GCR_TARGET_OFFSET		(8)
 #define CCU_GCR_TARGET_MASK		(0xF)
 
-
-struct ccu_configuration {
-	uintptr_t ccu_base;
-	uint32_t max_win;
-};
-
-struct ccu_configuration ccu_config;
-struct ccu_configuration *ccu_info = &ccu_config;
+uintptr_t ccu_base;
 
 #ifdef DEBUG_ADDR_MAP
 struct ccu_target_name_map {
@@ -112,7 +104,7 @@ static void dump_ccu(void)
 	/* Dump all AP windows */
 	printf("bank  id target   start		     end\n");
 	printf("----------------------------------------------------\n");
-	for (win_id = 0; win_id < ccu_info->max_win; win_id++) {
+	for (win_id = 0; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		win_cr = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
 		printf("Win %d: 0x%lx: 0x%x\n", win_id, CCU_WIN_CR_OFFSET(win_id), win_cr);
 		if (win_cr & WIN_ENABLE_BIT) {
@@ -187,28 +179,25 @@ int init_ccu(int ap_index)
 	INFO("Initializing CCU Address decoding\n");
 
 	/* Get the base address of the address decoding CCU */
-	ccu_info->ccu_base = MVEBU_CCU_BASE(ap_index);
-
-	/* Get the maximum number of CCU windows supported */
-	ccu_info->max_win = marvell_get_ccu_max_win();
-	if ((ccu_info->max_win == 0) || (ccu_info->max_win > CCU_MAX_WIN_NUM)) {
-		ccu_info->max_win = CCU_MAX_WIN_NUM;
-		ERROR("failed reading max windows number, set window max size to %d\n", ccu_info->max_win);
-	}
+	ccu_base = MVEBU_CCU_BASE(ap_index);
 
 	/* Get the array of the windows and fill the map data */
 	marvell_get_ccu_memory_map(ap_index, &win, &win_count);
 	if (win_count <= 0) {
 		INFO("no windows configurations found\n");
 		return 0;
+	} else if (win_count > (MVEBU_CCU_MAX_WINS - 1)) {
+		ERROR("CCU memory map array greater than max available windows, set win_count to max %d\n",
+				MVEBU_CCU_MAX_WINS);
+		win_count = MVEBU_CCU_MAX_WINS;
 	}
 
-	/* Set the default target ID to DRAM 0 */
+	/* Get & set the default target according board topology */
 	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all AP windows, start from 1 to avoid overriding internal registers */
-	for (win_id = 1; win_id < ccu_info->max_win; win_id++) {
+	for (win_id = 1; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		win_reg = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
 
 		win_reg &= ~WIN_ENABLE_BIT;
@@ -222,16 +211,13 @@ int init_ccu(int ap_index)
 	/* win_id is the index of the current ccu window
 	** array_id is the index of the current memory map window entry */
 	for (win_id = 1, array_id = 0;
-		  ((win_id < ccu_info->max_win) && (array_id < win_count)); win_id++) {
+		  ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count)); win_id++) {
 		ccu_win_check(win, win_id);
 		ccu_enable_win(win, win_id);
 
 		win++;
 		array_id++;
 	}
-
-	if (array_id != win_count)
-		ERROR("Set only %d CCU windows. expected %d", array_id, win_count);
 
 #ifdef DEBUG_ADDR_MAP
 	dump_ccu();

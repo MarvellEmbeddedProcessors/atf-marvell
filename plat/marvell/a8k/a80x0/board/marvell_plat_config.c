@@ -142,16 +142,9 @@ int marvell_get_iob_memory_map(struct iob_win **win,
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
-#define MARVELL_CCU_MAX_WIN	8
-
 struct ccu_win ccu_memory_map[] = {
 	{0x0,	0xf2000000,	0x0,	0xe000000,  IO_0_TID}, /* IO window */
 };
-
-int marvell_get_ccu_max_win(void)
-{
-	return MARVELL_CCU_MAX_WIN;
-}
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
 {

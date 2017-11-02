@@ -37,18 +37,11 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
-#define MARVELL_CCU_MAX_WIN	8
-
 struct ccu_win *ccu_memory_map = NULL;
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
 {
 	return DRAM_0_TID;
-}
-
-int marvell_get_ccu_max_win(void)
-{
-	return MARVELL_CCU_MAX_WIN;
 }
 
 int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)

@@ -69,7 +69,7 @@ static int bl2_plat_mmap_init(void)
 
 	win_nr =  sizeof(mem_map) / sizeof(struct ccu_win);
 
-	if (win_nr > marvell_get_ccu_max_win()) {
+	if (win_nr > MVEBU_CCU_MAX_WINS) {
 		ERROR("BL2: %s: trying to open too many windows\n", __func__);
 		return -1;
 	}

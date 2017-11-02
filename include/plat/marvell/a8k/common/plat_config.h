@@ -133,7 +133,6 @@ int marvell_gpio_config(void);
 uint32_t marvell_get_io_win_gcr_target(int);
 int marvell_get_iob_max_win(void);
 uint32_t marvell_get_ccu_gcr_target(int);
-int marvell_get_ccu_max_win(void);
 
 
 /*
