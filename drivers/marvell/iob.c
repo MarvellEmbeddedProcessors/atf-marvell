@@ -43,6 +43,9 @@
 #define DEBUG_ADDR_MAP
 #endif
 
+#define MVEBU_IOB_OFFSET		(0x190000)
+#define MVEBU_IOB_MAX_WINS		16
+
 /* common defines */
 #define WIN_ENABLE_BIT			(0x1)
 /* Physical address of the base of the window = {AddrLow[19:0],20`h0} */
@@ -145,7 +148,7 @@ static void dump_iob(void)
 }
 #endif
 
-int init_iob(int cp_index)
+int init_iob(uintptr_t base)
 {
 	struct iob_win *win;
 	uint32_t win_id, win_reg;
@@ -154,10 +157,10 @@ int init_iob(int cp_index)
 	INFO("Initializing IOB Address decoding\n");
 
 	/* Get the base address of the address decoding MBUS */
-	iob_base = MVEBU_IOB_BASE(cp_index);
+	iob_base = base + MVEBU_IOB_OFFSET;
 
 	/* Get the array of the windows and fill the map data */
-	marvell_get_iob_memory_map(&win, &win_count, cp_index);
+	marvell_get_iob_memory_map(&win, &win_count, base);
 	if (win_count <= 0) {
 		INFO("no windows configurations found\n");
 		return 0;

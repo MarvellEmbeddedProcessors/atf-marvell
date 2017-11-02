@@ -69,8 +69,7 @@ uint32_t marvell_get_ccu_gcr_target(int);
  */
 int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size);
 int marvell_get_io_win_memory_map(int, struct io_win **win, uint32_t *size);
-int marvell_get_iob_memory_map(struct iob_win **win,
-			       uint32_t *size, int cp_index);
+int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, uintptr_t base);
 int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size);
 
 #endif /* __BOARD_CONFIG_H__ */

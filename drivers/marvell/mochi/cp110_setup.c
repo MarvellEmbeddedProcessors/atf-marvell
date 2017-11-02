@@ -33,6 +33,7 @@
 */
 
 #include <plat_marvell.h>
+#include <debug.h>
 #include <plat_def.h>
 #include <amb_adec.h>
 #include <iob.h>
@@ -45,31 +46,79 @@
  */
 
  /* Used for Units of CP-110 (e.g. USB device, USB Host, and etc) */
-#define MVEBU_AXI_ATTR_BASE(cp_index)		(MVEBU_CP_REGS_BASE(cp_index) + 0x441300)
-#define MVEBU_AXI_ATTR_REG(cp_index, index)	(MVEBU_AXI_ATTR_BASE(cp_index) + 0x4 * index)
+#define MVEBU_AXI_ATTR_OFFSET				(0x441300)
+#define MVEBU_AXI_ATTR_REG(index)			(MVEBU_AXI_ATTR_OFFSET + 0x4 * index)
 
 /* AXI Protection bits */
-#define MVEBU_AXI_PROT_BASE(cp_index)		(MVEBU_CP_REGS_BASE(cp_index) + 0x441200)
+#define MVEBU_AXI_PROT_OFFSET				(0x441200)
 
 /* AXI Protection regs */
-#define MVEBU_AXI_PROT_REG(cp_index, index)	((index <= 4) ? (MVEBU_AXI_PROT_BASE(cp_index) + 0x4 * index) : \
-						(MVEBU_AXI_PROT_BASE(cp_index) + 0x18))
-#define MVEBU_AXI_PROT_REGS_NUM			(6)
+#define MVEBU_AXI_PROT_REG(index)			((index <= 4) ? (MVEBU_AXI_PROT_OFFSET + 0x4 * index) : \
+							(MVEBU_AXI_PROT_OFFSET + 0x18))
+#define MVEBU_AXI_PROT_REGS_NUM				(6)
 
-#define MVEBU_SOC_CFGS_BASE(cp_index)		(MVEBU_CP_REGS_BASE(cp_index) + 0x441900)
-#define MVEBU_SOC_CFG_REG(cp_index, index)	(MVEBU_SOC_CFGS_BASE(cp_index) + 0x4 * index)
-#define MVEBU_SOC_CFG_REG_NUM			(0)
-#define MVEBU_SOC_CFG_GLOG_SECURE_EN_MASK	(0xE)
+#define MVEBU_SOC_CFGS_OFFSET				(0x441900)
+#define MVEBU_SOC_CFG_REG(index)			(MVEBU_SOC_CFGS_OFFSET + 0x4 * index)
+#define MVEBU_SOC_CFG_REG_NUM				(0)
+#define MVEBU_SOC_CFG_GLOG_SECURE_EN_MASK		(0xE)
 
 /* SATA3 MBUS to AXI regs */
-#define MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index)	(MVEBU_CP_REGS_BASE(cp_index) + 0x54ff04)
+#define MVEBU_SATA_M2A_AXI_PORT_CTRL_REG		(0x54ff04)
 
 /* AXI to MBUS bridge registers */
-#define MVEBU_AMB_IP_BRIDGE_WIN_REG(cp_index, win)	(MVEBU_AMB_IP_BASE(cp_index) + (win * 0x8))
+#define MVEBU_AMB_IP_OFFSET				(0x13ff00)
+#define MVEBU_AMB_IP_BRIDGE_WIN_REG(win)		(MVEBU_AMB_IP_OFFSET + (win * 0x8))
 #define MVEBU_AMB_IP_BRIDGE_WIN_EN_OFFSET		0
 #define MVEBU_AMB_IP_BRIDGE_WIN_EN_MASK			(0x1 << MVEBU_AMB_IP_BRIDGE_WIN_EN_OFFSET)
 #define MVEBU_AMB_IP_BRIDGE_WIN_SIZE_OFFSET		16
 #define MVEBU_AMB_IP_BRIDGE_WIN_SIZE_MASK		(0xffff << MVEBU_AMB_IP_BRIDGE_WIN_SIZE_OFFSET)
+
+#define MVEBU_SAMPLE_AT_RESET_REG			(0x440600)
+#define SAR_PCIE1_CLK_CFG_OFFSET			31
+#define SAR_PCIE1_CLK_CFG_MASK				(0x1 << SAR_PCIE1_CLK_CFG_OFFSET)
+#define SAR_PCIE0_CLK_CFG_OFFSET			30
+#define SAR_PCIE0_CLK_CFG_MASK				(0x1 << SAR_PCIE0_CLK_CFG_OFFSET)
+#define SAR_I2C_INIT_EN_OFFSET				24
+#define SAR_I2C_INIT_EN_MASK				(1 << SAR_I2C_INIT_EN_OFFSET)
+
+/*******************************************************************************
+ * PCIE clock buffer control
+ ******************************************************************************/
+#define MVEBU_PCIE_REF_CLK_BUF_CTRL			(0x4404F0)
+#define PCIE1_REFCLK_BUFF_SOURCE			0x800
+#define PCIE0_REFCLK_BUFF_SOURCE			0x400
+
+/*******************************************************************************
+ * MSS Device Push Set Register
+ ******************************************************************************/
+#define MVEBU_CP_MSS_DPSHSR_REG				(0x280040)
+#define MSS_DPSHSR_REG_PCIE_CLK_SEL			0x8
+
+/*******************************************************************************
+ * RTC Configuration
+ ******************************************************************************/
+#define MVEBU_RTC_BASE					(0x284000)
+#define MVEBU_RTC_STATUS_REG				(MVEBU_RTC_BASE + 0x0)
+#define MVEBU_RTC_STATUS_ALARM1_MASK			0x1
+#define MVEBU_RTC_STATUS_ALARM2_MASK			0x2
+#define MVEBU_RTC_IRQ_1_CONFIG_REG			(MVEBU_RTC_BASE + 0x4)
+#define MVEBU_RTC_IRQ_2_CONFIG_REG			(MVEBU_RTC_BASE + 0x8)
+#define MVEBU_RTC_TIME_REG				(MVEBU_RTC_BASE + 0xC)
+#define MVEBU_RTC_ALARM_1_REG				(MVEBU_RTC_BASE + 0x10)
+#define MVEBU_RTC_ALARM_2_REG				(MVEBU_RTC_BASE + 0x14)
+#define MVEBU_RTC_CCR_REG				(MVEBU_RTC_BASE + 0x18)
+#define MVEBU_RTC_NOMINAL_TIMING			0x2000
+#define MVEBU_RTC_NOMINAL_TIMING_MASK			0x7FFF
+#define MVEBU_RTC_TEST_CONFIG_REG			(MVEBU_RTC_BASE + 0x1C)
+#define MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG		(MVEBU_RTC_BASE + 0x80)
+#define MVEBU_RTC_WRCLK_PERIOD_MASK			0xFFFF
+#define MVEBU_RTC_WRCLK_PERIOD_DEFAULT			0x3FF
+#define MVEBU_RTC_WRCLK_SETUP_OFFS			16
+#define MVEBU_RTC_WRCLK_SETUP_MASK			0xFFFF0000
+#define MVEBU_RTC_WRCLK_SETUP_DEFAULT			0x29
+#define MVEBU_RTC_BRIDGE_TIMING_CTRL1_REG		(MVEBU_RTC_BASE + 0x84)
+#define MVEBU_RTC_READ_OUTPUT_DELAY_MASK		0xFFFF
+#define MVEBU_RTC_READ_OUTPUT_DELAY_DEFAULT		0x1F
 
 /* Errata */
 /* This bit disables internal HW fix for CP i2c init on REV A1 and later */
@@ -133,7 +182,7 @@ uintptr_t stream_id_reg[] = {
 	0
 };
 
-void cp110_ble_errata_wa_init(int cp_index)
+void cp110_ble_errata_wa_init(uintptr_t base)
 {
 	uint32_t data;
 
@@ -155,13 +204,13 @@ void cp110_ble_errata_wa_init(int cp_index)
 	 * mode is active. This should be done before access to DDR SPD.
 	 */
 
-	data = mmio_read_32(MVEBU_SAMPLE_AT_RESET_REG(cp_index));
+	data = mmio_read_32(base + MVEBU_SAMPLE_AT_RESET_REG);
 	if (data & SAR_I2C_INIT_EN_MASK)
-		mmio_write_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index),
+		mmio_write_32(base + MVEBU_CP_MSS_DPSHSR_REG,
 			      MVEBU_CONF_I2C_INIT_SEL_MASK);
 }
 
-void cp110_errata_wa_init(int cp_index)
+void cp110_errata_wa_init(uintptr_t base)
 {
 	uint32_t data;
 
@@ -172,12 +221,12 @@ void cp110_errata_wa_init(int cp_index)
 	 * Performing it also at IHB/HB complicates programming model.
 	 *
 	 * Enable non-secure access in SOC configuration register */
-	data = mmio_read_32(MVEBU_SOC_CFG_REG(cp_index, MVEBU_SOC_CFG_REG_NUM));
+	data = mmio_read_32(base + MVEBU_SOC_CFG_REG(MVEBU_SOC_CFG_REG_NUM));
 	data &= ~MVEBU_SOC_CFG_GLOG_SECURE_EN_MASK;
-	mmio_write_32(MVEBU_SOC_CFG_REG(cp_index, MVEBU_SOC_CFG_REG_NUM), data);
+	mmio_write_32(base + MVEBU_SOC_CFG_REG(MVEBU_SOC_CFG_REG_NUM), data);
 }
 
-void cp110_pcie_clk_cfg(int cp_index)
+void cp110_pcie_clk_cfg(uintptr_t base)
 {
 	uint32_t pcie0_clk, pcie1_clk, reg;
 
@@ -185,7 +234,7 @@ void cp110_pcie_clk_cfg(int cp_index)
 	 * Determine the pcie0/1 clock direction (input/output) from the
 	 * sample at reset.
 	 */
-	reg = mmio_read_32(MVEBU_SAMPLE_AT_RESET_REG(cp_index));
+	reg = mmio_read_32(base + MVEBU_SAMPLE_AT_RESET_REG);
 	pcie0_clk = (reg & SAR_PCIE0_CLK_CFG_MASK) >> SAR_PCIE0_CLK_CFG_OFFSET;
 	pcie1_clk = (reg & SAR_PCIE1_CLK_CFG_MASK) >> SAR_PCIE1_CLK_CFG_OFFSET;
 
@@ -195,14 +244,14 @@ void cp110_pcie_clk_cfg(int cp_index)
 		 * PCIe Reference Clock Buffer Control register must be
 		 * set according to the clock direction (input/output)
 		 */
-		reg = mmio_read_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index));
+		reg = mmio_read_32(base + MVEBU_PCIE_REF_CLK_BUF_CTRL);
 		reg &= ~(PCIE0_REFCLK_BUFF_SOURCE | PCIE1_REFCLK_BUFF_SOURCE);
 		if (!pcie0_clk)
 			reg |= PCIE0_REFCLK_BUFF_SOURCE;
 		if (!pcie1_clk)
 			reg |= PCIE1_REFCLK_BUFF_SOURCE;
 
-		mmio_write_32(MVEBU_PCIE_REF_CLK_BUF_CTRL(cp_index), reg);
+		mmio_write_32(base + MVEBU_PCIE_REF_CLK_BUF_CTRL, reg);
 	}
 
 	/* CP110 revision A1 */
@@ -213,15 +262,15 @@ void cp110_pcie_clk_cfg(int cp_index)
 			 * we need to set mss_push[131] field, otherwise,
 			 * the pcie clock might not work.
 			 */
-			reg = mmio_read_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index));
+			reg = mmio_read_32(base + MVEBU_CP_MSS_DPSHSR_REG);
 			reg |= MSS_DPSHSR_REG_PCIE_CLK_SEL;
-			mmio_write_32(MVEBU_CP_MSS_DPSHSR_REG(cp_index), reg);
+			mmio_write_32(base + MVEBU_CP_MSS_DPSHSR_REG, reg);
 		}
 	}
 }
 
 /* Set a unique stream id for all DMA capable devices */
-void cp110_stream_id_init(uintptr_t cp110_base)
+void cp110_stream_id_init(uintptr_t base)
 {
 	int i = 0;
 	uint32_t stream_id = MAX_PCIE_STREAM_ID;
@@ -230,13 +279,13 @@ void cp110_stream_id_init(uintptr_t cp110_base)
 		/* SATA port 0/1 are in the same SATA unit, and they should use
 		** the same STREAM ID number */
 		if (stream_id_reg[i] == SATA_0_STREAM_ID_REG)
-			mmio_write_32(cp110_base + stream_id_reg[i++], stream_id);
+			mmio_write_32(base + stream_id_reg[i++], stream_id);
 		else
-			mmio_write_32(cp110_base + stream_id_reg[i++], stream_id++);
+			mmio_write_32(base + stream_id_reg[i++], stream_id++);
 	}
 }
 
-void cp110_axi_attr_init(int cp_index)
+void cp110_axi_attr_init(uintptr_t base)
 {
 	uint32_t index, data;
 
@@ -254,7 +303,7 @@ void cp110_axi_attr_init(int cp_index)
 			/* Set Ax-Cache as cacheable, no allocate, modifiable, bufferable
 			 The values are different because Read & Write definition
 			 is different in Ax-Cache */
-			data = mmio_read_32(MVEBU_AXI_ATTR_REG(cp_index, index));
+			data = mmio_read_32(base + MVEBU_AXI_ATTR_REG(index));
 			data &= ~MVEBU_AXI_ATTR_ARCACHE_MASK;
 			data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
 				<< MVEBU_AXI_ATTR_ARCACHE_OFFSET;
@@ -266,55 +315,52 @@ void cp110_axi_attr_init(int cp_index)
 			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_ARDOMAIN_OFFSET;
 			data &= ~MVEBU_AXI_ATTR_AWDOMAIN_MASK;
 			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_AWDOMAIN_OFFSET;
-			mmio_write_32(MVEBU_AXI_ATTR_REG(cp_index, index), data);
+			mmio_write_32(base + MVEBU_AXI_ATTR_REG(index), data);
 		}
 	}
 
 	/* SATA IOCC supported, cache attributes
 	 * for SATA MBUS to AXI configuration.
 	 */
-	data = mmio_read_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index));
+	data = mmio_read_32(base + MVEBU_SATA_M2A_AXI_PORT_CTRL_REG);
 	data &= ~MVEBU_SATA_M2A_AXI_AWCACHE_MASK;
 	data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
 		<< MVEBU_SATA_M2A_AXI_AWCACHE_OFFSET;
 	data &= ~MVEBU_SATA_M2A_AXI_ARCACHE_MASK;
 	data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
 		<< MVEBU_SATA_M2A_AXI_ARCACHE_OFFSET;
-	mmio_write_32(MVEBU_SATA_M2A_AXI_PORT_CTRL_REG(cp_index), data);
+	mmio_write_32(base + MVEBU_SATA_M2A_AXI_PORT_CTRL_REG, data);
 
 	/* Set all IO's AXI attribute to non-secure access. */
 	for (index = 0; index < MVEBU_AXI_PROT_REGS_NUM; index++)
-		mmio_write_32(MVEBU_AXI_PROT_REG(cp_index, index), DOMAIN_SYSTEM_SHAREABLE);
+		mmio_write_32(base + MVEBU_AXI_PROT_REG(index), DOMAIN_SYSTEM_SHAREABLE);
 
 	return;
 }
 
-void amb_bridge_init(int cp_index)
+void amb_bridge_init(uintptr_t base)
 {
 	uint32_t reg;
 
 	/* Open AMB bridge Window to Access COMPHY/MDIO registers */
-	reg = mmio_read_32(MVEBU_AMB_IP_BRIDGE_WIN_REG(cp_index, 0));
+	reg = mmio_read_32(base + MVEBU_AMB_IP_BRIDGE_WIN_REG(0));
 	reg &= ~(MVEBU_AMB_IP_BRIDGE_WIN_SIZE_MASK | MVEBU_AMB_IP_BRIDGE_WIN_EN_MASK);
 	reg |= (0x7ff << MVEBU_AMB_IP_BRIDGE_WIN_SIZE_OFFSET | 0x1 << MVEBU_AMB_IP_BRIDGE_WIN_EN_OFFSET);
-	mmio_write_32(MVEBU_AMB_IP_BRIDGE_WIN_REG(cp_index, 0), reg);
+	mmio_write_32(base + MVEBU_AMB_IP_BRIDGE_WIN_REG(0), reg);
 }
 
-void cp110_rtc_init(int cp_index)
+void cp110_rtc_init(uintptr_t base)
 {
 	/* Update MBus timing parameters before accessing RTC registers */
-	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
-			   MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG_OFFS,
+	mmio_clrsetbits_32(base + MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG,
 			   MVEBU_RTC_WRCLK_PERIOD_MASK,
 			   MVEBU_RTC_WRCLK_PERIOD_DEFAULT);
 
-	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
-			   MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG_OFFS,
+	mmio_clrsetbits_32(base + MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG,
 			   MVEBU_RTC_WRCLK_SETUP_MASK,
 			   MVEBU_RTC_WRCLK_SETUP_DEFAULT << MVEBU_RTC_WRCLK_SETUP_OFFS);
 
-	mmio_clrsetbits_32(MVEBU_RTC_BASE(cp_index) +
-			   MVEBU_RTC_BRIDGE_TIMING_CTRL1_REG_OFFS,
+	mmio_clrsetbits_32(base + MVEBU_RTC_BRIDGE_TIMING_CTRL1_REG,
 			   MVEBU_RTC_READ_OUTPUT_DELAY_MASK,
 			   MVEBU_RTC_READ_OUTPUT_DELAY_DEFAULT);
 
@@ -322,37 +368,36 @@ void cp110_rtc_init(int cp_index)
 	 * Issue reset to the RTC if Clock Correction register
 	 * contents did not sustain the reboot/power-on.
 	 */
-	if ((mmio_read_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_CCR_REG) &
+	if ((mmio_read_32(base + MVEBU_RTC_CCR_REG) &
 	    MVEBU_RTC_NOMINAL_TIMING_MASK) != MVEBU_RTC_NOMINAL_TIMING) {
 		/* Reset Test register */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TEST_CONFIG_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_TEST_CONFIG_REG, 0);
 		udelay(500000);
 
 		/* Reset Time register */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TIME_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_TIME_REG, 0);
 		udelay(62);
 
 		/* Reset Status register */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_STATUS_REG,
+		mmio_write_32(base + MVEBU_RTC_STATUS_REG,
 			      (MVEBU_RTC_STATUS_ALARM1_MASK | MVEBU_RTC_STATUS_ALARM2_MASK));
 		udelay(62);
 
 		/* Turn off Int1 and Int2 sources & clear the Alarm count */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_IRQ_1_CONFIG_REG, 0);
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_IRQ_2_CONFIG_REG, 0);
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_ALARM_1_REG, 0);
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_ALARM_2_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_IRQ_1_CONFIG_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_IRQ_2_CONFIG_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_ALARM_1_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_ALARM_2_REG, 0);
 
 		/* Setup nominal register access timing */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_CCR_REG,
-			      MVEBU_RTC_NOMINAL_TIMING);
+		mmio_write_32(base + MVEBU_RTC_CCR_REG, MVEBU_RTC_NOMINAL_TIMING);
 
 		/* Reset Time register */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_TIME_REG, 0);
+		mmio_write_32(base + MVEBU_RTC_TIME_REG, 0);
 		udelay(10);
 
 		/* Reset Status register */
-		mmio_write_32(MVEBU_RTC_BASE(cp_index) + MVEBU_RTC_STATUS_REG,
+		mmio_write_32(base + MVEBU_RTC_STATUS_REG,
 			      (MVEBU_RTC_STATUS_ALARM1_MASK | MVEBU_RTC_STATUS_ALARM2_MASK));
 		udelay(50);
 	}
@@ -360,41 +405,49 @@ void cp110_rtc_init(int cp_index)
 
 void cp110_init(int cp_index)
 {
+	uintptr_t cp110_base = MVEBU_CP_REGS_BASE(cp_index);
+
+	INFO("%s: Initialize CP%x\n", __func__, cp_index);
+
 	/* configure AXI-MBUS windows for CP0*/
-	init_amb_adec(cp_index);
+	init_amb_adec(cp110_base);
 
 	/* configure IOB windows for CP0*/
-	init_iob(cp_index);
+	init_iob(cp110_base);
 
 	/* configure axi for CP0*/
-	cp110_axi_attr_init(cp_index);
+	cp110_axi_attr_init(cp110_base);
 
 	/* Execute SW WA for erratas */
-	cp110_errata_wa_init(cp_index);
+	cp110_errata_wa_init(cp110_base);
 
 	/* Confiure pcie clock according to clock direction */
-	cp110_pcie_clk_cfg(cp_index);
+	cp110_pcie_clk_cfg(cp110_base);
 
 	/* configure stream id for CP0 */
-	cp110_stream_id_init(MVEBU_CP_REGS_BASE(cp_index));
+	cp110_stream_id_init(cp110_base);
 
 	/* Open AMB bridge for comphy for CP0 & CP1*/
-	amb_bridge_init(cp_index);
+	amb_bridge_init(cp110_base);
 
 	/* Reset RTC if needed */
-	cp110_rtc_init(cp_index);
+	cp110_rtc_init(cp110_base);
 }
 
 /* Do the minimal setup required to configure the CP in BLE */
 void cp110_ble_init(int cp_index)
 {
-	cp110_ble_errata_wa_init(cp_index);
+	uintptr_t cp110_base = MVEBU_CP_REGS_BASE(cp_index);
+
+	INFO("%s: Initialize CP%x\n", __func__, cp_index);
+
+	cp110_ble_errata_wa_init(cp110_base);
 
 #if PCI_EP_SUPPORT
-	amb_bridge_init(cp_index);
+	amb_bridge_init(cp110_base);
 
 	/* Configure PCIe clock */
-	cp110_pcie_clk_cfg(cp_index);
+	cp110_pcie_clk_cfg(cp110_base);
 
 	/* Configure PCIe endpoint */
 	ble_plat_pcie_ep_setup();

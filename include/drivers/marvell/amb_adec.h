@@ -62,7 +62,7 @@ enum amb_attribute_ids {
 
 #define AMB_MAX_WIN_ID		7
 
-int init_amb_adec(int cp_index);
+int init_amb_adec(uintptr_t);
 
 #endif /* _AMB_ADEC_H_ */
 

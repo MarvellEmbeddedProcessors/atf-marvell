@@ -55,7 +55,7 @@ enum target_ids_iob {
 	IOB_MAX_TID
 };
 
-int init_iob(int cp_index);
+int init_iob(uintptr_t);
 
 #endif /* _IOB_H_ */
 

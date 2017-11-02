@@ -94,15 +94,14 @@ struct iob_win iob_memory_map_cp0[] = {
 	{0x80,	0x00000000,	0x80,	0x0000000,	PEX0_TID}
 };
 
-int marvell_get_iob_memory_map(struct iob_win **win,
-			       uint32_t *size, int cp_index)
+int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, uintptr_t base)
 {
-	switch (cp_index) {
-	case 0:
+	switch (base) {
+	case MVEBU_CP_REGS_BASE(0):
 		*win = iob_memory_map_cp0;
 		*size = sizeof(iob_memory_map_cp0)/sizeof(struct iob_win);
 		return 0;
-	case 1:
+	case MVEBU_CP_REGS_BASE(1):
 		*size = 0;
 		*win = 0;
 		return 0;
