@@ -229,10 +229,10 @@ void apn806_init(void)
 	mci_remap_indirect_access_base();
 
 	/* configure IO_WIN windows */
-	init_io_win(0);
+	init_io_win(MVEBU_AP0);
 
 	/* configure CCU windows */
-	init_ccu(0);
+	init_ccu(MVEBU_AP0);
 
 	/* configure DSS */
 	dss_setup();

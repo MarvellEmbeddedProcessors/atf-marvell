@@ -38,6 +38,7 @@
 #include <arm_def.h>
 
 #define MVEBU_PRIMARY_CPU		0x0
+#define MVEBU_AP0			0x0
 
 #if PALLADIUM
 #define COUNTER_FREQUENCY		48000
