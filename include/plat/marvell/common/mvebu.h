@@ -36,13 +36,8 @@
 #define _MVEBU_H_
 
 /* Use this functions only when printf is allowed */
-#if defined(CONFIG_MVEBU_DEBUG_FUNC_IN_OUT) || defined(DEBUG)
-#define debug_enter()	printf("----> Enter %s\n", __func__)
-#define debug_exit()  printf("<---- Exit  %s\n", __func__)
-#else
-#define debug_enter()
-#define debug_exit()
-#endif
+#define debug_enter()	VERBOSE("----> Enter %s\n", __func__)
+#define debug_exit()	VERBOSE("<---- Exit  %s\n", __func__)
 
 /* Macro for testing alignment. Positive if number is NOT aligned */
 #define IS_NOT_ALIGN(number, align)	((number) & ((align) - 1))
