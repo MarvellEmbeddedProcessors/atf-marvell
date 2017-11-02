@@ -34,7 +34,7 @@
 #ifndef __PLAT_CP110_H__
 #define __PLAT_CP110_H__
 
-#include <apn806_setup.h>
+#include <mmio.h>
 
 #define MVEBU_DEVICE_ID_REG		(MVEBU_CP_DFX_BASE(0) + 0x40)
 #define MVEBU_DEVICE_ID_OFFSET		(0)
