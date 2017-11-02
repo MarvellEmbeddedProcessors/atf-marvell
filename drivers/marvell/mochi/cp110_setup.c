@@ -182,7 +182,7 @@ uintptr_t stream_id_reg[] = {
 	0
 };
 
-void cp110_ble_errata_wa_init(uintptr_t base)
+static void cp110_ble_errata_wa_init(uintptr_t base)
 {
 	uint32_t data;
 
@@ -210,7 +210,7 @@ void cp110_ble_errata_wa_init(uintptr_t base)
 			      MVEBU_CONF_I2C_INIT_SEL_MASK);
 }
 
-void cp110_errata_wa_init(uintptr_t base)
+static void cp110_errata_wa_init(uintptr_t base)
 {
 	uint32_t data;
 
@@ -226,7 +226,7 @@ void cp110_errata_wa_init(uintptr_t base)
 	mmio_write_32(base + MVEBU_SOC_CFG_REG(MVEBU_SOC_CFG_REG_NUM), data);
 }
 
-void cp110_pcie_clk_cfg(uintptr_t base)
+static void cp110_pcie_clk_cfg(uintptr_t base)
 {
 	uint32_t pcie0_clk, pcie1_clk, reg;
 
@@ -270,7 +270,7 @@ void cp110_pcie_clk_cfg(uintptr_t base)
 }
 
 /* Set a unique stream id for all DMA capable devices */
-void cp110_stream_id_init(uintptr_t base)
+static void cp110_stream_id_init(uintptr_t base)
 {
 	int i = 0;
 	uint32_t stream_id = MAX_PCIE_STREAM_ID;
@@ -285,7 +285,7 @@ void cp110_stream_id_init(uintptr_t base)
 	}
 }
 
-void cp110_axi_attr_init(uintptr_t base)
+static void cp110_axi_attr_init(uintptr_t base)
 {
 	uint32_t index, data;
 
@@ -338,7 +338,7 @@ void cp110_axi_attr_init(uintptr_t base)
 	return;
 }
 
-void amb_bridge_init(uintptr_t base)
+static void amb_bridge_init(uintptr_t base)
 {
 	uint32_t reg;
 
@@ -349,7 +349,7 @@ void amb_bridge_init(uintptr_t base)
 	mmio_write_32(base + MVEBU_AMB_IP_BRIDGE_WIN_REG(0), reg);
 }
 
-void cp110_rtc_init(uintptr_t base)
+static void cp110_rtc_init(uintptr_t base)
 {
 	/* Update MBus timing parameters before accessing RTC registers */
 	mmio_clrsetbits_32(base + MVEBU_RTC_BRIDGE_TIMING_CTRL0_REG,
