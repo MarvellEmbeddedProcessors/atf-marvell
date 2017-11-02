@@ -59,6 +59,7 @@
 #define MVEBU_LLC_BASE(ap_index)	(MVEBU_REGS_BASE + 0x8000)
 #define MVEBU_IOB_BASE(cp_index)	(MVEBU_CP_REGS_BASE(cp_index) + \
 								0x190000)
+#define MVEBU_IOB_MAX_WINS		16
 #define MVEBU_DRAM_MAC_BASE		(MVEBU_REGS_BASE + 0x20000)
 #define MVEBU_DRAM_PHY_BASE		(MVEBU_REGS_BASE + 0x20000)
 #define MVEBU_AMB_IP_BASE(cp_index)	(MVEBU_CP_REGS_BASE(cp_index) + \

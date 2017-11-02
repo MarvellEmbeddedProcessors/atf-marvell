@@ -61,7 +61,6 @@ struct skip_image {
 };
 
 uint32_t marvell_get_io_win_gcr_target(int);
-int marvell_get_iob_max_win(void);
 uint32_t marvell_get_ccu_gcr_target(int);
 
 /*

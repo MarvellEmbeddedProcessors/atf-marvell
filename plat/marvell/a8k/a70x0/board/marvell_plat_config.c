@@ -86,8 +86,6 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
-#define MARVELL_IOB_MAX_WIN	16
-
 struct iob_win iob_memory_map[] = {
 	/* PEX1_X1 window */
 	{0x0,	0xf7000000,	0x0,	0x1000000,	PEX1_TID},
@@ -96,11 +94,6 @@ struct iob_win iob_memory_map[] = {
 	/* PEX0_X4 window */
 	{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID},
 };
-
-int marvell_get_iob_max_win(void)
-{
-	return MARVELL_IOB_MAX_WIN;
-}
 
 int marvell_get_iob_memory_map(struct iob_win **win,
 			       uint32_t *size, int cp_index)

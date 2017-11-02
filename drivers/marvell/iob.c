@@ -51,28 +51,20 @@
 #define IOB_WIN_ALIGNMENT		(0x100000)
 
 /* IOB registers */
-#define IOB_MAX_WIN_NUM			(24)
-
-#define IOB_WIN_CR_OFFSET(win)		(iob_info->iob_base + 0x0 + (0x20 * win))
+#define IOB_WIN_CR_OFFSET(win)		(iob_base + 0x0 + (0x20 * win))
 #define IOB_TARGET_ID_OFFSET		(8)
 #define IOB_TARGET_ID_MASK		(0xF)
 
-#define IOB_WIN_SCR_OFFSET(win)		(iob_info->iob_base + 0x4 + (0x20 * win))
+#define IOB_WIN_SCR_OFFSET(win)		(iob_base + 0x4 + (0x20 * win))
 #define IOB_WIN_ENA_CTRL_WRITE_SECURE	(0x1)
 #define IOB_WIN_ENA_CTRL_READ_SECURE	(0x2)
 #define IOB_WIN_ENA_WRITE_SECURE	(0x4)
 #define IOB_WIN_ENA_READ_SECURE		(0x8)
 
-#define IOB_WIN_ALR_OFFSET(win)		(iob_info->iob_base + 0x8 + (0x20 * win))
-#define IOB_WIN_AHR_OFFSET(win)		(iob_info->iob_base + 0xC + (0x20 * win))
+#define IOB_WIN_ALR_OFFSET(win)		(iob_base + 0x8 + (0x20 * win))
+#define IOB_WIN_AHR_OFFSET(win)		(iob_base + 0xC + (0x20 * win))
 
-struct iob_configuration {
-	uintptr_t iob_base;
-	uint32_t max_win;
-};
-
-struct iob_configuration iob_config;
-struct iob_configuration *iob_info = &iob_config;
+uintptr_t iob_base;
 
 static void iob_win_check(struct iob_win *win, uint32_t win_num)
 {
@@ -130,7 +122,7 @@ static void dump_iob(void)
 	/* Dump all IOB windows */
 	printf("bank  id target  start              end\n");
 	printf("----------------------------------------------------\n");
-	for (win_id = 0; win_id < iob_info->max_win; win_id++) {
+	for (win_id = 0; win_id < MVEBU_IOB_MAX_WINS; win_id++) {
 		win_cr = mmio_read_32(IOB_WIN_CR_OFFSET(win_id));
 		if (win_cr & WIN_ENABLE_BIT) {
 			target_id = (win_cr >> IOB_TARGET_ID_OFFSET) & IOB_TARGET_ID_MASK;
@@ -162,24 +154,21 @@ int init_iob(int cp_index)
 	INFO("Initializing IOB Address decoding\n");
 
 	/* Get the base address of the address decoding MBUS */
-	iob_info->iob_base = MVEBU_IOB_BASE(cp_index);
-
-	/* Get the maximum number of iob windows supported */
-	iob_info->max_win = marvell_get_iob_max_win();
-	if (iob_info->max_win == 0) {
-		iob_info->max_win = IOB_MAX_WIN_NUM;
-		ERROR("IOB win num cannot be 0. Setting to default num (%d)\n", IOB_MAX_WIN_NUM);
-	}
+	iob_base = MVEBU_IOB_BASE(cp_index);
 
 	/* Get the array of the windows and fill the map data */
 	marvell_get_iob_memory_map(&win, &win_count, cp_index);
 	if (win_count <= 0) {
 		INFO("no windows configurations found\n");
 		return 0;
+	} else if (win_count > (MVEBU_IOB_MAX_WINS - 1)) {
+		ERROR("IOB memory map array greater than max available windows, set win_count to max %d\n",
+				MVEBU_IOB_MAX_WINS);
+		win_count = MVEBU_IOB_MAX_WINS;
 	}
 
 	/* disable all IOB windows, start from win_id = 1 because can't disable internal register window */
-	for (win_id = 1; win_id < iob_info->max_win; win_id++) {
+	for (win_id = 1; win_id < MVEBU_IOB_MAX_WINS; win_id++) {
 		win_reg = mmio_read_32(IOB_WIN_CR_OFFSET(win_id));
 		win_reg &= ~WIN_ENABLE_BIT;
 		mmio_write_32(IOB_WIN_CR_OFFSET(win_id), win_reg);

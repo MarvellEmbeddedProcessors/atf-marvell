@@ -64,6 +64,8 @@
 #define MVEBU_HPIPE_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x120000)
 #define MVEBU_AMB_IP_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x13ff00)
 #define MVEBU_IOB_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x190000)
+#define MVEBU_IOB_MAX_WINS			16
+
 #define MVEBU_ICU_REG_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x1E0000)
 
 #define MVEBU_CP_MPP_REGS(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440000 + ((n) << 2))

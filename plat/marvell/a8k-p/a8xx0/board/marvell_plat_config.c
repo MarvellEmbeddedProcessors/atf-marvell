@@ -55,14 +55,7 @@ int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
-#define MARVELL_IOB_MAX_WIN		16
-
 struct iob_win *iob_memory_map = NULL;
-
-int marvell_get_iob_max_win(void)
-{
-	return MARVELL_IOB_MAX_WIN;
-}
 
 int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, int cp_index)
 {
