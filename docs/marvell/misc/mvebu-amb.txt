@@ -28,8 +28,6 @@ BOOT_ROM	BOOT_ROM	0x1D
 UART		UART		0x01
 
 Mandatory functions:
-	- marvell_get_amb_reg_offs
-		returns the base address of the AXI-MBUS(AMB) unit
 	- marvell_get_amb_memory_map
 		returns the AMB windows configuration and the number of windows
 

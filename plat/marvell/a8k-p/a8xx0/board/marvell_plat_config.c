@@ -18,11 +18,6 @@
  ******************************************************************************/
 struct io_win *io_win_memory_map = NULL;
 
-uintptr_t marvell_get_io_win_reg_offs(int ap_index)
-{
-	return MVEBU_IO_WIN_BASE(ap_index);
-}
-
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
 {
 	return MCI_2_TID;
@@ -45,11 +40,6 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 #define MARVELL_CCU_MAX_WIN	8
 
 struct ccu_win *ccu_memory_map = NULL;
-
-uintptr_t marvell_get_ccu_reg_offs(int ap)
-{
-	return MVEBU_CCU_BASE(ap);
-}
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
 {
@@ -76,11 +66,6 @@ int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
 
 struct iob_win *iob_memory_map = NULL;
 
-uintptr_t marvell_get_iob_reg_offs(int cp_index)
-{
-	return MVEBU_IOB_BASE(cp_index);
-}
-
 int marvell_get_iob_max_win(void)
 {
 	return MARVELL_IOB_MAX_WIN;
@@ -98,11 +83,6 @@ int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, int cp_inde
  * AMB Configuration
  ******************************************************************************/
 struct amb_win *amb_memory_map = NULL;
-
-uintptr_t marvell_get_amb_reg_offs(int cp_index)
-{
-	return MVEBU_AMB_ADEC_BASE(cp_index);
-}
 
 int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
 {

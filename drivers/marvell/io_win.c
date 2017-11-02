@@ -155,7 +155,7 @@ int init_io_win(int ap_index)
 	INFO("Initializing IO WIN Address decoding\n");
 
 	/* Get the base address of the address decoding MBUS */
-	io_win_base = marvell_get_io_win_reg_offs(ap_index);
+	io_win_base = MVEBU_IO_WIN_BASE(ap_index);
 
 	/* Get the array of the windows and its size */
 	marvell_get_io_win_memory_map(ap_index, &win, &win_count);

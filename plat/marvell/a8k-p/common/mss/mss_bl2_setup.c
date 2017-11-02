@@ -38,7 +38,7 @@ struct ccu_win mem_map[] = {
 static int bl2_plat_mmap_init(void)
 {
 	size_t win_nr, win_id;
-	uintptr_t iow_base = MVEBU_IO_WIN_BASE;
+	uintptr_t iow_base = MVEBU_IO_WIN_BASE(MVEBU_AP0);
 
 	win_nr =  sizeof(mem_map) / sizeof(struct ccu_win);
 

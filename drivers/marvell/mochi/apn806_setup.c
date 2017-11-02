@@ -43,13 +43,13 @@
 #define SMMU_sACR				(MVEBU_SMMU_BASE + 0x10)
 #define SMMU_sACR_PG_64K			(1 << 16)
 
-#define CCU_GSPMU_CR				(MVEBU_CCU_BASE + 0x3F0)
+#define CCU_GSPMU_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x3F0)
 #define GSPMU_CPU_CONTROL			(0x1 << 0)
 
-#define CCU_HTC_CR				(MVEBU_CCU_BASE + 0x200)
+#define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x200)
 #define CCU_SET_POC_OFFSET			5
 
-#define CCU_LTC_CR				(MVEBU_CCU_BASE + 0x300)
+#define CCU_LTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x300)
 #define CCU_CLEAN_INV_WRITE_OFFSET		8
 
 #define DSS_CR0					(MVEBU_RFU_BASE + 0x100)

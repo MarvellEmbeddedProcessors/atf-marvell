@@ -39,7 +39,7 @@
 #include <cache_llc.h>
 
 
-#define CCU_HTC_ASET			(MVEBU_CCU_BASE + 0x264)
+#define CCU_HTC_ASET			(MVEBU_CCU_BASE(MVEBU_AP0) + 0x264)
 #define MVEBU_IO_AFFINITY		(0xF00)
 
 

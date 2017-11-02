@@ -98,6 +98,7 @@ static void amb_enable_win(struct amb_win *win, uint32_t win_num)
 	ctrl |= WIN_ENABLE_BIT;
 	mmio_write_32(AMB_WIN_CR_OFFSET(win_num), ctrl);
 }
+
 #ifdef DEBUG_ADDR_MAP
 static void dump_amb_adec(void)
 {
@@ -131,7 +132,7 @@ int init_amb_adec(int cp_index)
 	INFO("Initializing AXI to MBus Bridge Address decoding\n");
 
 	/* Get the base address of the AMB address decoding */
-	amb_base = marvell_get_amb_reg_offs(cp_index);
+	amb_base = MVEBU_AMB_ADEC_BASE(cp_index);
 
 	/* Get the array of the windows and its size */
 	marvell_get_amb_memory_map(&win, &win_count);

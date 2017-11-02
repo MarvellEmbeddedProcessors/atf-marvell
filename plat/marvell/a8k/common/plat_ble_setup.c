@@ -188,8 +188,8 @@ static void ble_plat_mmap_config(int restore)
 	static uint32_t ccu_win_regs[CCU_CFG_WIN_REGS_NUM];
 	static uint32_t io_win_regs[CP_COUNT];
 	static uint32_t ccu_gcr, iow_gcr;
-	uintptr_t ccu_base = MVEBU_CCU_BASE;
-	uintptr_t iow_base = MVEBU_IO_WIN_BASE;
+	uintptr_t ccu_base = MVEBU_CCU_BASE(MVEBU_AP0);
+	uintptr_t iow_base = MVEBU_IO_WIN_BASE(MVEBU_AP0);
 	uint32_t reg_val, win_num;
 
 	if (restore == MMAP_RESTORE_SAVED) {

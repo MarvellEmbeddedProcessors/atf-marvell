@@ -60,12 +60,8 @@ struct skip_image {
 	} info;
 };
 
-uintptr_t marvell_get_amb_reg_offs(int cp_index);
-uintptr_t marvell_get_io_win_reg_offs(int);
 uint32_t marvell_get_io_win_gcr_target(int);
-uintptr_t marvell_get_iob_reg_offs(int cp_index);
 int marvell_get_iob_max_win(void);
-uintptr_t marvell_get_ccu_reg_offs(int ap);
 uint32_t marvell_get_ccu_gcr_target(int);
 int marvell_get_ccu_max_win(void);
 

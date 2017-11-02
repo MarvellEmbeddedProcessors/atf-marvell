@@ -187,7 +187,7 @@ int init_ccu(int ap_index)
 	INFO("Initializing CCU Address decoding\n");
 
 	/* Get the base address of the address decoding CCU */
-	ccu_info->ccu_base = marvell_get_ccu_reg_offs(ap_index);
+	ccu_info->ccu_base = MVEBU_CCU_BASE(ap_index);
 
 	/* Get the maximum number of CCU windows supported */
 	ccu_info->max_win = marvell_get_ccu_max_win();

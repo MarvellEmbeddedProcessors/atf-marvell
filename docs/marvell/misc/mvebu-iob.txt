@@ -9,8 +9,6 @@ the enabled windows. If there is a hit and it passes the security checks, it is
 advanced to the target port.
 
 Mandatory functions:
-	- marvell_get_iob_reg_offs
-		returns the base address of the IOB unit
 	- marvell_get_iob_max_win
 		returns the number of the max IOB windows
 	- marvell_get_iob_memory_map

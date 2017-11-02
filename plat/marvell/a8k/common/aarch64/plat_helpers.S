@@ -37,7 +37,7 @@
 #include <platform_def.h>
 #include <marvell_pm.h>
 
-#define CCU_WIN_CR(x)		(MVEBU_CCU_BASE + (0x10 * x))
+#define CCU_WIN_CR(x)		(MVEBU_CCU_BASE(MVEBU_AP0) + (0x10 * x))
 #define	CCU_SRAM_WIN_CR		CCU_WIN_CR(1)
 
 #define	LLC_CR			(MVEBU_LLC_BASE(MVEBU_AP0) + 0x100)

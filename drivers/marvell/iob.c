@@ -162,7 +162,7 @@ int init_iob(int cp_index)
 	INFO("Initializing IOB Address decoding\n");
 
 	/* Get the base address of the address decoding MBUS */
-	iob_info->iob_base = marvell_get_iob_reg_offs(cp_index);
+	iob_info->iob_base = MVEBU_IOB_BASE(cp_index);
 
 	/* Get the maximum number of iob windows supported */
 	iob_info->max_win = marvell_get_iob_max_win();
