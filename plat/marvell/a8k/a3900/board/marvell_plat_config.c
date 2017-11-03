@@ -95,6 +95,7 @@ struct addr_map_win iob_memory_map[] = {
 	{0x00000000f8000000,	0x1000000,	PEX2_TID},
 	/* PEX0_X4 window */
 	{0x00000000f6000000,	0x1000000,	PEX0_TID},
+	{0x00000000c0000000,	0x30000000,	PEX0_TID},
 };
 
 int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
@@ -110,6 +111,7 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
  ******************************************************************************/
 struct addr_map_win ccu_memory_map[] = {	/* IO window */
 	{0x00000000f2000000,	0xe000000,	IO_0_TID},
+	{0x00000000c0000000,	0x30000000,	IO_0_TID},
 };
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
