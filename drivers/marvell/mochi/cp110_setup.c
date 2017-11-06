@@ -409,11 +409,11 @@ void cp110_init(int cp_index)
 
 	INFO("%s: Initialize CP%x\n", __func__, cp_index);
 
-	/* configure AXI-MBUS windows for CP0*/
-	init_amb_adec(cp110_base);
-
 	/* configure IOB windows for CP0*/
 	init_iob(cp110_base);
+
+	/* configure AXI-MBUS windows for CP0*/
+	init_amb_adec(cp110_base);
 
 	/* configure axi for CP0*/
 	cp110_axi_attr_init(cp110_base);
