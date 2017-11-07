@@ -37,7 +37,7 @@
 
 #define MVEBU_LLC_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x8000)
 
-#define MVEBU_AP_UART_BASE			(MVEBU_REGS_BASE + 0x512000)
+#define MVEBU_AP_UART_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x512000)
 #define MVEBU_MRI_XBAR_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x6A0000)
 #define MVEBU_AR_RFU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x6F0000)
 #define MVEBU_IO_WIN_BASE(ap)			(MVEBU_AR_RFU_BASE(ap))
@@ -60,10 +60,6 @@
 #define MVEBU_DRAM_PHY_BASE			(MVEBU_REGS_BASE + 0x20000)
 
 #define MVEBU_CP_REGS_BASE(cp)			(0xF2000000 + (cp) * 0x2000000)
-
-#define MVEBU_HPIPE_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x120000)
-
-#define MVEBU_ICU_REG_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x1E0000)
 
 #define MVEBU_CP_MPP_REGS(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440000 + ((n) << 2))
 #define MVEBU_CP_GPIO_DATA_OUT(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440100 + ((n > 32) ? 0x40 : 0x00))
