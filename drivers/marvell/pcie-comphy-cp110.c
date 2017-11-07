@@ -493,13 +493,16 @@ int comphy_pcie_power_up(uint32_t lane, struct pci_hw_cfg *hw)
 	reg_set(hpipe_addr + HPIPE_FRAME_DET_CONTROL_REG, data, mask);
 
 	/* Configure DFE adaptations */
-	mask = HPIPE_CDR_MAX_DFE_ADAPT_1_MASK;
-	data = 0x1 << HPIPE_CDR_MAX_DFE_ADAPT_1_OFFSET;
-	mask |= HPIPE_CDR_MAX_DFE_ADAPT_0_MASK;
-	data |= 0x0 << HPIPE_CDR_MAX_DFE_ADAPT_0_OFFSET;
+	mask = HPIPE_CDR_RX_MAX_DFE_ADAPT_0_MASK;
+	data = 0x0 << HPIPE_CDR_RX_MAX_DFE_ADAPT_0_OFFSET;
 	mask |= HPIPE_CDR_RX_MAX_DFE_ADAPT_1_MASK;
 	data |= 0x0 << HPIPE_CDR_RX_MAX_DFE_ADAPT_1_OFFSET;
+	mask |= HPIPE_CDR_MAX_DFE_ADAPT_0_MASK;
+	data |= 0x0 << HPIPE_CDR_MAX_DFE_ADAPT_0_OFFSET;
+	mask |= HPIPE_CDR_MAX_DFE_ADAPT_1_MASK;
+	data |= 0x1 << HPIPE_CDR_MAX_DFE_ADAPT_1_OFFSET;
 	reg_set(hpipe_addr + HPIPE_CDR_CONTROL_REG, data, mask);
+
 	mask = HPIPE_DFE_TX_MAX_DFE_ADAPT_MASK;
 	data = 0x0 << HPIPE_DFE_TX_MAX_DFE_ADAPT_OFFSET;
 	reg_set(hpipe_addr + HPIPE_DFE_CONTROL_REG, data, mask);
@@ -539,8 +542,12 @@ int comphy_pcie_power_up(uint32_t lane, struct pci_hw_cfg *hw)
 	mask |= HPIPE_LANE_CFG_FOM_ONLY_MODE_MASK;
 	data |= 0x1 << HPIPE_LANE_CFG_FOM_ONLY_MODE_OFFFSET;
 	mask |= HPIPE_LANE_CFG_FOM_PRESET_VECTOR_MASK;
-	data |= 0x1 << HPIPE_LANE_CFG_FOM_PRESET_VECTOR_OFFSET;
+	data |= 0x6 << HPIPE_LANE_CFG_FOM_PRESET_VECTOR_OFFSET;
 	reg_set(hpipe_addr + HPIPE_LANE_EQ_REMOTE_SETTING_REG, data, mask);
+
+	mask = HPIPE_CFG_EQ_BUNDLE_DIS_MASK;
+	data = 0x1 << HPIPE_CFG_EQ_BUNDLE_DIS_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LANE_EQ_CFG2_REG, data, mask);
 
 	if (!hw->is_end_point) {
 		/* Set phy in root complex mode */

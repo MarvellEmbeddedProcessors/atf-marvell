@@ -57,6 +57,8 @@
 #define PCIE_LINK_CAPABILITY		0x7C
 
 #define PCIE_GEN3_EQU_CTRL		0x8A8
+#define PCIE_GEN3_EQ_FB_MODE_MASK	0xf
+#define PCIE_GEN3_EQ_FB_MODE_OFFSET	0x0
 #define GEN3_EQU_EVAL_2MS_DISABLE	(1 << 5)
 #define GEN3_EQ_PSET_REQ_VEC_MASK	0xffff00
 #define GEN3_EQ_PSET_REQ_VEC_OFFSET	8
@@ -148,13 +150,16 @@ void dw_pcie_configure(uintptr_t regs_base, uint32_t cap_speed)
 
 	reg = mmio_read_32(regs_base + PCIE_GEN3_EQU_CTRL);
 	reg |= GEN3_EQU_EVAL_2MS_DISABLE;
+
 	/*
-	 * According to the electrical measurmentrs, the best preset that our
-	 * receiver can handle is preset4, so we are changing the vector of
-	 * presets to evaluate during the link equalization training to preset4.
+	 * According to the electrical measurmentrs, the best presets for our
+	 * receiver are preset3 to preset8, so we are changing the vector of
+	 * presets to evaluate during the link equalization training preset3-8.
 	 */
 	reg &= ~GEN3_EQ_PSET_REQ_VEC_MASK;
-	reg |= 0x10 << GEN3_EQ_PSET_REQ_VEC_OFFSET;
+	reg |= 0x3f0 << GEN3_EQ_PSET_REQ_VEC_OFFSET;
+	reg &= ~PCIE_GEN3_EQ_FB_MODE_MASK;
+	reg |= 0x1 << PCIE_GEN3_EQ_FB_MODE_OFFSET;
 	mmio_write_32(regs_base + PCIE_GEN3_EQU_CTRL, reg);
 
 	/*
