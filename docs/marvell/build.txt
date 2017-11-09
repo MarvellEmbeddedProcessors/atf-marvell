@@ -22,7 +22,7 @@ Build Instructions
 
 	   u-boot.bin should be used and not u-boot-spl.bin
 
-	Set MSS/SCP image path (only for Armada70x0, Armada80x0)::
+	Set MSS/SCP image path (mandatory only for Armada80x0)::
 
 		> export SCP_BL2=path/to/RTOSDemo-cm3.bin
 

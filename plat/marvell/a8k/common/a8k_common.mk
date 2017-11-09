@@ -118,5 +118,12 @@ BL31_SOURCES		+=	$(PLAT_COMMON_BASE)/plat_pm_trace.c
 # It is not needed since Marvell platform already used the new platform APIs.
 ENABLE_PLAT_COMPAT	:= 	0
 
+ifndef SCP_BL2
+# Force builds with BL2 image on a80x0 platforms
+ifneq ($(findstring a80x0,$(PLAT)),)
+ $(error "Error: SCP_BL2 image is mandatory for a8k family")
+endif
+endif
+
 # MSS (SCP) build
 include $(PLAT_COMMON_BASE)/mss/mss_common.mk
