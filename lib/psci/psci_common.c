@@ -62,7 +62,7 @@ const spd_pm_ops_t *psci_spd_pm;
  * the cache thrashing can be avoided.
  */
 static plat_local_state_t
-	psci_req_local_pwr_states[PLAT_MAX_PWR_LVL][PLATFORM_CORE_COUNT];
+	psci_req_local_pwr_states[PLAT_MAX_PWR_LVL+1][PLATFORM_CORE_COUNT];
 
 
 /*******************************************************************************
