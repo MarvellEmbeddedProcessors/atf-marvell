@@ -108,36 +108,16 @@ static void mpp_config(void)
 	uintptr_t reg;
 	uint32_t val;
 
-	/*
-	 * The DRAM SPD on A0 and A1 boards is located on different i2c channels
-	 * The A80x0 A0 DB boards are using the AP i2c channel (MPP4 and MPP5),
-	 * while A80x0 A1 DB boards - the CP0 i2c one (MPP37, MPP38).
-	 */
-	if (apn806_rev_id_get() == APN806_REV_ID_A0) {
-		/* configure ap mmps 4, 5 to i2c */
-		reg = MVEBU_AP_MPP_CTRL0_7_REG;
-		val = mmio_read_32(reg);
-
-		val &= ~((MVEBU_MPP_CTRL_MASK << MVEBU_AP_MPP_CTRL4_OFFS) |
-			(MVEBU_MPP_CTRL_MASK << MVEBU_AP_MPP_CTRL5_OFFS));
-		val |= ((MVEBU_AP_MPP_CTRL4_I2C0_SDA_ENA <<
-				MVEBU_AP_MPP_CTRL4_OFFS) |
-			(MVEBU_AP_MPP_CTRL5_I2C0_SCK_ENA <<
-				MVEBU_AP_MPP_CTRL5_OFFS));
-		mmio_write_32(reg, val);
-		val = mmio_read_32(reg);
-	} else {
-		reg = MVEBU_CP_MPP_REGS(0, 4);
-		/* configure CP0 MPP 37 and 38 to i2c */
-		val = mmio_read_32(reg);
-		val &= ~((MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL37_OFFS) |
-			(MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL38_OFFS));
-		val |= (MVEBU_CP_MPP_CTRL37_I2C0_SCK_ENA <<
-				MVEBU_CP_MPP_CTRL37_OFFS) |
-			(MVEBU_CP_MPP_CTRL38_I2C0_SDA_ENA <<
-				MVEBU_CP_MPP_CTRL38_OFFS);
-		mmio_write_32(reg, val);
-	}
+	reg = MVEBU_CP_MPP_REGS(0, 4);
+	/* configure CP0 MPP 37 and 38 to i2c */
+	val = mmio_read_32(reg);
+	val &= ~((MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL37_OFFS) |
+		(MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL38_OFFS));
+	val |= (MVEBU_CP_MPP_CTRL37_I2C0_SCK_ENA <<
+			MVEBU_CP_MPP_CTRL37_OFFS) |
+		(MVEBU_CP_MPP_CTRL38_I2C0_SDA_ENA <<
+			MVEBU_CP_MPP_CTRL38_OFFS);
+	mmio_write_32(reg, val);
 }
 
 /*
@@ -154,21 +134,13 @@ int update_dram_info(struct dram_config *cfg)
 	if (tm->cfg_src == MV_DDR_CFG_SPD) {
 		/* configure MPPs to enable i2c */
 		mpp_config();
-		/*
-		 * The DRAM SPD on A0 and A1 boards is located on different i2c
-		 * channels
-		 * The A80x0 A0 DB boards are using the AP i2c channel,
-		 * while A80x0 A1 DB boards - the CP0 i2c one.
-		 * In both cases the SPD device address on i2c bus is the same.
-		 */
-		if (apn806_rev_id_get() == APN806_REV_ID_A0)
-			/* initialize ap i2c */
-			i2c_init((void *)MVEBU_AP_I2C_BASE);
-		else
-			 /* initialize ap i2c */
-			i2c_init((void *)MVEBU_CP0_I2C_BASE);
+
+		/* initialize i2c */
+		i2c_init((void *)MVEBU_CP0_I2C_BASE);
+
 		/* select SPD memory page 0 to access DRAM configuration */
 		i2c_write(I2C_SPD_P0_ADDR, 0x0, 1, tm->spd_data.all_bytes, 1);
+
 		/* read data from spd */
 		i2c_read(I2C_SPD_ADDR, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
