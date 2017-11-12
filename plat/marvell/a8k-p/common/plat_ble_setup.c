@@ -9,7 +9,7 @@
 #include <plat_config.h>
 #include <plat_def.h>
 #include <debug.h>
-#include <dram_if.h>
+#include <mv_ddr_if.h>
 #include <ap810_setup.h>
 #include <cp110_setup.h>
 

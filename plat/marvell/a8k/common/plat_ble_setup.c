@@ -37,7 +37,7 @@
 #include <plat_def.h>
 #include <debug.h>
 #include <sys_info.h>
-#include <dram_if.h>
+#include <mv_ddr_if.h>
 #include <ccu.h>
 #include <aro.h>
 #include <apn806_setup.h>

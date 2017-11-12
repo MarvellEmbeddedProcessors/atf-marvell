@@ -8,14 +8,9 @@
 #include <arch_helpers.h>
 #include <plat_marvell.h>
 #include <debug.h>
-#include <dram_if.h>
+#include <mv_ddr_if.h>
 #include <plat_def.h>
 #include <mmio.h>
-
-#include <mv_ddr_atf_wrapper.h>
-#include <apn806/mv_ddr_apn806.h>
-#include <apn806/mv_ddr_apn806_topology.h>
-#include <ddr3_topology_def.h>
 
 struct dram_config dram_cfg;
 

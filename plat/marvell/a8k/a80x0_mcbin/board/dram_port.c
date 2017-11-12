@@ -35,15 +35,10 @@
 #include <arch_helpers.h>
 #include <plat_marvell.h>
 #include <debug.h>
-#include <dram_if.h>
+#include <mv_ddr_if.h>
 #include <plat_def.h>
 #include <mmio.h>
 #include <a8k_i2c.h>
-
-#include <mv_ddr_atf_wrapper.h>
-#include <apn806/mv_ddr_apn806.h>
-#include <apn806/mv_ddr_apn806_topology.h>
-#include <ddr3_topology_def.h>
 
 #define MVEBU_CP_MPP_CTRL37_OFFS		20
 #define MVEBU_CP_MPP_CTRL38_OFFS		24
