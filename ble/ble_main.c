@@ -52,7 +52,7 @@ void mailbox_clean(void)
 	memset(mailbox, 0, PLAT_MARVELL_MAILBOX_SIZE);
 }
 
-int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
+int exec_ble_main(int bootrom_flags)
 {
 	int skip = 0;
 	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
@@ -115,4 +115,15 @@ int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
 	}
 
 	return 0;
+}
+
+/* NOTE: don't notify this function, all code must be added to exec_ble_main
+ * in order to keep the end of ble_main as a fixed address.
+ */
+int  __attribute__ ((section(".entry"))) ble_main(int bootrom_flags)
+{
+	volatile int ret;
+
+	ret = exec_ble_main(bootrom_flags);
+	return ret;
 }
