@@ -37,8 +37,8 @@
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#ifndef IMAGE_BLE
 #include <plat_def.h>
+#ifndef IMAGE_BLE
 
 /*******************************************************************************
  * AMB Configuration
@@ -133,17 +133,9 @@ int marvell_get_ccu_memory_map(int ap_index, struct addr_map_win **win, uint32_t
  * SKIP IMAGE Configuration
  ******************************************************************************/
 
-struct skip_image skip_im = {
-	.detection_method = GPIO,
-	.info.gpio.num = 33,
-	.info.gpio.button_state = HIGH,
-	.info.test.cp_ap = CP,
-	.info.test.cp_index = 0,
-};
-
 void *plat_get_skip_image_data(void)
 {
-	/* Return the skip_image configurations */
-	return &skip_im;
+	/* No recovery button on A3900 VD/AXIS/BT boards */
+	return NULL;
 }
 #endif
