@@ -12,6 +12,7 @@
 #include <ap810_setup.h>
 #include <io_win.h>
 #include <ccu.h>
+#include <gwin.h>
 #include <cache_llc.h>
 #include <debug.h>
 #include <types.h>
@@ -510,6 +511,8 @@ void ap810_init(void)
 		ap810_init_aurora2(ap_id);
 		/* configure RFU windows */
 		init_io_win(ap_id);
+		/* configure GWIN windows */
+		init_gwin(ap_id);
 		/* configure CCU windows */
 		init_ccu(ap_id);
 		/* configure the SMMU */
