@@ -314,7 +314,7 @@ static void ble_plat_avs_config(void)
 }
 
 /******************************************************************************
- * SVC flow - v0.6
+ * SVC flow - v0.8
  * The feature is inteded  to configure AVS value according to eFuse values
  * that are burned individually for each SoC during the test process.
  * Primary AVS value is stored in HD efuse and processed on power on by the HW engine
@@ -328,7 +328,7 @@ static void ble_plat_svc_config(void)
 	uint32_t reg_val, avs_workpoint, freq_pidi_mode;
 	uint64_t efuse;
 	uint32_t device_id, single_cluster;
-	uint8_t  svc[4];
+	uint8_t  svc[4], i, sw_ver;
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
@@ -345,9 +345,9 @@ static void ble_plat_svc_config(void)
 	 * SW version 0 (efuse not programmed) should follow the
 	 * regular AVS update flow.
 	 */
-	reg_val = (efuse >> EFUSE_AP_LD0_SWREV_OFFS) & EFUSE_AP_LD0_SWREV_MASK;
-	if (reg_val < 1) {
-		NOTICE("SVC: SW Revision 0x%x. SVC is not supported\n", reg_val);
+	sw_ver = (efuse >> EFUSE_AP_LD0_SWREV_OFFS) & EFUSE_AP_LD0_SWREV_MASK;
+	if (sw_ver < 1) {
+		NOTICE("SVC: SW Revision 0x%x. SVC is not supported\n", sw_ver);
 		ble_plat_avs_config();
 		return;
 	}
@@ -364,7 +364,26 @@ static void ble_plat_svc_config(void)
 	svc[2] = (efuse >> EFUSE_AP_LD0_SVC3_OFFS) & EFUSE_AP_LD0_WP_MASK;
 	svc[3] = (efuse >> EFUSE_AP_LD0_SVC4_OFFS) & EFUSE_AP_LD0_WP_MASK;
 	INFO("SVC: Efuse WP: [0]=0x%x, [1]=0x%x, [2]=0x%x, [3]=0x%x\n",
-	     svc[0], svc[1], svc[2], svc[3]);
+		svc[0], svc[1], svc[2], svc[3]);
+
+	/* Validate parity of SVC workpoint values */
+	for (i = 0; i < 4; i++) {
+		uint8_t parity, bit;
+
+		for (bit = 1, parity = svc[i] & 1; bit < 7; bit++)
+			parity ^= (svc[i] >> bit) & 1;
+
+		if (parity != ((svc[i] >> 7) & 1)) {
+			/* Starting from SW version 2,
+			 * the parity check is mandatory
+			 */
+			if (sw_ver > 1) {
+				ERROR("Failed SVC WP[%d] parity check!\n", i);
+				ERROR("Ignoring the WP values\n");
+				return;
+			}
+		}
+	}
 
 	single_cluster = mmio_read_32(MVEBU_AP_LD0_220_189_EFUSE_OFFS);
 	single_cluster = (single_cluster >> EFUSE_AP_LD0_CLUSTER_DOWN_OFFS) & 1;
@@ -443,6 +462,10 @@ static void ble_plat_svc_config(void)
 		ERROR("SVC: Wrong SAR 0x%x for this BIN\n", freq_pidi_mode);
 		return;
 	}
+
+	/* Remove parity bit */
+	if (sw_ver > 1)
+		avs_workpoint &= 0x7F;
 
 	reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
 	NOTICE("SVC: AVS work point changed from 0x%x to 0x%x\n",
