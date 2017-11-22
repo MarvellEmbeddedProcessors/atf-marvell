@@ -73,6 +73,7 @@
 #define MVEBU_MCI_PHY(ap, n)			(MVEBU_REGS_BASE_AP(ap) + 0x6C0000 + \
 						(((n) / 2 + 1) * 0x1000) + 0x1000 * (n))
 
+#define SCRATCH_PAD_ADDR(ap, num)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0xE0 + 0x4 * num)
 #define MVEBU_SMMU_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x100000)
 #define MVEBU_AP_I2C_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x511000)
 

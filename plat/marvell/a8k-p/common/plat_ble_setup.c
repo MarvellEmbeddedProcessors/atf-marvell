@@ -6,6 +6,8 @@
  */
 
 #include <ap810_setup.h>
+#include <a8kp_plat_def.h>
+#include <debug.h>
 #include <addr_map.h>
 #include <ccu.h>
 #include <gwin.h>
@@ -122,9 +124,34 @@ static int ble_dram_config(void)
 	return 0;
 }
 
+
+/* Read Frequency Value from MPPS 15-17 and save
+ * to scratch-pad Register as a temporary solution
+ * in AP810 A0 revision to cover the bug in sampled-at-reset
+ * register.
+*/
+static void ble_read_cpu_freq(void)
+{
+	unsigned int mpp_address, val;
+
+	if (ap810_rev_id_get(0))
+		return;
+
+	/* TODO: add errata for this WA, we can't read from sample at reset
+	 * register.
+	 */
+	mpp_address = MVEBU_AP_GPIO_DATA_IN(0);
+	val = mmio_read_32(mpp_address);
+	val = (val >> 15) & 0x7;
+	INFO("sar option read from MPPs = 0x%x\n", val);
+	mmio_write_32(SCRATCH_PAD_ADDR(0, 1), val);
+}
+
 int ble_plat_setup(int *skip)
 {
 	int ret = 0;
+
+	ble_read_cpu_freq();
 
 	ap810_ble_init();
 
