@@ -15,6 +15,7 @@
 #include <cache_llc.h>
 #include <debug.h>
 #include <types.h>
+#include <mvebu.h>
 
 #define AP810_MAX_AP_NUM			4
 #define AP810_MAX_AP_MASK			0xf
@@ -82,6 +83,7 @@ int get_ap_count(void)
 	if (g_ap_count != -1)
 		return g_ap_count;
 
+	debug_enter();
 	count = 1; /* start with the local AP */
 	reg = mmio_read_32(MVEBU_DFX_SAR_REG(0, 0));
 	reg = (reg >> MVEBU_SAR_0_COHERENT_EN_OFFSET) & MVEBU_SAR_0_COHERENT_EN_MASK;
@@ -93,7 +95,10 @@ int get_ap_count(void)
 	}
 
 	g_ap_count = count;
+
 	INFO("Found %d APs\n", g_ap_count);
+
+	debug_exit();
 	return g_ap_count;
 }
 
@@ -102,6 +107,7 @@ static void setup_banked_rgf(int ap_id)
 {
 	int val, stop;
 
+	debug_enter();
 	/* Open access for all the banked RGF
 	 * (remote ring access registers)
 	 * 0xf for QUAD - 0x3 for DUAL - 0x1 for single (default)
@@ -120,6 +126,7 @@ static void setup_banked_rgf(int ap_id)
 			mmio_write_32(CCU_B_GIDACR(ap_id, stop), val);
 		}
 	}
+	debug_exit();
 }
 
 
@@ -133,6 +140,7 @@ static void ap810_enumeration_algo(void)
 	if (get_ap_count() == 1)
 		return;
 
+	debug_enter();
 	setup_banked_rgf(0);
 
 	/* Enable training bit - for AP0 */
@@ -199,16 +207,21 @@ static void ap810_enumeration_algo(void)
 	/* Update AP-ID of every AP die in the system */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++)
 		mmio_write_32(MVEBU_CCU_GUID(ap_id), ap_id);
+	debug_exit();
 }
 
 static void ap810_dvm_affinity(int ap_id)
 {
+	debug_enter();
 	INFO("place holder to implement %s\n", __func__);
+	debug_exit();
 }
 
 static void ap810_init_aurora2(int ap_id)
 {
 	unsigned int reg;
+
+	debug_enter();
 
 	/* Open access to another AP configuration */
 	setup_banked_rgf(ap_id);
@@ -231,21 +244,29 @@ static void ap810_init_aurora2(int ap_id)
 	mmio_write_32(CCU_HTC_CR(ap_id), reg);
 
 	ap810_dvm_affinity(ap_id);
+
+	debug_exit();
 }
 
 static void ap810_setup_smmu(int ap)
 {
 	uint32_t reg;
 
+	debug_enter();
+
 	/* Set the SMMU page size to 64 KB */
 	reg = mmio_read_32(SMMU_S_ACR(ap));
 	reg |= SMMU_S_ACR_PG_64K;
 	mmio_write_32(SMMU_S_ACR(ap), reg);
+
+	debug_exit();
 }
 
 static void ap810_sec_masters_access_en(int ap, uint32_t enable)
 {
+	debug_enter();
 	INFO("place holder to implement %s\n", __func__);
+	debug_exit();
 }
 
 static void ap810_axi_attr_init(int ap)
@@ -256,6 +277,7 @@ static void ap810_axi_attr_init(int ap)
 	 * Go over the AXI attributes and set
 	 * Ax-Cache and Ax-Domain
 	 */
+	debug_enter();
 	for (index = 0; index < AXI_MAX_ATTR; index++) {
 		switch (index) {
 		/* DFX works with no coherent only -
@@ -285,6 +307,7 @@ static void ap810_axi_attr_init(int ap)
 		}
 	}
 
+	debug_exit();
 	return;
 }
 
@@ -293,6 +316,7 @@ static void ap810_axi_attr_init(int ap)
  */
 void ap810_setup_events(int ap_id)
 {
+	debug_enter();
 	INFO("Event propegation setup for AP%d\n", ap_id);
 	/* The index of the register represents the destination port.
 	 * The bit number represents the source to be masked.
@@ -365,37 +389,46 @@ void ap810_setup_events(int ap_id)
 			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 4), 0x38);
 		break;
 	}
+	debug_exit();
 }
 
 static void ap810_stream_id_init(int ap_id)
 {
+	debug_enter();
 	INFO("place holder to implement %s\n", __func__);
+	debug_exit();
 }
 
 static void ap810_soc_misc_configurations(int ap)
 {
 	uint32_t reg;
 
+	debug_enter();
 	/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
 	 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
 	 */
 	reg = mmio_read_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap));
 	reg &= ~(WD_MASK_SYS_RST_OUT);
 	mmio_write_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap), reg);
+	debug_exit();
 }
 
 void ap810_generic_timer_init(void)
 {
+	debug_enter();
 	INFO("place holder to implement %s\n", __func__);
+	debug_exit();
 }
 
 void ap810_init(void)
 {
 	int ap_id;
 
+	debug_enter();
 	ap810_enumeration_algo();
 
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		INFO("Initialize AP-%d\n", ap_id);
 		/* Setup Aurora2. */
 		ap810_init_aurora2(ap_id);
 		/* configure RFU windows */
@@ -417,4 +450,5 @@ void ap810_init(void)
 	}
 
 	ap810_generic_timer_init();
+	debug_exit();
 }
