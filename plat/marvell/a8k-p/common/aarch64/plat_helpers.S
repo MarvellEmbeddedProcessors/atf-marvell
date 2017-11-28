@@ -100,7 +100,7 @@ endfunc plat_get_my_entrypoint
 	 */
 func plat_is_my_cpu_primary
 	mrs	x0, mpidr_el1
-	and	x0, x0, #(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK)
+	and	x0, x0, #(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK | (MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))
 	cmp	x0, #MVEBU_PRIMARY_CPU
 	cset	w0, eq
 	ret
