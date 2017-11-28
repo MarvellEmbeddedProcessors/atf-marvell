@@ -580,7 +580,7 @@ int ble_plat_setup(int *skip)
 	}
 
 	/* Do required CP-110 setups for BLE stage */
-	cp110_ble_init(0);
+	cp110_ble_init(MVEBU_CP_REGS_BASE(0));
 
 	/* Setup AVS */
 	ble_plat_svc_config();

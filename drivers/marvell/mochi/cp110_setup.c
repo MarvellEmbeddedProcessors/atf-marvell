@@ -375,11 +375,9 @@ static void cp110_rtc_init(uintptr_t base)
 	}
 }
 
-void cp110_init(int cp_index)
+void cp110_init(uintptr_t cp110_base)
 {
-	uintptr_t cp110_base = MVEBU_CP_REGS_BASE(cp_index);
-
-	INFO("%s: Initialize CP%x\n", __func__, cp_index);
+	INFO("%s: Initialize CPx - base = %lx\n", __func__, cp110_base);
 
 	/* configure IOB windows for CP0*/
 	init_iob(cp110_base);
@@ -407,12 +405,10 @@ void cp110_init(int cp_index)
 }
 
 /* Do the minimal setup required to configure the CP in BLE */
-void cp110_ble_init(int cp_index)
+void cp110_ble_init(uintptr_t cp110_base)
 {
 #if PCI_EP_SUPPORT
-	uintptr_t cp110_base = MVEBU_CP_REGS_BASE(cp_index);
-
-	INFO("%s: Initialize CP%x\n", __func__, cp_index);
+	INFO("%s: Initialize CPx - base = %lx\n", __func__, cp110_base);
 
 	amb_bridge_init(cp110_base);
 

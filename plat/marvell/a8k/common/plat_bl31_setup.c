@@ -113,11 +113,11 @@ void bl31_plat_arch_setup(void)
 		marvell_bl31_plat_arch_setup();
 
 	/* configure cp110 for CP0*/
-	cp110_init(0);
+	cp110_init(MVEBU_CP_REGS_BASE(0));
 
 	/* initialize MCI & CP1 */
 	if (CP_COUNT == 2 && mci_initialize(0))
-		cp110_init(1);
+		cp110_init(MVEBU_CP_REGS_BASE(1));
 
 	/* Should be called only after setting IOB windows */
 	marvell_bl31_mpp_init();

@@ -64,7 +64,7 @@ static inline uint32_t cp110_rev_id_get(void)
 		MVEBU_DEVICE_REV_OFFSET;
 }
 
-void cp110_init(int cp_index);
-void cp110_ble_init(int cp_index);
+void cp110_init(uintptr_t cp110_base);
+void cp110_ble_init(uintptr_t cp110_base);
 
 #endif /* __PLAT_CP110_H__ */
