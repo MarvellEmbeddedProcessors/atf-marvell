@@ -68,6 +68,22 @@ enum axi_attr {
 	AXI_MAX_ATTR,
 };
 
+/* We can move this to Linux driver, need  to check this :) */
+#define XOR_0_STREAM_ID_REG	(0x410010)
+#define XOR_1_STREAM_ID_REG	(0x430010)
+#define XOR_2_STREAM_ID_REG	(0x450010)
+#define XOR_3_STREAM_ID_REG	(0x470010)
+
+uintptr_t ap_stream_id_reg[] = {
+	XOR_0_STREAM_ID_REG,
+	XOR_1_STREAM_ID_REG,
+	XOR_2_STREAM_ID_REG,
+	XOR_3_STREAM_ID_REG,
+	0
+};
+
+uint32_t stream_id = 0xA0;
+
 /* Global AP count */
 int g_ap_count = -1;
 
@@ -394,8 +410,17 @@ void ap810_setup_events(int ap_id)
 
 static void ap810_stream_id_init(int ap_id)
 {
+	uintptr_t base = MVEBU_REGS_BASE_AP(ap_id);
+	int i = 0;
+
 	debug_enter();
-	INFO("place holder to implement %s\n", __func__);
+
+	/* Initialize Func stream ID & intrrupt stream ID */
+	while (ap_stream_id_reg[i]) {
+		mmio_write_32(base + ap_stream_id_reg[i++], stream_id << 16 | stream_id);
+		stream_id++;
+	}
+
 	debug_exit();
 }
 
