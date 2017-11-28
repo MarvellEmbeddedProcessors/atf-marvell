@@ -43,18 +43,18 @@
 /*******************************************************************************
  * AMB Configuration
  ******************************************************************************/
-struct amb_win amb_memory_map[] = {
+struct addr_map_win amb_memory_map[] = {
 	/* CP1 SPI1 CS0 Direct Mode access */
 	{0xf900,	0x1000000,	AMB_SPI1_CS0_ID},
 };
 
-int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
+int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size)
 {
 	*win = amb_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(amb_memory_map)/sizeof(struct amb_win);
+		*size = sizeof(amb_memory_map)/sizeof(amb_memory_map[0]);
 
 	return 0;
 }
@@ -62,19 +62,19 @@ int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
 /*******************************************************************************
  * IO WIN Configuration
  ******************************************************************************/
-struct io_win io_win_memory_map[] = {
+struct addr_map_win io_win_memory_map[] = {
 	/* CP1 (MCI0) internal regs */
-	{0x0,	0xf4000000,			0x0,	0x2000000,  MCI_0_TID},
+	{0x00000000f4000000,		0x2000000,  MCI_0_TID},
 	/* PCIe0 and SPI1_CS0 (RUNIT) on CP1*/
-	{0x0,	0xf9000000,			0x0,	0x2000000,  MCI_0_TID},
+	{0x00000000f9000000,		0x2000000,  MCI_0_TID},
 	/* PCIe1 on CP1*/
-	{0x0,	0xfb000000,			0x0,	0x1000000,  MCI_0_TID},
+	{0x00000000fb000000,		0x1000000,  MCI_0_TID},
 	/* PCIe2 on CP1*/
-	{0x0,	0xfc000000,			0x0,	0x1000000,  MCI_0_TID},
+	{0x00000000fc000000,		0x1000000,  MCI_0_TID},
 	/* MCI 0 indirect window */
-	{0x0,	MVEBU_MCI_REG_BASE_REMAP(0),	0x0,	0x100000,  MCI_0_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,  MCI_0_TID},
 	/* MCI 1 indirect window */
-	{0x0,	MVEBU_MCI_REG_BASE_REMAP(1),	0x0,	0x100000,  MCI_1_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000,  MCI_1_TID},
 };
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
@@ -82,13 +82,13 @@ uint32_t marvell_get_io_win_gcr_target(int ap_index)
 	return PIDI_TID;
 }
 
-int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint32_t *size)
 {
 	*win = io_win_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(io_win_memory_map)/sizeof(struct io_win);
+		*size = sizeof(io_win_memory_map)/sizeof(io_win_memory_map[0]);
 
 	return 0;
 }
@@ -96,38 +96,38 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
-struct iob_win iob_memory_map_cp0[] = {
+struct addr_map_win iob_memory_map_cp0[] = {
 	/* CP0 */
 	/* PEX1_X1 window */
-	{0x0,	0xf7000000,	0x0,	0x1000000,	PEX1_TID},
+	{0x00000000f7000000,	0x1000000,	PEX1_TID},
 	/* PEX2_X1 window */
-	{0x0,	0xf8000000,	0x0,	0x1000000,	PEX2_TID},
+	{0x00000000f8000000,	0x1000000,	PEX2_TID},
 	/* PEX0_X4 window */
-	{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID}
+	{0x00000000f6000000,	0x1000000,	PEX0_TID}
 };
 
-struct iob_win iob_memory_map_cp1[] = {
+struct addr_map_win iob_memory_map_cp1[] = {
 	/* CP1 */
 	/* SPI1_CS0 (RUNIT) window */
-	{0x0,	0xf9000000,	0x0,	0x1000000,	RUNIT_TID},
+	{0x00000000f9000000,	0x1000000,	RUNIT_TID},
 	/* PEX1_X1 window */
-	{0x0,	0xfb000000,	0x0,	0x1000000,	PEX1_TID},
+	{0x00000000fb000000,	0x1000000,	PEX1_TID},
 	/* PEX2_X1 window */
-	{0x0,	0xfc000000,	0x0,	0x1000000,	PEX2_TID},
+	{0x00000000fc000000,	0x1000000,	PEX2_TID},
 	/* PEX0_X4 window */
-	{0x0,	0xfa000000,	0x0,	0x1000000,	PEX0_TID}
+	{0x00000000fa000000,	0x1000000,	PEX0_TID}
 };
 
-int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
 	switch (base) {
 	case MVEBU_CP_REGS_BASE(0):
 		*win = iob_memory_map_cp0;
-		*size = sizeof(iob_memory_map_cp0)/sizeof(struct iob_win);
+		*size = sizeof(iob_memory_map_cp0)/sizeof(iob_memory_map_cp0[0]);
 		return 0;
 	case MVEBU_CP_REGS_BASE(1):
 		*win = iob_memory_map_cp1;
-		*size = sizeof(iob_memory_map_cp1)/sizeof(struct iob_win);
+		*size = sizeof(iob_memory_map_cp1)/sizeof(iob_memory_map_cp1[0]);
 		return 0;
 	default:
 		*size = 0;
@@ -139,8 +139,8 @@ int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, uintptr_t b
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
-struct ccu_win ccu_memory_map[] = {
-	{0x0,	0xf2000000,	0x0,	0xe000000,  IO_0_TID}, /* IO window */
+struct addr_map_win ccu_memory_map[] = {
+	{0x00000000f2000000,	0xe000000,  IO_0_TID}, /* IO window */
 };
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
@@ -148,10 +148,10 @@ uint32_t marvell_get_ccu_gcr_target(int ap)
 	return DRAM_0_TID;
 }
 
-int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
+int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
 	*win = ccu_memory_map;
-	*size = sizeof(ccu_memory_map)/sizeof(struct ccu_win);
+	*size = sizeof(ccu_memory_map)/sizeof(ccu_memory_map[0]);
 
 	return 0;
 }

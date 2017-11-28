@@ -16,14 +16,14 @@
 /*******************************************************************************
  * IO WIN Configuration
  ******************************************************************************/
-struct io_win *io_win_memory_map = NULL;
+struct addr_map_win *io_win_memory_map = NULL;
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
 {
 	return MCI_2_TID;
 }
 
-int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint32_t *size)
 {
 	*win = io_win_memory_map;
 	if (*win == NULL)
@@ -37,14 +37,14 @@ int marvell_get_io_win_memory_map(int ap_index, struct io_win **win, uint32_t *s
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
-struct ccu_win *ccu_memory_map = NULL;
+struct addr_map_win *ccu_memory_map = NULL;
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
 {
 	return DRAM_0_TID;
 }
 
-int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
+int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
 	*win = ccu_memory_map;
 	*size = sizeof(ccu_memory_map)/sizeof(struct ccu_win);
@@ -55,9 +55,9 @@ int marvell_get_ccu_memory_map(int ap, struct ccu_win **win, uint32_t *size)
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
-struct iob_win *iob_memory_map = NULL;
+struct addr_map_win *iob_memory_map = NULL;
 
-int marvell_get_iob_memory_map(struct iob_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
 	*win = iob_memory_map;
 	*size = sizeof(iob_memory_map)/sizeof(struct iob_win);

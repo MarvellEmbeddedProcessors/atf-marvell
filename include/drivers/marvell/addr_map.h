@@ -1,6 +1,6 @@
 /*
 * ***************************************************************************
-* Copyright (C) 2016 Marvell International Ltd.
+* Copyright (C) 2017 Marvell International Ltd.
 * ***************************************************************************
 *
 * Redistribution and use in source and binary forms, with or without
@@ -32,24 +32,15 @@
 ***************************************************************************
 */
 
-#ifndef _IO_WIN_H_
-#define _IO_WIN_H_
+#ifndef _ADDR_MAP_H_
+#define _ADDR_MAP_H_
 
-#include <addr_map.h>
+#include <stdint.h>
 
-enum io_win_target_ids {
-	MCI_0_TID	 = 0x0,
-	MCI_1_TID	 = 0x1,
-	MCI_2_TID	 = 0x2,
-	PIDI_TID	 = 0x3,
-	SPI_TID		 = 0x4,
-	STM_TID		 = 0x5,
-	BOOTROM_TID	 = 0x6,
-	IO_WIN_MAX_TID
+struct addr_map_win {
+	uint64_t base_addr;
+	uint64_t win_size;
+	uint32_t target_id;
 };
 
-#define IO_WIN_MAX_NUM		7
-
-int init_io_win(int);
-
-#endif /* _IO_WIN_H_ */
+#endif /* _ADDR_MAP_H_ */

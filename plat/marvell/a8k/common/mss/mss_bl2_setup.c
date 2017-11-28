@@ -44,9 +44,9 @@
 /* IO windows configuration */
 #define IOW_GCR_OFFSET		(0x70)
 
-struct ccu_win mem_map[] = {
-	{0x0, MVEBU_CP_REGS_BASE(0), 0x0, 0x2000000, IO_0_TID},
-	{0x0, MVEBU_CP_REGS_BASE(1), 0x0, 0x2000000, IO_0_TID},
+struct addr_map_win ccu_mem_map[] = {
+	{MVEBU_CP_REGS_BASE(0), 0x2000000, IO_0_TID},
+	{MVEBU_CP_REGS_BASE(1), 0x2000000, IO_0_TID},
 };
 
 /* Since the scp_bl2 image can contain firmware for cp1 and cp0 coprocessors,
@@ -67,7 +67,7 @@ static int bl2_plat_mmap_init(void)
 	size_t win_nr, win_id;
 	uintptr_t iow_base = MVEBU_IO_WIN_BASE(MVEBU_AP0);
 
-	win_nr =  sizeof(mem_map) / sizeof(struct ccu_win);
+	win_nr =  sizeof(ccu_mem_map) / sizeof(ccu_mem_map[0]);
 
 	if (win_nr > MVEBU_CCU_MAX_WINS) {
 		ERROR("BL2: %s: trying to open too many windows\n", __func__);
@@ -76,8 +76,8 @@ static int bl2_plat_mmap_init(void)
 
 	for (win_id = 0; win_id < win_nr; win_id++) {
 		/* Enable required CCU windows */
-		ccu_win_check(&mem_map[win_id], win_id);
-		ccu_enable_win(&mem_map[win_id], win_id);
+		ccu_win_check(&ccu_mem_map[win_id], win_id);
+		ccu_enable_win(&ccu_mem_map[win_id], win_id);
 	}
 
 	/* Set the default target id to PIDI */

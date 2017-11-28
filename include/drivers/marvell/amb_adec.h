@@ -37,12 +37,6 @@
 
 #include <stdint.h>
 
-struct amb_win {
-	uint32_t base_addr;
-	uint32_t win_size;
-	uint32_t attribute;
-};
-
 enum amb_attribute_ids {
 	AMB_SPI0_CS0_ID = 0x1E,
 	AMB_SPI0_CS1_ID = 0x5E,
@@ -65,4 +59,3 @@ enum amb_attribute_ids {
 int init_amb_adec(uintptr_t);
 
 #endif /* _AMB_ADEC_H_ */
-

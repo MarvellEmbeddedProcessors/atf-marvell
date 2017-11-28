@@ -126,40 +126,31 @@ static void dump_ccu(void)
 }
 #endif
 
-void ccu_win_check(struct ccu_win *win, uint32_t win_num)
+void ccu_win_check(struct addr_map_win *win, uint32_t win_num)
 {
-	uint64_t start_addr, win_size;
-
 	/* check if address is aligned to 1M */
-	start_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	if (IS_NOT_ALIGN(start_addr, CCU_WIN_ALIGNMENT)) {
-		start_addr = ALIGN_UP(start_addr, CCU_WIN_ALIGNMENT);
+	if (IS_NOT_ALIGN(win->base_addr, CCU_WIN_ALIGNMENT)) {
+		win->base_addr = ALIGN_UP(win->base_addr, CCU_WIN_ALIGNMENT);
 		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, CCU_WIN_ALIGNMENT);
-		printf("Align up the base address to 0x%lx\n", start_addr);
-		win->base_addr_high = (uint32_t)(start_addr >> 32);
-		win->base_addr_low = (uint32_t)(start_addr);
+		printf("Align up the base address to 0x%lx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
-	win_size = ((uint64_t)win->win_size_high << 32) + win->win_size_low;
-	if (IS_NOT_ALIGN(win_size, CCU_WIN_ALIGNMENT)) {
-		win_size = ALIGN_UP(win_size, CCU_WIN_ALIGNMENT);
+	if (IS_NOT_ALIGN(win->win_size, CCU_WIN_ALIGNMENT)) {
+		win->win_size = ALIGN_UP(win->win_size, CCU_WIN_ALIGNMENT);
 		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, CCU_WIN_ALIGNMENT);
-		printf("Aligning size to 0x%lx\n", win_size);
-		win->win_size_high = (uint32_t)(win_size >> 32);
-		win->win_size_low = (uint32_t)(win_size);
+		printf("Aligning size to 0x%lx\n", win->win_size);
 	}
 }
 
-void ccu_enable_win(struct ccu_win *win, uint32_t win_id)
+void ccu_enable_win(struct addr_map_win *win, uint32_t win_id)
 {
 	uint32_t ccu_win_reg;
 	uint32_t alr, ahr;
-	uint64_t start_addr, end_addr;
+	uint64_t end_addr;
 
-	start_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	end_addr = (start_addr + (((uint64_t)win->win_size_high << 32) + win->win_size_low) - 1);
-	alr = (uint32_t)((start_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
+	end_addr = (win->base_addr + win->win_size - 1);
+	alr = (uint32_t)((win->base_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
 	mmio_write_32(CCU_WIN_ALR_OFFSET(win_id), alr);
@@ -172,7 +163,7 @@ void ccu_enable_win(struct ccu_win *win, uint32_t win_id)
 
 int init_ccu(int ap_index)
 {
-	struct ccu_win *win;
+	struct addr_map_win *win;
 	uint32_t win_id, win_reg;
 	uint32_t win_count, array_id;
 

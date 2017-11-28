@@ -69,44 +69,35 @@
 
 uintptr_t iob_base;
 
-static void iob_win_check(struct iob_win *win, uint32_t win_num)
+static void iob_win_check(struct addr_map_win *win, uint32_t win_num)
 {
-	uint64_t base_addr, win_size;
-
 	/* check if address is aligned to the size */
-	base_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	if (IS_NOT_ALIGN(base_addr, IOB_WIN_ALIGNMENT)) {
-		base_addr = ALIGN_UP(base_addr, IOB_WIN_ALIGNMENT);
+	if (IS_NOT_ALIGN(win->base_addr, IOB_WIN_ALIGNMENT)) {
+		win->base_addr = ALIGN_UP(win->base_addr, IOB_WIN_ALIGNMENT);
 		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Align up the base address to 0x%lx\n", base_addr);
-		win->base_addr_high = (uint32_t)(base_addr >> 32);
-		win->base_addr_low = (uint32_t)(base_addr);
+		printf("Align up the base address to 0x%lx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
-	win_size = ((uint64_t)win->win_size_high << 32) + win->win_size_low;
-	if (IS_NOT_ALIGN(win_size, IOB_WIN_ALIGNMENT)) {
-		win_size = ALIGN_UP(win_size, IOB_WIN_ALIGNMENT);
+	if (IS_NOT_ALIGN(win->win_size, IOB_WIN_ALIGNMENT)) {
+		win->win_size = ALIGN_UP(win->win_size, IOB_WIN_ALIGNMENT);
 		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Aligning size to 0x%lx\n", win_size);
-		win->win_size_high = (uint32_t)(win_size >> 32);
-		win->win_size_low = (uint32_t)(win_size);
+		printf("Aligning size to 0x%lx\n", win->win_size);
 	}
 }
 
-static void iob_enable_win(struct iob_win *win, uint32_t win_id)
+static void iob_enable_win(struct addr_map_win *win, uint32_t win_id)
 {
 	uint32_t iob_win_reg;
 	uint32_t alr, ahr;
-	uint64_t start_addr, end_addr;
+	uint64_t end_addr;
 
 	iob_win_reg = WIN_ENABLE_BIT;
 	iob_win_reg |= (win->target_id & IOB_TARGET_ID_MASK) << IOB_TARGET_ID_OFFSET;
 	mmio_write_32(IOB_WIN_CR_OFFSET(win_id), iob_win_reg);
 
-	start_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	end_addr = (start_addr + (((uint64_t)win->win_size_high << 32) + win->win_size_low) - 1);
-	alr = (uint32_t)((start_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
+	end_addr = (win->base_addr + win->win_size - 1);
+	alr = (uint32_t)((win->base_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
 	mmio_write_32(IOB_WIN_ALR_OFFSET(win_id), alr);
@@ -150,7 +141,7 @@ static void dump_iob(void)
 
 int init_iob(uintptr_t base)
 {
-	struct iob_win *win;
+	struct addr_map_win *win;
 	uint32_t win_id, win_reg;
 	uint32_t win_count;
 

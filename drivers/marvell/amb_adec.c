@@ -55,42 +55,52 @@
 
 #define AMB_WIN_BASE_OFFSET(win)	(amb_base + 0x4 + (0x8 * win))
 #define AMB_BASE_OFFSET			16
+#define AMB_BASE_ADDR_MASK		((1 << (32 - AMB_BASE_OFFSET)) - 1)
 
 #define AMB_WIN_ALIGNMENT_64K		(0x10000)
 #define AMB_WIN_ALIGNMENT_1M		(0x100000)
 
 uintptr_t amb_base;
 
-static void amb_check_win(struct amb_win *win, uint32_t win_num)
+static void amb_check_win(struct addr_map_win *win, uint32_t win_num)
 {
-	uint32_t alignment_value = AMB_WIN_ALIGNMENT_1M;
-	uint32_t base_addr  = win->base_addr << AMB_BASE_OFFSET;
+	uint32_t base_addr;
 
+	/* make sure the base address is in 16-bit range */
+	if (win->base_addr > AMB_BASE_ADDR_MASK) {
+		printf("Warning: Window %d: base address is too big 0x%lx\n",
+		       win_num, win->base_addr);
+		win->base_addr = AMB_BASE_ADDR_MASK;
+		printf("Set the base address to 0x%lx\n", win->base_addr);
+	}
+
+	base_addr  = win->base_addr << AMB_BASE_OFFSET;
 	/* for AMB The base is always 1M aligned */
 	/* check if address is aligned to 1M */
-
-	if (IS_NOT_ALIGN(base_addr, alignment_value)) {
-		win->base_addr = ALIGN_UP(base_addr, alignment_value);
-		printf("Warning: Window %d: base address unaligned to 0x%x\n", win_num, alignment_value);
-		printf("Align up the base address to 0x%x\n", win->base_addr);
+	if (IS_NOT_ALIGN(base_addr, AMB_WIN_ALIGNMENT_1M)) {
+		win->base_addr = ALIGN_UP(base_addr, AMB_WIN_ALIGNMENT_1M);
+		printf("Warning: Window %d: base address unaligned to 0x%x\n",
+		       win_num, AMB_WIN_ALIGNMENT_1M);
+		printf("Align up the base address to 0x%lx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (!IS_POWER_OF_2(win->win_size)) {
-		printf("Warning: Window %d: window size is not power of 2 (0x%x)\n", win_num, win->win_size);
+		printf("Warning: Window %d: window size is not power of 2 (0x%lx)\n",
+		       win_num, win->win_size);
 		win->win_size = ROUND_UP_TO_POW_OF_2(win->win_size);
-		printf("Rounding size to 0x%x\n", win->win_size);
+		printf("Rounding size to 0x%lx\n", win->win_size);
 	}
 }
 
-static void amb_enable_win(struct amb_win *win, uint32_t win_num)
+static void amb_enable_win(struct addr_map_win *win, uint32_t win_num)
 {
 	uint32_t ctrl, base, size;
 
 	size = (win->win_size / AMB_WIN_ALIGNMENT_64K) - 1; /* size is 64KB granularity.
 							     * The number of 1s specifies the size of the
 							     * window in 64 KB granularity. 0 is 64KB */
-	ctrl = (size << AMB_SIZE_OFFSET) | (win->attribute << AMB_ATTR_OFFSET);
+	ctrl = (size << AMB_SIZE_OFFSET) | (win->target_id << AMB_ATTR_OFFSET);
 	base = win->base_addr << AMB_BASE_OFFSET;
 
 	mmio_write_32(AMB_WIN_BASE_OFFSET(win_num), base);
@@ -127,7 +137,7 @@ static void dump_amb_adec(void)
 
 int init_amb_adec(uintptr_t base)
 {
-	struct amb_win *win;
+	struct addr_map_win *win;
 	uint32_t win_id, win_reg;
 	uint32_t win_count;
 

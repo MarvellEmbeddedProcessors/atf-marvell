@@ -35,15 +35,7 @@
 #ifndef _CCU_H_
 #define _CCU_H_
 
-#include <stdint.h>
-
-struct ccu_win {
-	uint32_t base_addr_high;
-	uint32_t base_addr_low;
-	uint32_t win_size_high;
-	uint32_t win_size_low;
-	uint32_t target_id;
-};
+#include <addr_map.h>
 
 enum ccu_target_ids {
 	IO_0_TID        = 0x00,
@@ -58,8 +50,7 @@ enum ccu_target_ids {
 };
 
 int init_ccu(int);
-void ccu_win_check(struct ccu_win *win, uint32_t win_num);
-void ccu_enable_win(struct ccu_win *win, uint32_t win_id);
+void ccu_win_check(struct addr_map_win *win, uint32_t win_num);
+void ccu_enable_win(struct addr_map_win *win, uint32_t win_id);
 
 #endif /* _CCU_H_ */
-

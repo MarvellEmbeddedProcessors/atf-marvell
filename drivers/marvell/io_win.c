@@ -58,48 +58,38 @@
 
 uintptr_t io_win_base;
 
-static void io_win_check(struct io_win *win, uint32_t win_num)
+static void io_win_check(struct addr_map_win *win, uint32_t win_num)
 {
-	uint64_t base_addr, win_size;
-	uint32_t alignment_value = IO_WIN_ALIGNMENT_1M;
-
 	/* for IO The base is always 1M aligned */
 	/* check if address is aligned to 1M */
-	base_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	if (IS_NOT_ALIGN(base_addr, IO_WIN_ALIGNMENT_1M)) {
-		base_addr = ALIGN_UP(base_addr, IO_WIN_ALIGNMENT_1M);
+	if (IS_NOT_ALIGN(win->base_addr, IO_WIN_ALIGNMENT_1M)) {
+		win->base_addr = ALIGN_UP(win->base_addr, IO_WIN_ALIGNMENT_1M);
 		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, IO_WIN_ALIGNMENT_1M);
-		printf("Align up the base address to 0x%lx\n", base_addr);
-		win->base_addr_high = (uint32_t)(base_addr >> 32);
-		win->base_addr_low = (uint32_t)(base_addr);
+		printf("Align up the base address to 0x%lx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
-	win_size = ((uint64_t)win->win_size_high << 32) + win->win_size_low;
-	if (IS_NOT_ALIGN(win_size, alignment_value)) {
-		win_size = ALIGN_UP(win_size, alignment_value);
-		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, alignment_value);
-		printf("Aligning size to 0x%lx\n", win_size);
-		win->win_size_high = (uint32_t)(win_size >> 32);
-		win->win_size_low = (uint32_t)(win_size);
+	if (IS_NOT_ALIGN(win->win_size, IO_WIN_ALIGNMENT_1M)) {
+		win->win_size = ALIGN_UP(win->win_size, IO_WIN_ALIGNMENT_1M);
+		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, IO_WIN_ALIGNMENT_1M);
+		printf("Aligning size to 0x%lx\n", win->win_size);
 	}
 }
 
-static void io_win_enable_window(struct io_win *win, uint32_t win_num)
+static void io_win_enable_window(struct addr_map_win *win, uint32_t win_num)
 {
 	uint32_t alr, ahr;
-	uint64_t start_addr, end_addr;
+	uint64_t end_addr;
 
 	if (win->target_id < 0 || win->target_id >= IO_WIN_MAX_NUM) {
 		ERROR("target ID = %d, is invalid\n", win->target_id);
 		return;
 	}
 
-	/* calculate 64bit start-address and end-address */
-	start_addr = ((uint64_t)win->base_addr_high << 32) + win->base_addr_low;
-	end_addr = (start_addr + (((uint64_t)win->win_size_high << 32) + win->win_size_low) - 1);
+	/* calculate the end-address */
+	end_addr = (win->base_addr + win->win_size - 1);
 
-	alr = (uint32_t)((start_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
+	alr = (uint32_t)((win->base_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 	alr |= WIN_ENABLE_BIT;
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
@@ -148,7 +138,7 @@ static void dump_io_win(void)
 
 int init_io_win(int ap_index)
 {
-	struct io_win *win;
+	struct addr_map_win *win;
 	uint32_t win_id, win_reg;
 	uint32_t win_count;
 

@@ -35,13 +35,7 @@
 #ifndef _IOB_H_
 #define _IOB_H_
 
-struct iob_win {
-	uint32_t base_addr_high;
-	uint32_t base_addr_low;
-	uint32_t win_size_high;
-	uint32_t win_size_low;
-	uint32_t target_id;
-};
+#include <addr_map.h>
 
 enum target_ids_iob {
 	INTERNAL_TID	= 0x0,
@@ -58,4 +52,3 @@ enum target_ids_iob {
 int init_iob(uintptr_t);
 
 #endif /* _IOB_H_ */
-
