@@ -64,6 +64,7 @@ MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/io_win.c	\
 				$(MARVELL_DRV_BASE)/mci.c	\
 				$(MARVELL_DRV_BASE)/amb_adec.c	\
 				$(MARVELL_DRV_BASE)/ccu.c	\
+				$(MARVELL_DRV_BASE)/icu.c       \
 				$(MARVELL_DRV_BASE)/gwin.c	\
 				$(MARVELL_DRV_BASE)/cache_llc.c
 

@@ -37,9 +37,57 @@
 #include <plat_def.h>
 #include <amb_adec.h>
 #include <iob.h>
+#include <icu.h>
 #include <mmio.h>
 #include <delay_timer.h>
 #include <cp110_setup.h>
+
+/*
+  ICU configuration for SEI and REI
+ */
+/* SEI - System Error Interrupts */
+/* Note: SPI ID 0-20 are reserved for North-Bridge */
+static struct icu_irq irq_map_sei[] = {
+	{11, 21, 0}, /* SEI error CP-2-CP */
+	{15, 22, 0}, /* PIDI-64 SOC */
+	{16, 23, 0}, /* D2D error irq */
+	{17, 24, 0}, /* D2D irq */
+	{18, 25, 0}, /* NAND error */
+	{19, 26, 0}, /* PCIx4 error */
+	{20, 27, 0}, /* PCIx1_0 error */
+	{21, 28, 0}, /* PCIx1_1 error */
+	{25, 29, 0}, /* SDIO reg error */
+	{75, 30, 0}, /* IOB error */
+	{94, 31, 0}, /* EIP150 error */
+	{97, 32, 0}, /* XOR-1 system error */
+	{99, 33, 0}, /* XOR-0 system error */
+	{108, 34, 0}, /* SATA-1 error */
+	{110, 35, 0}, /* SATA-0 error */
+	{114, 36, 0}, /* TDM-MC error */
+	{116, 37, 0}, /* DFX server irq */
+	{119, 38, 0}, /* Device bus error */
+	{147, 39, 0}, /* Audio error */
+	{171, 40, 0}, /* PIDI Sync error */
+};
+
+/* REI - RAM Error Interrupts */
+static const struct icu_irq irq_map_rei[] = {
+	{12, 0, 0}, /* REI error CP-2-CP */
+	{26, 1, 0}, /* SDIO memory error */
+	{87, 2, 0}, /* EIP-197 ECC error */
+	{93, 3, 1}, /* EIP-150 RAM error */
+	{96, 4, 0}, /* XOR-1 memory irq */
+	{98, 5, 0}, /* XOR-0 memory irq */
+	{100, 6, 1}, /* USB3 device tx parity */
+	{101, 7, 1}, /* USB3 device rq parity */
+	{103, 8, 1}, /* USB3H-1 RAM error */
+	{104, 9, 1}, /* USB3H-0 RAM error */
+};
+
+static const struct icu_config icu_config = {
+	.sei = { irq_map_sei, ARRAY_SIZE(irq_map_sei) },
+	.rei = { irq_map_rei, ARRAY_SIZE(irq_map_rei) },
+};
 
 /*
  * AXI Configuration.
@@ -393,6 +441,9 @@ void cp110_init(uintptr_t cp110_base)
 
 	/* Confiure pcie clock according to clock direction */
 	cp110_pcie_clk_cfg(cp110_base);
+
+	/* configure icu */
+	icu_init(cp110_base, &icu_config);
 
 	/* configure stream id for CP0 */
 	cp110_stream_id_init(cp110_base);
