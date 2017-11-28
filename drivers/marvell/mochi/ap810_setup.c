@@ -40,6 +40,12 @@
 
 #define GEVENT_CR_PORTx_EVENT_MASK(ap, port)	(MVEBU_AR_RFU_BASE(ap) + 0x500 + port * 0x4)
 
+/* Generic Timer System Controller */
+#define MVEBU_MSS_GTCR_REG(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x581000)
+#define MVEBU_MSS_GTCR_ENABLE_BIT		0x1
+#define MVEBU_MSS_GTCVLR_REG(ap)		(MVEBU_MSS_GTCR_REG(ap) + 0x8)
+#define MVEBU_MSS_GTCVHR_REG(ap)		(MVEBU_MSS_GTCR_REG(ap) + 0xc)
+
 /* SYSRST_OUTn Config definitions */
 #define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
@@ -440,8 +446,54 @@ static void ap810_soc_misc_configurations(int ap)
 
 void ap810_generic_timer_init(void)
 {
+	uint32_t reg, i;
+
 	debug_enter();
-	INFO("place holder to implement %s\n", __func__);
+
+	/* This code initializes the timer of the SoC,
+	** in case of single AP, the bootrom initializes the timer.
+	** In this code, we re-initialize the timer in the all APs.
+	** TODO: move this code to be timer calibration algorithm
+	** */
+	for (i = 0; i < get_ap_count(); i++) {
+		/* Disable timer */
+		reg = mmio_read_32(MVEBU_MSS_GTCR_REG(i));
+		reg &= ~MVEBU_MSS_GTCR_ENABLE_BIT;
+		mmio_write_32(MVEBU_MSS_GTCR_REG(i), reg);
+		/* Set Zero to value high register */
+		mmio_write_32(MVEBU_MSS_GTCVLR_REG(i), 0x0);
+		/* Set Zero to value low register */
+		mmio_write_32(MVEBU_MSS_GTCVHR_REG(i), 0x0);
+	}
+
+
+	if (get_ap_count() == 2) {
+		/* Enable timer */
+		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
+		mmio_write_32(MVEBU_MSS_GTCR_REG(1), MVEBU_MSS_GTCR_ENABLE_BIT);
+
+#if LOG_LEVEL >= LOG_LEVEL_INFO
+		unsigned int ap0, ap1;
+		ap0 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(0));
+		ap1 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(1));
+		INFO("Read time AP0 = %x - AP1 = %x\n", ap0, ap1);
+#endif
+	} else if (get_ap_count() == 4) {
+		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
+		mmio_write_32(MVEBU_MSS_GTCR_REG(1), MVEBU_MSS_GTCR_ENABLE_BIT);
+		mmio_write_32(MVEBU_MSS_GTCR_REG(2), MVEBU_MSS_GTCR_ENABLE_BIT);
+		mmio_write_32(MVEBU_MSS_GTCR_REG(3), MVEBU_MSS_GTCR_ENABLE_BIT);
+
+#if LOG_LEVEL >= LOG_LEVEL_INFO
+		unsigned int ap0, ap1, ap2, ap3;
+		ap0 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(0));
+		ap1 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(1));
+		ap2 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(2));
+		ap3 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(3));
+		INFO("Read time AP0 = %x - AP1 = %x - AP2 = %x - AP3 = %x\n", ap0, ap1, ap2, ap3);
+#endif
+	}
+
 	debug_exit();
 }
 
