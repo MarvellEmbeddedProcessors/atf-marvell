@@ -12,18 +12,15 @@
 #include <cache_llc.h>
 #include <plat_marvell.h>
 
-#define CCU_HTC_ASET(ap)		(MVEBU_CCU_HOME_CNTL_BASE(ap) + 0x64)
-
 static void plat_enable_affinity(void)
 {
-	int cluster_id, affinity, ap_id;
+	int cluster_id, ap_id;
 	uint64_t mpidr = read_mpidr_el1();
 
 	ap_id = MPIDR_AP_ID_GET(mpidr);
 	/* set CPU Affinity */
 	cluster_id = plat_marvell_calc_core_pos_die(mpidr) / PLAT_MARVELL_CLUSTER_CORE_COUNT;
-	affinity = (1 << cluster_id);
-	mmio_write_32(CCU_HTC_ASET(ap_id), affinity);
+	mmio_write_32(CCU_HTC_ASET(ap_id), (1 << cluster_id));
 
 	/* set barier */
 	__asm__ volatile("isb");

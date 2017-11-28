@@ -47,6 +47,14 @@
 
 #define GEVENT_CR_PORTx_EVENT_MASK(ap, port)	(MVEBU_AR_RFU_BASE(ap) + 0x500 + port * 0x4)
 
+#define MVEBU_CCU_MASTERS_IN_RING		16
+
+#define CCU_HTC_ACR_MEM_AFF_GRP_OFFSET		0
+#define CCU_HTC_ACR_DVM_AFF_GRP_OFFSET		16
+#define CCU_HTC_ACR_GLOBAL_STOP_OFFSET		(0x1 << 9)
+
+#define CCU_HTC_ASET_WA				(0x1 << 5)
+
 /* Generic Timer System Controller */
 #define MVEBU_MSS_GTCR_REG(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x581000)
 #define MVEBU_MSS_GTCR_ENABLE_BIT		0x1
@@ -278,10 +286,40 @@ static void ap810_enumeration_algo(void)
 	debug_exit();
 }
 
+/*
+** When the chip powers up, no affinity group is defined. During boot the affinity
+** group should be created. Memory affinity group describes which elements are
+** snooped when memory transaction enters the coherency fabric.  The snooped
+** element should be the one that includes a memory cache - the CPU clusters.
+** */
 static void ap810_dvm_affinity(int ap_id)
 {
+	uint32_t dvm_val;
+	int i;
+
 	debug_enter();
-	INFO("place holder to implement %s\n", __func__);
+	/* Configure the snoop topology for local affinity */
+	dvm_val = (CCU_HTC_ACR_CLUSTERx_OFFSET(0) | CCU_HTC_ACR_CLUSTERx_OFFSET(1) |
+		CCU_HTC_ACR_CLUSTERx_OFFSET(2) | CCU_HTC_ACR_CLUSTERx_OFFSET(3) |
+		CCU_HTC_ACR_GLOBAL_STOP_OFFSET);
+	dvm_val |= dvm_val << CCU_HTC_ACR_DVM_AFF_GRP_OFFSET;
+	for (i = 0; i < MVEBU_CCU_MASTERS_IN_RING; i++)
+		mmio_write_32(CCU_HTC_ACR(ap_id, i), dvm_val);
+
+	/* TODO: add errata for this WA */
+	/*
+	** Workaround, bug in which DVM that inserts Sg fom global ring must not
+	** have affinity=0. We open the Sio of the SMMU (AURORA2-1615)
+	** */
+	mmio_write_32(CCU_HTC_ASET(ap_id), CCU_HTC_ACR_GLOBAL_STOP_OFFSET | CCU_HTC_ASET_WA);
+
+	/* Configure the snop topology for global affinity */
+	for (i = 0; i < MVEBU_CCU_MASTERS_IN_RING; i++)
+		mmio_write_32(CCU_HTC_GACR(ap_id, i), AP810_MAX_AP_MASK);
+
+	mmio_write_32(CCU_HTC_GASET(ap_id),
+			AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - get_ap_count()));
+
 	debug_exit();
 }
 

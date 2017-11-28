@@ -37,6 +37,12 @@
 #define MVEBU_GWIN_MAX_WINS			(16)
 
 #define MVEBU_CCU_HOME_CNTL_BASE(ap)		(MVEBU_CCU_BASE(ap) + 0x200)
+#define CCU_HTC_ACR(ap, m)			(MVEBU_CCU_HOME_CNTL_BASE(ap) + 0x10 + (m) * 0x4)
+#define CCU_HTC_ASET(ap)			(MVEBU_CCU_HOME_CNTL_BASE(ap) + 0x64)
+#define CCU_HTC_ACR_CLUSTERx_OFFSET(x)		(0x1 << (x))
+#define CCU_HTC_GACR(ap, m)			(MVEBU_CCU_HOME_CNTL_BASE(ap) + 0x80 + (m) * 0x4)
+#define CCU_HTC_GASET(ap)			(MVEBU_CCU_HOME_CNTL_BASE(ap) + 0xD4)
+
 #define MVEBU_CCU_LOCL_CNTL_BASE(ap)		(MVEBU_CCU_BASE(ap) + 0x300)
 
 #define MVEBU_LLC_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x8000)
