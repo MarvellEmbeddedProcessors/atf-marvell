@@ -182,34 +182,6 @@ uintptr_t stream_id_reg[] = {
 	0
 };
 
-static void cp110_ble_errata_wa_init(uintptr_t base)
-{
-	uint32_t data;
-
-	/* ERRATA FE-6163379 (STORM-1443):
-	 * Serial ROM initialization from CP is not functional (Rev-A0).
-	 * The above was fixed in the HW starting Rev-A1, so when I2C0 Serial
-	 * ROM is enabled, MPP[38:37] wakes up as I2C Clock and Data.
-	 * The MPP configuration register does not reflect the real function
-	 * state since internaly it overridden by the HW engine to i2c function.
-	 * The normal MPP functionality should be restored by setting bit[4]
-	 * in the push-pull register when the CPU released from reset so the
-	 * I2C serial ROM initialization has already finished.
-	 * Without this fix MPP[38:37] will not accept any other function
-	 * excepting the i2c (which is set by the HW).
-	 * This write has no affect on Rev-A0 SoCs, in which CP I2C init
-	 * remains not functional.
-	 *
-	 * Disable HW fix through the push-pull register if CP I2C ROM init
-	 * mode is active. This should be done before access to DDR SPD.
-	 */
-
-	data = mmio_read_32(base + MVEBU_SAMPLE_AT_RESET_REG);
-	if (data & SAR_I2C_INIT_EN_MASK)
-		mmio_write_32(base + MVEBU_CP_MSS_DPSHSR_REG,
-			      MVEBU_CONF_I2C_INIT_SEL_MASK);
-}
-
 static void cp110_errata_wa_init(uintptr_t base)
 {
 	uint32_t data;
@@ -437,13 +409,11 @@ void cp110_init(int cp_index)
 /* Do the minimal setup required to configure the CP in BLE */
 void cp110_ble_init(int cp_index)
 {
+#if PCI_EP_SUPPORT
 	uintptr_t cp110_base = MVEBU_CP_REGS_BASE(cp_index);
 
 	INFO("%s: Initialize CP%x\n", __func__, cp_index);
 
-	cp110_ble_errata_wa_init(cp110_base);
-
-#if PCI_EP_SUPPORT
 	amb_bridge_init(cp110_base);
 
 	/* Configure PCIe clock */
