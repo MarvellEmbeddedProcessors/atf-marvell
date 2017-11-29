@@ -29,7 +29,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint3
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(io_win_memory_map)/sizeof(struct io_win);
+		*size = sizeof(io_win_memory_map)/sizeof(io_win_memory_map[0]);
 
 	return 0;
 }
@@ -47,7 +47,7 @@ uint32_t marvell_get_ccu_gcr_target(int ap)
 int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
 	*win = ccu_memory_map;
-	*size = sizeof(ccu_memory_map)/sizeof(struct ccu_win);
+	*size = sizeof(ccu_memory_map)/sizeof(ccu_memory_map[0]);
 
 	return 0;
 }
@@ -60,7 +60,7 @@ struct addr_map_win *iob_memory_map = NULL;
 int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
 	*win = iob_memory_map;
-	*size = sizeof(iob_memory_map)/sizeof(struct iob_win);
+	*size = sizeof(iob_memory_map)/sizeof(iob_memory_map[0]);
 
 	return 0;
 }
@@ -68,15 +68,15 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 /*******************************************************************************
  * AMB Configuration
  ******************************************************************************/
-struct amb_win *amb_memory_map = NULL;
+struct addr_map_win *amb_memory_map = NULL;
 
-int marvell_get_amb_memory_map(struct amb_win **win, uint32_t *size)
+int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size)
 {
 	*win = amb_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(amb_memory_map)/sizeof(struct amb_win);
+		*size = sizeof(amb_memory_map)/sizeof(amb_memory_map[0]);
 
 	return 0;
 }
