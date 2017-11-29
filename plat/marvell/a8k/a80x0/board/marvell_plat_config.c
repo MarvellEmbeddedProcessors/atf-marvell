@@ -181,6 +181,7 @@ void *plat_get_pm_cfg(void)
  * SKIP IMAGE Configuration
  ******************************************************************************/
 
+#if PLAT_RECOVERY_IMAGE_ENABLE
 struct skip_image skip_im = {
 	.detection_method = GPIO,
 	.info.gpio.num = 33,
@@ -194,4 +195,5 @@ void *plat_get_skip_image_data(void)
 	/* Return the skip_image configurations */
 	return &skip_im;
 }
+#endif
 #endif

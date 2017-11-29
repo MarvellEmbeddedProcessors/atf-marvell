@@ -188,6 +188,9 @@
 #define PLAT_MARVELL_BL31_RUN_UART_BASE		PLAT_MARVELL_BOOT_UART_BASE
 #define PLAT_MARVELL_BL31_RUN_UART_CLK_IN_HZ	PLAT_MARVELL_BOOT_UART_CLK_IN_HZ
 
+/* Recovery image enable */
+#define PLAT_RECOVERY_IMAGE_ENABLE		0
+
 /* Required platform porting definitions */
 #define PLAT_MAX_PWR_LVL			MPIDR_AFFLVL1
 

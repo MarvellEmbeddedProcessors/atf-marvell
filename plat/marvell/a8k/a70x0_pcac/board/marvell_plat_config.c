@@ -153,9 +153,11 @@ struct pci_hw_cfg *plat_get_pcie_hw_data(void)
  * SKIP IMAGE Configuration
  ******************************************************************************/
 
+#if PLAT_RECOVERY_IMAGE_ENABLE
 void *plat_get_skip_image_data(void)
 {
 	/* No recovery button on A7k-PCAC board */
 	return NULL;
 }
+#endif
 #endif

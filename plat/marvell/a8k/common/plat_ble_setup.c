@@ -478,6 +478,7 @@ static void ble_plat_svc_config(void)
 	mmio_write_32(AVS_EN_CTRL_REG, reg_val);
 }
 
+#if PLAT_RECOVERY_IMAGE_ENABLE
 static int ble_skip_image_i2c(struct skip_image *skip_im)
 {
 	ERROR("skipping image using i2c is not supported\n");
@@ -555,6 +556,7 @@ static int  ble_skip_current_image(void)
 
 	return 0;
 }
+#endif
 
 int ble_plat_setup(int *skip)
 {
@@ -571,6 +573,7 @@ int ble_plat_setup(int *skip)
 	 */
 	ble_plat_mmap_config(MMAP_SAVE_AND_CONFIG);
 
+#if PLAT_RECOVERY_IMAGE_ENABLE
 	/* Check if there's a skip request to bootRom recovey Image */
 	if (ble_skip_current_image()) {
 		/* close memory access to all CPn periferals. */
@@ -578,7 +581,7 @@ int ble_plat_setup(int *skip)
 		*skip = 1;
 		return 0;
 	}
-
+#endif
 	/* Do required CP-110 setups for BLE stage */
 	cp110_ble_init(MVEBU_CP_REGS_BASE(0));
 
