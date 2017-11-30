@@ -32,6 +32,9 @@
 #define MVEBU_CCU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x4000)
 #define MVEBU_CCU_MAX_WINS			(8)
 
+#define MVEBU_GWIN_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x5400)
+#define MVEBU_GWIN_MAX_WINS			(16)
+
 #define MVEBU_CCU_HOME_CNTL_BASE(ap)		(MVEBU_CCU_BASE(ap) + 0x200)
 #define MVEBU_CCU_LOCL_CNTL_BASE(ap)		(MVEBU_CCU_BASE(ap) + 0x300)
 

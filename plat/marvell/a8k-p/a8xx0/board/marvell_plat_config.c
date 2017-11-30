@@ -14,6 +14,43 @@
 #include <plat_def.h>
 
 /*******************************************************************************
+ * GWIN Configuration
+ ******************************************************************************/
+struct addr_map_win *gwin_memory_map = NULL;
+
+int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
+{
+	*win = gwin_memory_map;
+	if (*win == NULL)
+		*size = 0;
+	else
+		*size = sizeof(gwin_memory_map)/sizeof(gwin_memory_map[0]);
+
+	return 0;
+}
+
+/*******************************************************************************
+ * CCU Configuration
+ ******************************************************************************/
+struct addr_map_win *ccu_memory_map = NULL;
+
+uint32_t marvell_get_ccu_gcr_target(int ap)
+{
+	return DRAM_0_TID;
+}
+
+int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
+{
+	*win = ccu_memory_map;
+	if (*win == NULL)
+		*size = 0;
+	else
+		*size = sizeof(ccu_memory_map)/sizeof(ccu_memory_map[0]);
+
+	return 0;
+}
+
+/*******************************************************************************
  * IO WIN Configuration
  ******************************************************************************/
 struct addr_map_win *io_win_memory_map = NULL;
@@ -35,24 +72,6 @@ int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint3
 }
 
 /*******************************************************************************
- * CCU Configuration
- ******************************************************************************/
-struct addr_map_win *ccu_memory_map = NULL;
-
-uint32_t marvell_get_ccu_gcr_target(int ap)
-{
-	return DRAM_0_TID;
-}
-
-int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
-{
-	*win = ccu_memory_map;
-	*size = sizeof(ccu_memory_map)/sizeof(ccu_memory_map[0]);
-
-	return 0;
-}
-
-/*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
 struct addr_map_win *iob_memory_map = NULL;
@@ -60,7 +79,10 @@ struct addr_map_win *iob_memory_map = NULL;
 int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
 	*win = iob_memory_map;
-	*size = sizeof(iob_memory_map)/sizeof(iob_memory_map[0]);
+	if (*win == NULL)
+		*size = 0;
+	else
+		*size = sizeof(iob_memory_map)/sizeof(iob_memory_map[0]);
 
 	return 0;
 }

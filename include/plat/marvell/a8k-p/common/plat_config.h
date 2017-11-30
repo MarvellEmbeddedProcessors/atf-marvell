@@ -12,6 +12,7 @@
 #include <io_win.h>
 #include <iob.h>
 #include <ccu.h>
+#include <gwin.h>
 #include <pci_ep.h>
 
 /*
@@ -71,5 +72,6 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size);
 int marvell_get_io_win_memory_map(int, struct addr_map_win **win, uint32_t *size);
 int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base);
 int marvell_get_ccu_memory_map(int, struct addr_map_win **win, uint32_t *size);
+int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *size);
 
 #endif /* __BOARD_CONFIG_H__ */
