@@ -82,17 +82,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S		       \
 				$(MARVELL_MOCHI_DRV)			       \
 				$(MARVELL_GICV3_SOURCES)
 
-# Add trace functionality for PM
-ifneq (${SCP_BL2},)
-BL31_SOURCES		+=	$(PLAT_COMMON_BASE)/plat_pm_trace.c
-endif
-
 # Disable the PSCI platform compatibility layer (allows porting
 # from Old Platform APIs to the new APIs).
 # It is not needed since Marvell platform already used the new platform APIs.
 ENABLE_PLAT_COMPAT	:= 	0
-
-# MSS (SCP) build
-ifneq (${SCP_BL2},)
-include $(PLAT_COMMON_BASE)/mss/mss_common.mk
-endif
