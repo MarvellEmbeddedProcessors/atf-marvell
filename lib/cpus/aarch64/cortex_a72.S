@@ -102,6 +102,12 @@ endfunc cortex_a72_disable_ext_debug
 	 * -------------------------------------------------
 	 */
 func cortex_a72_reset_func
+
+#if IMAGE_BL31 && WORKAROUND_CVE_2017_5715
+	adr	x0, workaround_mmu_runtime_exceptions
+	msr	vbar_el3, x0
+#endif
+
 	/* ---------------------------------------------
 	 * As a bare minimum enable the SMP bit.
 	 * ---------------------------------------------

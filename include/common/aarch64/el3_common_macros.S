@@ -37,7 +37,7 @@
 	/*
 	 * Helper macro to initialise EL3 registers we care about.
 	 */
-	.macro el3_arch_init_common _exception_vectors
+	.macro el3_arch_init_common
 	/* ---------------------------------------------------------------------
 	 * Enable the instruction cache, stack pointer and data access alignment
 	 * checks
@@ -60,14 +60,6 @@
 	 */
 	bl	init_cpu_data_ptr
 #endif /* IMAGE_BL31 */
-
-	/* ---------------------------------------------------------------------
-	 * Set the exception vectors.
-	 * ---------------------------------------------------------------------
-	 */
-	adr	x0, \_exception_vectors
-	msr	vbar_el3, x0
-	isb
 
 	/* ---------------------------------------------------------------------
 	 * Early set RES1 bits in SCR_EL3. Set EA bit to catch both
@@ -180,6 +172,14 @@
 	.endif /* _warm_boot_mailbox */
 
 	/* ---------------------------------------------------------------------
+	 * Set the exception vectors.
+	 * ---------------------------------------------------------------------
+	 */
+	adr	x0, \_exception_vectors
+	msr	vbar_el3, x0
+	isb
+
+	/* ---------------------------------------------------------------------
 	 * It is a cold boot.
 	 * Perform any processor specific actions upon reset e.g. cache, TLB
 	 * invalidations etc.
@@ -187,7 +187,7 @@
 	 */
 	bl	reset_handler
 
-	el3_arch_init_common \_exception_vectors
+	el3_arch_init_common
 
 	.if \_secondary_cold_boot
 		/* -------------------------------------------------------------
