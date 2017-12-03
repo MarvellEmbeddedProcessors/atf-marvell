@@ -52,11 +52,9 @@
 #define IO_WIN_ALIGNMENT_64K		(0x10000)
 
 /* AP registers */
-#define IO_WIN_ALR_OFFSET(win)		(io_win_base + 0x0 + (0x10 * win))
-#define IO_WIN_AHR_OFFSET(win)		(io_win_base + 0x8 + (0x10 * win))
-#define IO_WIN_CR_OFFSET(win)		(io_win_base + 0xC + (0x10 * win))
-
-uintptr_t io_win_base;
+#define IO_WIN_ALR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x0 + (0x10 * win))
+#define IO_WIN_AHR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x8 + (0x10 * win))
+#define IO_WIN_CR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0xC + (0x10 * win))
 
 static void io_win_check(struct addr_map_win *win, uint32_t win_num)
 {
@@ -76,13 +74,18 @@ static void io_win_check(struct addr_map_win *win, uint32_t win_num)
 	}
 }
 
-static void io_win_enable_window(struct addr_map_win *win, uint32_t win_num)
+static void io_win_enable_window(int ap_index, struct addr_map_win *win, uint32_t win_num)
 {
 	uint32_t alr, ahr;
 	uint64_t end_addr;
 
 	if (win->target_id < 0 || win->target_id >= IO_WIN_MAX_NUM) {
 		ERROR("target ID = %d, is invalid\n", win->target_id);
+		return;
+	}
+
+	if ((win_num == 0) || (win_num > IO_WIN_MAX_NUM)) {
+		ERROR("Enabling wrong IOW window %d!\n", win_num);
 		return;
 	}
 
@@ -94,15 +97,29 @@ static void io_win_enable_window(struct addr_map_win *win, uint32_t win_num)
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
 	/* write start address and end address for IO window */
-	mmio_write_32(IO_WIN_ALR_OFFSET(win_num), alr);
-	mmio_write_32(IO_WIN_AHR_OFFSET(win_num), ahr);
+	mmio_write_32(IO_WIN_ALR_OFFSET(ap_index, win_num), alr);
+	mmio_write_32(IO_WIN_AHR_OFFSET(ap_index, win_num), ahr);
 
 	/* write window target */
-	mmio_write_32(IO_WIN_CR_OFFSET(win_num), win->target_id);
+	mmio_write_32(IO_WIN_CR_OFFSET(ap_index, win_num), win->target_id);
+}
+
+static void io_win_disable_window(int ap_index, uint32_t win_num)
+{
+	uint32_t win_reg;
+
+	if ((win_num == 0) || (win_num > IO_WIN_MAX_NUM)) {
+		ERROR("Disabling wrong IOW window %d!\n", win_num);
+		return;
+	}
+
+	win_reg = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_num));
+	win_reg &= ~WIN_ENABLE_BIT;
+	mmio_write_32(IO_WIN_ALR_OFFSET(ap_index, win_num), win_reg);
 }
 
 #ifdef DEBUG_ADDR_MAP
-static void dump_io_win(void)
+static void dump_io_win(int ap_index)
 {
 	uint32_t trgt_id, win_id;
 	uint32_t alr, ahr;
@@ -114,7 +131,7 @@ static void dump_io_win(void)
 	printf("bank  target     start              end\n");
 	printf("----------------------------------------------------\n");
 	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++) {
-		alr = mmio_read_32(IO_WIN_ALR_OFFSET(win_id));
+		alr = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_id));
 		if (alr & WIN_ENABLE_BIT) {
 			alr &= ~WIN_ENABLE_BIT;
 			/* in case this is BOOTROM window */
@@ -122,8 +139,8 @@ static void dump_io_win(void)
 				ahr = alr;
 				trgt_id = BOOTROM_TID;
 			} else {
-				ahr = mmio_read_32(IO_WIN_AHR_OFFSET(win_id));
-				trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(win_id));
+				ahr = mmio_read_32(IO_WIN_AHR_OFFSET(ap_index, win_id));
+				trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
 			}
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
@@ -144,9 +161,6 @@ int init_io_win(int ap_index)
 
 	INFO("Initializing IO WIN Address decoding\n");
 
-	/* Get the base address of the address decoding MBUS */
-	io_win_base = MVEBU_IO_WIN_BASE(ap_index);
-
 	/* Get the array of the windows and its size */
 	marvell_get_io_win_memory_map(ap_index, &win, &win_count);
 	if (win_count <= 0)
@@ -159,23 +173,20 @@ int init_io_win(int ap_index)
 
 	/* Get the default target id to set the GCR */
 	win_reg = marvell_get_io_win_gcr_target(ap_index);
-	mmio_write_32(io_win_base + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
+	mmio_write_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all IO windows */
-	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++) {
-		win_reg = mmio_read_32(IO_WIN_ALR_OFFSET(win_id));
-		win_reg &= ~WIN_ENABLE_BIT;
-		mmio_write_32(IO_WIN_ALR_OFFSET(win_id), win_reg);
-	}
+	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++)
+		io_win_disable_window(ap_index, win_id);
 
 	/* enable relevant windows, starting from win_id=1 because index 0 dedicated for BootRom */
 	for (win_id = 1; win_id <= win_count; win_id++, win++) {
 		io_win_check(win, win_id);
-		io_win_enable_window(win, win_id);
+		io_win_enable_window(ap_index, win, win_id);
 	}
 
 #ifdef DEBUG_ADDR_MAP
-	dump_io_win();
+	dump_io_win(ap_index);
 #endif
 
 	INFO("Done IO WIN Address decoding Initializing\n");

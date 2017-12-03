@@ -51,22 +51,20 @@
 #define CCU_WIN_ALIGNMENT		(0x100000)
 
 /* AP registers */
-#define CCU_WIN_CR_OFFSET(win)		(ccu_base + 0x0 + (0x10 * win))
+#define CCU_WIN_CR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x0 + (0x10 * win))
 #define CCU_TARGET_ID_OFFSET		(8)
 #define CCU_TARGET_ID_MASK		(0x7F)
 
-#define CCU_WIN_SCR_OFFSET(win)		(ccu_base + 0x4 + (0x10 * win))
+#define CCU_WIN_SCR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x4 + (0x10 * win))
 #define CCU_WIN_ENA_WRITE_SECURE	(0x1)
 #define CCU_WIN_ENA_READ_SECURE		(0x2)
 
-#define CCU_WIN_ALR_OFFSET(win)		(ccu_base + 0x8 + (0x10 * win))
-#define CCU_WIN_AHR_OFFSET(win)		(ccu_base + 0xC + (0x10 * win))
+#define CCU_WIN_ALR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x8 + (0x10 * win))
+#define CCU_WIN_AHR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0xC + (0x10 * win))
 
-#define CCU_WIN_GCR_OFFSET		(ccu_base + 0xD0)
+#define CCU_WIN_GCR_OFFSET(ap)		(MVEBU_CCU_BASE(ap) + 0xD0)
 #define CCU_GCR_TARGET_OFFSET		(8)
 #define CCU_GCR_TARGET_MASK		(0xF)
-
-uintptr_t ccu_base;
 
 #ifdef DEBUG_ADDR_MAP
 struct ccu_target_name_map {
@@ -95,7 +93,7 @@ static char *ccu_target_name_get(enum ccu_target_ids trgt_id)
 	return ccu_target_name_get(INVALID_TID);
 }
 
-static void dump_ccu(void)
+static void dump_ccu(int ap_index)
 {
 	uint32_t win_id, win_cr, alr, ahr;
 	uint8_t target_id;
@@ -105,20 +103,20 @@ static void dump_ccu(void)
 	printf("bank  id target   start		     end\n");
 	printf("----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
-		win_cr = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
-		printf("Win %d: 0x%lx: 0x%x\n", win_id, CCU_WIN_CR_OFFSET(win_id), win_cr);
+		win_cr = mmio_read_32(CCU_WIN_CR_OFFSET(ap_index, win_id));
+		printf("Win %d: 0x%x: 0x%x\n", win_id, CCU_WIN_CR_OFFSET(ap_index, win_id), win_cr);
 		if (win_cr & WIN_ENABLE_BIT) {
 			printf("\tWin %d: Enabled\n", win_id);
 			target_id = (win_cr >> CCU_TARGET_ID_OFFSET) & CCU_TARGET_ID_MASK;
-			alr = mmio_read_32(CCU_WIN_ALR_OFFSET(win_id));
-			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(win_id));
+			alr = mmio_read_32(CCU_WIN_ALR_OFFSET(ap_index, win_id));
+			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_index, win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
 			printf("ccu   %02x %s  0x%016lx 0x%016lx\n"
 				, win_id, ccu_target_name_get(target_id), start, end);
 		}
 	}
-	win_cr = mmio_read_32(CCU_WIN_GCR_OFFSET);
+	win_cr = mmio_read_32(CCU_WIN_GCR_OFFSET(ap_index));
 	target_id = (win_cr >> CCU_GCR_TARGET_OFFSET) & CCU_GCR_TARGET_MASK;
 	printf("ccu   GCR %s - all other transactions\n", ccu_target_name_get(target_id));
 
@@ -143,22 +141,41 @@ void ccu_win_check(struct addr_map_win *win, uint32_t win_num)
 	}
 }
 
-void ccu_enable_win(struct addr_map_win *win, uint32_t win_id)
+void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id)
 {
 	uint32_t ccu_win_reg;
 	uint32_t alr, ahr;
 	uint64_t end_addr;
 
+	if ((win_id == 0) || (win_id > MVEBU_CCU_MAX_WINS)) {
+		ERROR("Enabling wrong CCU window %d!\n", win_id);
+		return;
+	}
+
 	end_addr = (win->base_addr + win->win_size - 1);
 	alr = (uint32_t)((win->base_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
-	mmio_write_32(CCU_WIN_ALR_OFFSET(win_id), alr);
-	mmio_write_32(CCU_WIN_AHR_OFFSET(win_id), ahr);
+	mmio_write_32(CCU_WIN_ALR_OFFSET(ap_index, win_id), alr);
+	mmio_write_32(CCU_WIN_AHR_OFFSET(ap_index, win_id), ahr);
 
 	ccu_win_reg = WIN_ENABLE_BIT;
 	ccu_win_reg |= (win->target_id & CCU_TARGET_ID_MASK) << CCU_TARGET_ID_OFFSET;
-	mmio_write_32(CCU_WIN_CR_OFFSET(win_id), ccu_win_reg);
+	mmio_write_32(CCU_WIN_CR_OFFSET(ap_index, win_id), ccu_win_reg);
+}
+
+static void ccu_disable_win(int ap_index, uint32_t win_id)
+{
+	uint32_t win_reg;
+
+	if ((win_id == 0) || (win_id > MVEBU_CCU_MAX_WINS)) {
+		ERROR("Disabling wrong CCU window %d!\n", win_id);
+		return;
+	}
+
+	win_reg = mmio_read_32(CCU_WIN_CR_OFFSET(ap_index, win_id));
+	win_reg &= ~WIN_ENABLE_BIT;
+	mmio_write_32(CCU_WIN_CR_OFFSET(ap_index, win_id), win_reg);
 }
 
 int init_ccu(int ap_index)
@@ -168,9 +185,6 @@ int init_ccu(int ap_index)
 	uint32_t win_count, array_id;
 
 	INFO("Initializing CCU Address decoding\n");
-
-	/* Get the base address of the address decoding CCU */
-	ccu_base = MVEBU_CCU_BASE(ap_index);
 
 	/* Get the array of the windows and fill the map data */
 	marvell_get_ccu_memory_map(ap_index, &win, &win_count);
@@ -185,18 +199,14 @@ int init_ccu(int ap_index)
 
 	/* Get & set the default target according board topology */
 	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
-	mmio_write_32(CCU_WIN_GCR_OFFSET, win_reg);
+	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_index), win_reg);
 
 	/* disable all AP windows, start from 1 to avoid overriding internal registers */
 	for (win_id = 1; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
-		win_reg = mmio_read_32(CCU_WIN_CR_OFFSET(win_id));
-
-		win_reg &= ~WIN_ENABLE_BIT;
-		mmio_write_32(CCU_WIN_CR_OFFSET(win_id), win_reg);
-
+		ccu_disable_win(ap_index, win_id);
 		/* enable write secure (and clear read secure) */
-		win_reg = CCU_WIN_ENA_WRITE_SECURE;
-		mmio_write_32(CCU_WIN_SCR_OFFSET(win_id), win_reg);
+		mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id),
+			      CCU_WIN_ENA_WRITE_SECURE);
 	}
 
 	/* win_id is the index of the current ccu window
@@ -204,14 +214,14 @@ int init_ccu(int ap_index)
 	for (win_id = 1, array_id = 0;
 		  ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count)); win_id++) {
 		ccu_win_check(win, win_id);
-		ccu_enable_win(win, win_id);
+		ccu_enable_win(ap_index, win, win_id);
 
 		win++;
 		array_id++;
 	}
 
 #ifdef DEBUG_ADDR_MAP
-	dump_ccu();
+	dump_ccu(ap_index);
 #endif
 
 	INFO("Done CCU Address decoding Initializing\n");

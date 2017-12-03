@@ -51,6 +51,6 @@ enum ccu_target_ids {
 
 int init_ccu(int);
 void ccu_win_check(struct addr_map_win *win, uint32_t win_num);
-void ccu_enable_win(struct addr_map_win *win, uint32_t win_id);
+void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id);
 
 #endif /* _CCU_H_ */
