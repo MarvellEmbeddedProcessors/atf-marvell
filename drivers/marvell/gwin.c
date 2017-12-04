@@ -60,6 +60,9 @@
 #define GWIN_ALR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0x8 + (0x10 * (win)))
 #define GWIN_AHR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0xc + (0x10 * (win)))
 
+#define CCU_GRU_CR_OFFSET(ap)		(MVEBU_CCU_GRU_BASE(ap))
+#define CCR_GRU_CR_GWIN_MBYPASS		(1 << 1)
+
 static void gwin_check(struct addr_map_win *win)
 {
 	/* The base is always 64M aligned */
@@ -144,6 +147,7 @@ int init_gwin(int ap_index)
 	struct addr_map_win *win;
 	uint32_t win_id;
 	uint32_t win_count;
+	uint32_t win_reg;
 
 	INFO("Initializing GWIN Address decoding\n");
 
@@ -168,6 +172,18 @@ int init_gwin(int ap_index)
 		gwin_check(win);
 		gwin_enable_window(ap_index, win, win_id);
 	}
+
+	/* GWIN Miss feature has not verified, therefore any access towards
+	 * remote AP should be accompanied with proper configuration to
+	 * GWIN registers group and therefore the GWIN Miss feature
+	 * should be set into Bypass mode, need to make sure all GWIN regions
+	 * are defined correctly that will assure no GWIN miss occurrance
+	 * JIRA-AURORA2-1630
+	 */
+	INFO("Update GWIN miss bypass\n");
+	win_reg = mmio_read_32(CCU_GRU_CR_OFFSET(ap_index));
+	win_reg |= CCR_GRU_CR_GWIN_MBYPASS;
+	mmio_write_32(CCU_GRU_CR_OFFSET(ap_index), win_reg);
 
 #ifdef DEBUG_ADDR_MAP
 	dump_gwin(ap_index);
