@@ -43,6 +43,7 @@
 #define MCI_WRITE_READ_DATA_REG(mci_index)	MVEBU_MCI_REG_BASE_REMAP(mci_index)
 /* /HB /Units /Direct_regs /Direct regs /Configuration Register Access Command Register */
 #define MCI_ACCESS_CMD_REG(mci_index)		(MVEBU_MCI_REG_BASE_REMAP(mci_index) + 0x4)
+
 /* Access Command fields :
  * bit[3:0]   - Sub command: 1 => Periferal Config Register Read,
  *			     0 => Periferal Config Refister Write,
@@ -194,15 +195,6 @@
 #define MCI_HB_CTRL_TX_CTRL_MAX_RD_CNT(val)		(((val) & 0x1F) << 6)
 #define MCI_HB_CTRL_TX_CTRL_MAX_WR_CNT(val)		(((val) & 0x1F) << 0)
 
-/* HB /Units /IHB_REG /IHB_REGInterchip Hopping Bus Registers /IHB PHY Idle Control Register */
-#define MCI_PHY_P0_IDLE_CTRL_REG_NUM		0x6
-#define MCI_PHY_P0_IDLE_MIN_IDLE_COUNT_OFFSET	12
-#define MCI_PHY_P0_IDLE_MIN_IDLE_COUNT		(0xF << MCI_PHY_P0_IDLE_MIN_IDLE_COUNT_OFFSET)
-#define MCI_PHY_P0_IDLE_SW_PWR_REQ_EN_OFFSET	16
-#define MCI_PHY_P0_IDLE_SW_PWR_REQ_EN		(1 << MCI_PHY_P0_IDLE_SW_PWR_REQ_EN_OFFSET)
-#define MCI_PHY_P0_IDLE_SW_RETRAIN_MODE_OFFSET	20
-#define MCI_PHY_P0_IDLE_SW_RETRAIN_MODE		(1 << MCI_PHY_P0_IDLE_SW_RETRAIN_MODE_OFFSET)
-
 /* /HB /Units /IHB_REG /IHB_REGInterchip Hopping Bus Registers /IHB Version Control Register */
 #define MCI_PHY_CTRL_REG_NUM			0x7
 #define MCI_PHY_CTRL_MCI_MINOR			0x8 /* BITS [3:0] */
@@ -220,26 +212,6 @@
 #define MCI_PHY_CTRL_PHY_ADDR_MSB(addr)		(((addr) & 0x3) << MCI_PHY_CTRL_PHY_ADDR_MSB_OFFSET)
 #define MCI_PHY_CTRL_PIDI_MODE_OFFSET		31
 #define MCI_PHY_CTRL_PIDI_MODE			(1 << MCI_PHY_CTRL_PIDI_MODE_OFFSET)
-/* /IHB_8G_X4_PHY_V /Units /Registers /PWM Control Register 2 */
-#define MCI_PHY_PWM2_REG_NUM			0x6
-#define PWM2_SPEED_V3_8G			(3)
-#define PWM2_SPEED_V2_4G			(2)
-#define PWM2_SPEED_V1_2G			(1)
-#define PWM2_SPEED_V0_1G			(0)
-#define PWM2_SPEED_FORCE_OFFSET			10
-#define PWM2_SPEED_FORCE			(1 << PWM2_SPEED_FORCE_OFFSET)
-#define PWM2_RX_LINE_EN_OFFSET			21
-#define PWM2_RX_LINE_EN				(1 << PWM2_RX_LINE_EN_OFFSET)
-#define PWM2_TX_LINE_EN_OFFSET			29
-#define PWM2_TX_LINE_EN				(1 << PWM2_TX_LINE_EN_OFFSET)
-
-/* /IHB_8G_X4_PHY_V /Units /Registers /PWM Control Register 3 */
-#define MCI_PHY_PWM3_REG_NUM			0x7
-#define PWM3_LINK_ERROR_OFFSET			8	/* [11:8] : LINK_ERROR */
-#define PWM3_LINK_ERROR_MASK			(0xF << PWM3_LINK_ERROR_OFFSET)
-#define PWM3_NUM_OF_LANES_OFFSET		20	/* [20:22] : AUTO_NUMBER_OF_LANES */
-#define PWM3_NUM_OF_LANES_MASK			(0x7 << PWM3_NUM_OF_LANES_OFFSET)
-#define PWM3_LINK_SPEED_MASK			0x7	/* [3:0] AUTO_SPEED */
 
 /* Number of times to wait for the MCI link ready after MCI configurations
  * Normally takes 34-35 successive reads
