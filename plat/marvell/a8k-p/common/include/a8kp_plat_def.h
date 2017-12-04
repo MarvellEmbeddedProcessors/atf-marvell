@@ -46,6 +46,8 @@
 #define MVEBU_AR_RFU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x6F0000)
 #define MVEBU_IO_WIN_BASE(ap)			(MVEBU_AR_RFU_BASE(ap))
 #define MVEBU_IO_WIN_GCR_OFFSET			(0xF0)
+#define MVEBU_IO_WIN_MAX_WINS			(11)
+
 
 #define MVEBU_DFX_SR_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x8000)
 #define MVEBU_DFX_SAR_REG(ap, sar)		(MVEBU_DFX_SR_BASE(ap) + 0x200 + 0x4 * sar)
@@ -137,5 +139,35 @@
 #ifdef SCP_IMAGE
 #define SCP_BL2_BASE				BL31_BASE
 #endif
+
+#ifndef __ASSEMBLER__
+enum io_win_target_ids {
+	MCI_0_TID	 = 0x0,
+	MCI_1_TID	 = 0x1,
+	MCI_2_TID	 = 0x2,
+	MCI_3_TID	 = 0x3,
+	MCI_4_TID	 = 0x4,
+	MCI_5_TID	 = 0x5,
+	MCI_6_TID	 = 0x6,
+	MCI_7_TID	 = 0x7,
+	PIDI_TID	 = 0x8,
+	SPI_TID		 = 0x9,
+	STM_TID		 = 0xa,
+	BOOTROM_TID	 = 0xb,
+	IO_WIN_MAX_TID
+};
+
+enum ccu_target_ids {
+	IO_0_TID        = 0x00,
+	DRAM_0_TID      = 0x03,
+	DRAM_1_TID      = 0x08,
+	GLOBAL_TID	= 0x09,
+	CFG_REG_TID     = 0x10,
+	RAR_TID         = 0x20,
+	SRAM_TID        = 0x40,
+	CCU_MAX_TID,
+	INVALID_TID     = 0xFF
+};
+#endif /* __ASSEMBLER__ */
 
 #endif /* __MVEBU_A8K_DEF_H__ */

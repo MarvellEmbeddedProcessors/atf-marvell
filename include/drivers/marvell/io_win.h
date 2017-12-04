@@ -37,19 +37,6 @@
 
 #include <addr_map.h>
 
-enum io_win_target_ids {
-	MCI_0_TID	 = 0x0,
-	MCI_1_TID	 = 0x1,
-	MCI_2_TID	 = 0x2,
-	PIDI_TID	 = 0x3,
-	SPI_TID		 = 0x4,
-	STM_TID		 = 0x5,
-	BOOTROM_TID	 = 0x6,
-	IO_WIN_MAX_TID
-};
-
-#define IO_WIN_MAX_NUM		7
-
 int init_io_win(int);
 
 #endif /* _IO_WIN_H_ */

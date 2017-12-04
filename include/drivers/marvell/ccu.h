@@ -37,18 +37,6 @@
 
 #include <addr_map.h>
 
-enum ccu_target_ids {
-	IO_0_TID        = 0x00,
-	DRAM_0_TID      = 0x03,
-	IO_1_TID        = 0x0F,
-	CFG_REG_TID     = 0x10,
-	RAR_TID         = 0x20,
-	SRAM_TID        = 0x40,
-	DRAM_1_TID      = 0xC0,
-	CCU_MAX_TID,
-	INVALID_TID     = 0xFF
-};
-
 int init_ccu(int);
 void ccu_win_check(struct addr_map_win *win, uint32_t win_num);
 void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id);

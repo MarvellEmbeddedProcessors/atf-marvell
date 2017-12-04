@@ -40,6 +40,18 @@
 #define MVEBU_PRIMARY_CPU		0x0
 #define MVEBU_AP0			0x0
 
+#define APN806_REV_ID_A0		0
+#define APN806_REV_ID_A1		1
+
+/* APN806 revision ID */
+#define MVEBU_CSS_GWD_CTRL_IIDR2_REG	(MVEBU_REGS_BASE + 0x610FCC)
+#define GWD_IIDR2_REV_ID_OFFSET		12
+#define GWD_IIDR2_REV_ID_MASK		0xF
+
+#define AP806_SAR0_REG_BASE		(MVEBU_REGS_BASE + 0x6F82D4)
+#define AP806_SAR0_BOOT_SOURCE_OFFSET	8
+#define AP806_SAR0_BOOT_SOURCE_MASK	0x7
+
 #if PALLADIUM
 #define COUNTER_FREQUENCY		48000
 #else
@@ -52,6 +64,8 @@
 #define MVEBU_RFU_BASE			(MVEBU_REGS_BASE + 0x6F0000)
 #define MVEBU_IO_WIN_BASE(ap_index)	(MVEBU_RFU_BASE)
 #define MVEBU_IO_WIN_GCR_OFFSET		(0x70)
+#define MVEBU_IO_WIN_MAX_WINS		(7)
+
 
 #define MVEBU_CCU_BASE(ap_index)	(MVEBU_REGS_BASE + 0x4000)
 #define MVEBU_CCU_MAX_WINS		(8)
@@ -156,5 +170,41 @@
 #ifdef SCP_IMAGE
 #define SCP_BL2_BASE                    BL31_BASE
 #endif
+
+#ifndef __ASSEMBLER__
+enum ap806_sar_target_dev {
+	SAR_PIDI_MCIX2		= 0x0,
+	SAR_MCIX4		= 0x1,
+	SAR_SPI			= 0x2,
+	SAR_SD			= 0x3,
+	SAR_PIDI_MCIX2_BD	= 0x4, /* BootRom disabled */
+	SAR_MCIX4_DB		= 0x5, /* BootRom disabled */
+	SAR_SPI_DB		= 0x6, /* BootRom disabled */
+	SAR_EMMC		= 0x7
+};
+
+enum io_win_target_ids {
+	MCI_0_TID	 = 0x0,
+	MCI_1_TID	 = 0x1,
+	MCI_2_TID	 = 0x2,
+	PIDI_TID	 = 0x3,
+	SPI_TID		 = 0x4,
+	STM_TID		 = 0x5,
+	BOOTROM_TID	 = 0x6,
+	IO_WIN_MAX_TID
+};
+
+enum ccu_target_ids {
+	IO_0_TID        = 0x00,
+	DRAM_0_TID      = 0x03,
+	IO_1_TID        = 0x0F,
+	CFG_REG_TID     = 0x10,
+	RAR_TID         = 0x20,
+	SRAM_TID        = 0x40,
+	DRAM_1_TID      = 0xC0,
+	CCU_MAX_TID,
+	INVALID_TID     = 0xFF
+};
+#endif /* __ASSEMBLER__ */
 
 #endif /* __MVEBU_A8K_DEF_H__ */

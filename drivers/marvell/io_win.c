@@ -79,12 +79,12 @@ static void io_win_enable_window(int ap_index, struct addr_map_win *win, uint32_
 	uint32_t alr, ahr;
 	uint64_t end_addr;
 
-	if (win->target_id < 0 || win->target_id >= IO_WIN_MAX_NUM) {
+	if (win->target_id < 0 || win->target_id >= MVEBU_IO_WIN_MAX_WINS) {
 		ERROR("target ID = %d, is invalid\n", win->target_id);
 		return;
 	}
 
-	if ((win_num == 0) || (win_num > IO_WIN_MAX_NUM)) {
+	if ((win_num == 0) || (win_num > MVEBU_IO_WIN_MAX_WINS)) {
 		ERROR("Enabling wrong IOW window %d!\n", win_num);
 		return;
 	}
@@ -108,7 +108,7 @@ static void io_win_disable_window(int ap_index, uint32_t win_num)
 {
 	uint32_t win_reg;
 
-	if ((win_num == 0) || (win_num > IO_WIN_MAX_NUM)) {
+	if ((win_num == 0) || (win_num > MVEBU_IO_WIN_MAX_WINS)) {
 		ERROR("Disabling wrong IOW window %d!\n", win_num);
 		return;
 	}
@@ -130,7 +130,7 @@ static void dump_io_win(int ap_index)
 	/* Dump all IO windows */
 	printf("bank  target     start              end\n");
 	printf("----------------------------------------------------\n");
-	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++) {
+	for (win_id = 0; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++) {
 		alr = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_id));
 		if (alr & WIN_ENABLE_BIT) {
 			alr &= ~WIN_ENABLE_BIT;
@@ -166,8 +166,8 @@ int init_io_win(int ap_index)
 	if (win_count <= 0)
 		INFO("no windows configurations found\n");
 
-	if (win_count > IO_WIN_MAX_NUM) {
-		INFO("number of windows is bigger than %d\n", IO_WIN_MAX_NUM);
+	if (win_count > MVEBU_IO_WIN_MAX_WINS) {
+		INFO("number of windows is bigger than %d\n", MVEBU_IO_WIN_MAX_WINS);
 		return 0;
 	}
 
@@ -176,7 +176,7 @@ int init_io_win(int ap_index)
 	mmio_write_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all IO windows */
-	for (win_id = 0; win_id < IO_WIN_MAX_NUM; win_id++)
+	for (win_id = 0; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++)
 		io_win_disable_window(ap_index, win_id);
 
 	/* enable relevant windows, starting from win_id=1 because index 0 dedicated for BootRom */
