@@ -127,6 +127,10 @@ Special Build Flags
 --------------------
 	- PALLADIUM: Enables building ATF for palladium target. This mainly involves changing the UART baud rate
 		and the timer frequency to a lower values to match palladium's setup.
+	- PLAT_RECOVERY_IMAGE_ENABLE: When set this option to enable secondary recovery function when build
+		atf. In order to build uart recovery image this operation should be disabled for a70x0 and a80x0
+                because of hardware limitation(boot from secondary image can interrrupt uart recovery process).
+		This MACRO definition is set in plat/marvell/a8k/common/include/platform_def.h file
 
 (for more information about build options, please refer to section 'Summary of build options' in  ATF user-guide:
  https://github.com/ARM-software/arm-trusted-firmware/blob/master/docs/user-guide.md)
