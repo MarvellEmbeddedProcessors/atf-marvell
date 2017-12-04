@@ -118,6 +118,54 @@ static void io_win_disable_window(int ap_index, uint32_t win_num)
 	mmio_write_32(IO_WIN_ALR_OFFSET(ap_index, win_num), win_reg);
 }
 
+/* Insert/Remove temporary window for using the out-of reset default
+ * CPx base address to access the CP configuration space prior to
+ * the further base address update in accordance with address mapping
+ * design.
+ *
+ * NOTE: Use the same window array for insertion and removal of
+ *       temporary windows.
+ */
+void iow_temp_win_insert(int ap_index, struct addr_map_win *win, int size)
+{
+	uint32_t win_id;
+
+	for (int i = 0; i < size; i++) {
+		win_id = MVEBU_IO_WIN_MAX_WINS - i - 1;
+		io_win_check(win, win_id);
+		io_win_enable_window(ap_index, win, win_id);
+		win++;
+	}
+}
+
+/*
+ * NOTE: Use the same window array for insertion and removal of
+ *       temporary windows.
+ */
+void iow_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
+{
+	uint32_t win_id;
+
+	/* Start from the last window and do not touch Win0 */
+	for (int i = 0; i < size; i++) {
+		uint64_t base;
+		uint32_t target;
+		win_id = MVEBU_IO_WIN_MAX_WINS - i - 1;
+
+		target = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
+		base = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_id));
+		base &= ~WIN_ENABLE_BIT;
+		base <<= ADDRESS_SHIFT;
+
+		if ((win->target_id != target) || (win->base_addr != base)) {
+			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
+			continue;
+		}
+		io_win_disable_window(ap_index, win_id);
+		win++;
+	}
+}
+
 #ifdef DEBUG_ADDR_MAP
 static void dump_io_win(int ap_index)
 {

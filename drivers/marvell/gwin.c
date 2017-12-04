@@ -46,7 +46,8 @@
 /* common defines */
 #define WIN_ENABLE_BIT			(0x1)
 #define WIN_TARGET_MASK			(0xF)
-#define WIN_TARGET(tgt)			(((tgt) & WIN_TARGET_MASK) << 8)
+#define WIN_TARGET_SHIFT		(0x8)
+#define WIN_TARGET(tgt)			(((tgt) & WIN_TARGET_MASK) << WIN_TARGET_SHIFT)
 
 /* Bits[43:26] of the physical address are the window base,
  * which is aligned to 64MB
@@ -110,6 +111,56 @@ static void gwin_disable_window(int ap_index, uint32_t win_num)
 	win_reg = mmio_read_32(GWIN_CR_OFFSET(ap_index, win_num));
 	win_reg &= ~WIN_ENABLE_BIT;
 	mmio_write_32(GWIN_CR_OFFSET(ap_index, win_num), win_reg);
+}
+
+/* Insert/Remove temporary window for using the out-of reset default
+ * CPx base address to access the CP configuration space prior to
+ * the further base address update in accordance with address mapping
+ * design.
+ *
+ * NOTE: Use the same window array for insertion and removal of
+ *       temporary windows.
+ */
+void gwin_temp_win_insert(int ap_index, struct addr_map_win *win, int size)
+{
+	uint32_t win_id;
+
+	for (int i = 0; i < size; i++) {
+		win_id = MVEBU_GWIN_MAX_WINS - i - 1;
+		gwin_check(win);
+		gwin_enable_window(ap_index, win, win_id);
+		win++;
+	}
+}
+
+/*
+ * NOTE: Use the same window array for insertion and removal of
+ *       temporary windows.
+ */
+void gwin_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
+{
+	uint32_t win_id;
+
+	for (int i = 0; i < size; i++) {
+		uint64_t base;
+		uint32_t target;
+		win_id = MVEBU_GWIN_MAX_WINS - i - 1;
+
+		target = mmio_read_32(GWIN_CR_OFFSET(ap_index, win_id));
+		target >>= WIN_TARGET_SHIFT;
+		target &= WIN_TARGET_MASK;
+
+		base = mmio_read_32(GWIN_ALR_OFFSET(ap_index, win_id));
+		base >>= ADDRESS_LSHIFT;
+		base <<= ADDRESS_RSHIFT;
+
+		if ((win->target_id != target) || (win->base_addr != base)) {
+			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
+			continue;
+		}
+		gwin_disable_window(ap_index, win_id);
+		win++;
+	}
 }
 
 #ifdef DEBUG_ADDR_MAP
