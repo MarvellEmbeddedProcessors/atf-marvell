@@ -151,6 +151,13 @@ int ble_plat_setup(int *skip)
 {
 	int ret = 0;
 
+#if !PALLADIUM
+	/* SW WA for AP link bring-up over JTAG connection */
+	if ((get_ap_count() != 1) &&
+	    (ap810_rev_id_get(0) == 0))
+		jtag_init_ihb_dual_ap();
+#endif
+
 	ble_read_cpu_freq();
 
 	ap810_ble_init();
