@@ -467,7 +467,6 @@ void ap810_generic_timer_init(void)
 		mmio_write_32(MVEBU_MSS_GTCVHR_REG(i), 0x0);
 	}
 
-
 	if (get_ap_count() == 2) {
 		/* Enable timer */
 		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
@@ -493,6 +492,8 @@ void ap810_generic_timer_init(void)
 		ap3 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(3));
 		INFO("Read time AP0 = %x - AP1 = %x - AP2 = %x - AP3 = %x\n", ap0, ap1, ap2, ap3);
 #endif
+	} else {
+		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
 	}
 
 	debug_exit();
