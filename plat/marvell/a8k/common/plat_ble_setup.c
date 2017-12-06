@@ -290,7 +290,7 @@ static void ble_plat_avs_config(void)
 		return;
 
 	/* Check which SoC is running and act accordingly */
-	device_id = cp110_device_id_get();
+	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	switch (device_id) {
 	case MVEBU_80X0_DEV_ID:
 		/* Set the new AVS value - fix the default one on A80x0 */
@@ -388,7 +388,7 @@ static void ble_plat_svc_config(void)
 	single_cluster = mmio_read_32(MVEBU_AP_LD0_220_189_EFUSE_OFFS);
 	single_cluster = (single_cluster >> EFUSE_AP_LD0_CLUSTER_DOWN_OFFS) & 1;
 
-	device_id = cp110_device_id_get();
+	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	if (device_id == MVEBU_80X0_DEV_ID) {
 		/* A8040/A8020 */
 		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",

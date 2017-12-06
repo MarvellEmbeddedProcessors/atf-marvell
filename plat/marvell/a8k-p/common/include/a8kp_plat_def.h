@@ -69,7 +69,7 @@
 #define MVEBU_CP_GPIO_DATA_OUT_EN(cp, n)	(MVEBU_CP_REGS_BASE(cp) + 0x440104 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_CP_GPIO_DATA_IN(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440110 + ((n > 32) ? 0x40 : 0x00))
 
-#define MVEBU_CP_DFX_BASE(cp)			(MVEBU_CP_REGS_BASE(cp) + 0x400200)
+#define MVEBU_CP_DFX_OFFSET			(0x400200)
 
 /*******************************************************************************
  * MVEBU memory map related constants

@@ -227,7 +227,7 @@ static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t i
 	_Bool has_cp1 = 0;
 	int ret;
 
-	if (cp110_device_id_get() == MVEBU_80X0_DEV_ID)
+	if (cp110_device_id_get(MVEBU_CP_REGS_BASE(0)) == MVEBU_80X0_DEV_ID)
 		has_cp1 = 1;
 
 	switch (cm3_type) {

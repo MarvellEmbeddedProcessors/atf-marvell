@@ -141,7 +141,7 @@ struct pci_hw_cfg a70x0_pci_hw_cfg = {
 	.mac_base	= MVEBU_PCIE_X4_MAC_BASE(0),
 	.comphy_base	= MVEBU_COMPHY_BASE(0),
 	.hpipe_base	= MVEBU_HPIPE_BASE(0),
-	.dfx_base	= MVEBU_CP_DFX_BASE(0),
+	.dfx_base	= MVEBU_CP_REGS_BASE(0) + MVEBU_CP_DFX_OFFSET,
 };
 
 struct pci_hw_cfg *plat_get_pcie_hw_data(void)
