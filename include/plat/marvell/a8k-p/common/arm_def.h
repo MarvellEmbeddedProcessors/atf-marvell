@@ -157,7 +157,7 @@
  * Required platform porting definitions common to all MARVELL std. platforms
  *****************************************************************************/
 
-#define ADDR_SPACE_SIZE			(1ull << 32)
+#define ADDR_SPACE_SIZE			(1ull << 40)
 
 /*
  * This macro defines the deepest retention state possible. A higher state
