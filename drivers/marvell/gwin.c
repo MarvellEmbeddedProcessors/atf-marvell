@@ -69,13 +69,13 @@ static void gwin_check(struct addr_map_win *win)
 	/* The base is always 64M aligned */
 	if (IS_NOT_ALIGN(win->base_addr, GWIN_ALIGNMENT_64M)) {
 		win->base_addr = ALIGN_UP(win->base_addr, GWIN_ALIGNMENT_64M);
-		NOTICE("Align up the base address to 0x%lx\n", win->base_addr);
+		NOTICE("%s: Align up the base address to 0x%lx\n", __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, GWIN_ALIGNMENT_64M)) {
 		win->win_size = ALIGN_UP(win->win_size, GWIN_ALIGNMENT_64M);
-		NOTICE("Aligning window size to 0x%lx\n", win->win_size);
+		NOTICE("%s: Aligning window size to 0x%lx\n", __func__, win->win_size);
 	}
 }
 
@@ -169,7 +169,7 @@ static void dump_gwin(int ap_index)
 	uint32_t win_num;
 
 	/* Dump all GWIN windows */
-	printf("GWIN for AP%d (0x%lx)\n\n", ap_index, base);
+	printf("GWIN for AP%d\n", ap_index);
 	printf("win\ttarget\tstart\t\t\tend\n");
 	printf("----------------------------------------------------\n");
 	for (win_num = 0; win_num < MVEBU_GWIN_MAX_WINS; win_num++) {

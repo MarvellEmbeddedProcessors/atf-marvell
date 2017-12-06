@@ -38,7 +38,7 @@
 #include <addr_map.h>
 
 int init_ccu(int);
-void ccu_win_check(struct addr_map_win *win, uint32_t win_num);
+void ccu_win_check(struct addr_map_win *win);
 void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id);
 void ccu_temp_win_insert(int ap_index, struct addr_map_win *win, int size);
 void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size);

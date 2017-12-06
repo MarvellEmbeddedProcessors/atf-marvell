@@ -67,32 +67,6 @@
 #define CCU_GCR_TARGET_MASK		(0xF)
 
 #ifdef DEBUG_ADDR_MAP
-struct ccu_target_name_map {
-	enum ccu_target_ids trgt_id;
-	char name[10];
-};
-
-struct ccu_target_name_map ccu_target_name_table[] = {
-	{IO_0_TID,	"IO-0	"},
-	{DRAM_0_TID,	"DRAM-0 "},
-	{IO_1_TID,	"IO-1	"},
-	{CFG_REG_TID,	"CFG-REG"},
-	{RAR_TID,	"RAR	"},
-	{SRAM_TID,	"SRAM	"},
-	{DRAM_1_TID,	"DRAM-1 "},
-	{INVALID_TID,	"INVALID"},
-};
-
-static char *ccu_target_name_get(enum ccu_target_ids trgt_id)
-{
-	int i;
-
-	for (i = 0; i < CCU_MAX_TID; i++)
-		if (ccu_target_name_table[i].trgt_id == trgt_id)
-			return ccu_target_name_table[i].name;
-	return ccu_target_name_get(INVALID_TID);
-}
-
 static void dump_ccu(int ap_index)
 {
 	uint32_t win_id, win_cr, alr, ahr;
@@ -112,32 +86,29 @@ static void dump_ccu(int ap_index)
 			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_index, win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
-			printf("ccu   %02x %s  0x%016lx 0x%016lx\n"
-				, win_id, ccu_target_name_get(target_id), start, end);
+			printf("ccu   %02x %x  0x%016lx 0x%016lx\n", win_id, target_id, start, end);
 		}
 	}
 	win_cr = mmio_read_32(CCU_WIN_GCR_OFFSET(ap_index));
 	target_id = (win_cr >> CCU_GCR_TARGET_OFFSET) & CCU_GCR_TARGET_MASK;
-	printf("ccu   GCR %s - all other transactions\n", ccu_target_name_get(target_id));
+	printf("ccu   GCR %d - all other transactions\n", target_id);
 
 	return;
 }
 #endif
 
-void ccu_win_check(struct addr_map_win *win, uint32_t win_num)
+void ccu_win_check(struct addr_map_win *win)
 {
 	/* check if address is aligned to 1M */
 	if (IS_NOT_ALIGN(win->base_addr, CCU_WIN_ALIGNMENT)) {
 		win->base_addr = ALIGN_UP(win->base_addr, CCU_WIN_ALIGNMENT);
-		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, CCU_WIN_ALIGNMENT);
-		printf("Align up the base address to 0x%lx\n", win->base_addr);
+		NOTICE("%s: Align up the base address to 0x%lx\n", __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, CCU_WIN_ALIGNMENT)) {
 		win->win_size = ALIGN_UP(win->win_size, CCU_WIN_ALIGNMENT);
-		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, CCU_WIN_ALIGNMENT);
-		printf("Aligning size to 0x%lx\n", win->win_size);
+		NOTICE("%s: Aligning size to 0x%lx\n", __func__, win->win_size);
 	}
 }
 
@@ -192,7 +163,7 @@ void ccu_temp_win_insert(int ap_index, struct addr_map_win *win, int size)
 
 	for (int i = 0; i < size; i++) {
 		win_id = MVEBU_CCU_MAX_WINS - 1 - i;
-		ccu_win_check(win, win_id);
+		ccu_win_check(win);
 		ccu_enable_win(ap_index, win, win_id);
 		win++;
 	}
@@ -266,7 +237,7 @@ int init_ccu(int ap_index)
 	** array_id is the index of the current memory map window entry */
 	for (win_id = 1, array_id = 0;
 		  ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count)); win_id++) {
-		ccu_win_check(win, win_id);
+		ccu_win_check(win);
 		ccu_enable_win(ap_index, win, win_id);
 
 		win++;

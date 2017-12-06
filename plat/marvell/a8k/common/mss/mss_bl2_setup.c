@@ -79,7 +79,7 @@ static int bl2_plat_mmap_init(void)
 	 */
 	for (cfg_idx = 0, win_id = 1; cfg_idx < cfg_num; cfg_idx++, win_id++) {
 		/* Enable required CCU windows */
-		ccu_win_check(&ccu_mem_map[cfg_idx], win_id);
+		ccu_win_check(&ccu_mem_map[cfg_idx]);
 		ccu_enable_win(MVEBU_AP0, &ccu_mem_map[cfg_idx], win_id);
 	}
 

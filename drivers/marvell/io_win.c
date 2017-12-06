@@ -56,21 +56,19 @@
 #define IO_WIN_AHR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x8 + (0x10 * win))
 #define IO_WIN_CR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0xC + (0x10 * win))
 
-static void io_win_check(struct addr_map_win *win, uint32_t win_num)
+static void io_win_check(struct addr_map_win *win)
 {
 	/* for IO The base is always 1M aligned */
 	/* check if address is aligned to 1M */
 	if (IS_NOT_ALIGN(win->base_addr, IO_WIN_ALIGNMENT_1M)) {
 		win->base_addr = ALIGN_UP(win->base_addr, IO_WIN_ALIGNMENT_1M);
-		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, IO_WIN_ALIGNMENT_1M);
-		printf("Align up the base address to 0x%lx\n", win->base_addr);
+		NOTICE("%s: Align up the base address to 0x%lx\n", __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, IO_WIN_ALIGNMENT_1M)) {
 		win->win_size = ALIGN_UP(win->win_size, IO_WIN_ALIGNMENT_1M);
-		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, IO_WIN_ALIGNMENT_1M);
-		printf("Aligning size to 0x%lx\n", win->win_size);
+		NOTICE("%s: Aligning size to 0x%lx\n", __func__, win->win_size);
 	}
 }
 
@@ -132,7 +130,7 @@ void iow_temp_win_insert(int ap_index, struct addr_map_win *win, int size)
 
 	for (int i = 0; i < size; i++) {
 		win_id = MVEBU_IO_WIN_MAX_WINS - i - 1;
-		io_win_check(win, win_id);
+		io_win_check(win);
 		io_win_enable_window(ap_index, win, win_id);
 		win++;
 	}
@@ -172,8 +170,6 @@ static void dump_io_win(int ap_index)
 	uint32_t trgt_id, win_id;
 	uint32_t alr, ahr;
 	uint64_t start, end;
-	char *io_win_target_name[IO_WIN_MAX_TID] = {"MCI-0    ", "MCI-1    ", "MCI-2    ", "PIDI     ",
-						"SPI      ", "STM      ", "BootRoom "};
 
 	/* Dump all IO windows */
 	printf("bank  target     start              end\n");
@@ -182,20 +178,14 @@ static void dump_io_win(int ap_index)
 		alr = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_id));
 		if (alr & WIN_ENABLE_BIT) {
 			alr &= ~WIN_ENABLE_BIT;
-			/* in case this is BOOTROM window */
-			if (win_id == 0) {
-				ahr = alr;
-				trgt_id = BOOTROM_TID;
-			} else {
-				ahr = mmio_read_32(IO_WIN_AHR_OFFSET(ap_index, win_id));
-				trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
-			}
+			ahr = mmio_read_32(IO_WIN_AHR_OFFSET(ap_index, win_id));
+			trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
-			printf("io-win %s  0x%016lx 0x%016lx\n", io_win_target_name[trgt_id], start, end);
+			printf("io-win %d  0x%016lx 0x%016lx\n", trgt_id, start, end);
 		}
 	}
-	printf("io-win PIDI-port  - all other IO transactions\n");
+	printf("io-win gcr is %x\n", mmio_read_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET));
 
 	return;
 }
@@ -229,7 +219,7 @@ int init_io_win(int ap_index)
 
 	/* enable relevant windows, starting from win_id=1 because index 0 dedicated for BootRom */
 	for (win_id = 1; win_id <= win_count; win_id++, win++) {
-		io_win_check(win, win_id);
+		io_win_check(win);
 		io_win_enable_window(ap_index, win, win_id);
 	}
 
