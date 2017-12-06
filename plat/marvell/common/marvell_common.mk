@@ -35,8 +35,7 @@ MARVELL_PLAT_INCLUDE_BASE	:= include/plat/marvell
 
 PLAT_INCLUDES		+=	-I.	-Iinclude/common/tbbr		       \
 				-I$(MARVELL_PLAT_INCLUDE_BASE)/common	       \
-				-I$(MARVELL_PLAT_INCLUDE_BASE)/common/aarch64  \
-				-I$(MARVELL_PLAT_INCLUDE_BASE)/common/board
+				-I$(MARVELL_PLAT_INCLUDE_BASE)/common/aarch64
 
 
 PLAT_BL_COMMON_SOURCES  +=      lib/xlat_tables/xlat_tables_common.c			\
