@@ -197,8 +197,12 @@ int init_ccu(int ap_index)
 		win_count = MVEBU_CCU_MAX_WINS;
 	}
 
-	/* Get & set the default target according board topology */
-	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
+	/* Need to set GCR to DRAM0 before we disable all CCU windows for ensuring normal access to
+	 * DRAM location that we are running from. Once we set all CCU windows, which have to
+	 * include the dedicated DRAM window(s) as well, we may switch the GCR to IO or anything
+	 * else as it defined by platform configuration.
+	 */
+	win_reg = (DRAM_0_TID & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_index), win_reg);
 
 	/* disable all AP windows, start from 1 to avoid overriding internal registers */
@@ -219,6 +223,10 @@ int init_ccu(int ap_index)
 		win++;
 		array_id++;
 	}
+
+	/* Get & set the default target according board topology */
+	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
+	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_index), win_reg);
 
 #ifdef DEBUG_ADDR_MAP
 	dump_ccu(ap_index);
