@@ -42,10 +42,8 @@ BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 
 BLE_SOURCES		:=	$(MARVELL_COMMON_BASE)/sys_info.c		 	\
 				$(PLAT_COMMON_BASE)/plat_ble_setup.c 	\
-				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c	 	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		 	\
-				$(MARVELL_DRV_BASE)/aro.c	         	\
 				$(BLE_PORTING_SOURCES)
 
 ifeq (${PCI_EP_SUPPORT}, 1)
