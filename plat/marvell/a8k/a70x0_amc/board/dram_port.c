@@ -76,7 +76,7 @@ static struct mv_ddr_topology_map board_topology_map = {
 	      {0x3, 0x2, 0, 0},
 	      {0x3, 0x2, 0, 0},
 	      {0x3, 0x2, 0, 0} },
-	   SPEED_BIN_DDR_2400S,		/* speed_bin */
+	   SPEED_BIN_DDR_2400T,		/* speed_bin */
 	   MV_DDR_DEV_WIDTH_8BIT,	/* sdram device width */
 	   MV_DDR_DIE_CAP_8GBIT,	/* die capacity */
 	   MV_DDR_FREQ_SAR,		/* frequency */
