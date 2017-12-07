@@ -107,22 +107,22 @@
 #  define PLAT_MARVELL_MMAP_ENTRIES		8
 #endif
 #if IMAGE_BL31
-#define PLAT_MARVELL_MMAP_ENTRIES		8
+#define PLAT_MARVELL_MMAP_ENTRIES		12
 #endif
 
 /*
  * Platform specific page table and MMU setup constants
  */
 #if IMAGE_BL1
-#define MAX_XLAT_TABLES			4
+#define MAX_XLAT_TABLES			8
 #elif IMAGE_BLE
-#  define MAX_XLAT_TABLES		4
+#  define MAX_XLAT_TABLES		8
 #elif IMAGE_BL2
-#  define MAX_XLAT_TABLES		4
+#  define MAX_XLAT_TABLES		8
 #elif IMAGE_BL31
-# define MAX_XLAT_TABLES		4
+# define MAX_XLAT_TABLES		8
 #elif IMAGE_BL32
-#  define MAX_XLAT_TABLES               4
+#  define MAX_XLAT_TABLES               8
 #endif
 
 #define MAX_IO_DEVICES			3
