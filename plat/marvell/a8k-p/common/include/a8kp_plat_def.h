@@ -66,13 +66,10 @@
 #define MVEBU_DRAM_MAC_BASE			(MVEBU_REGS_BASE + 0x20000)
 #define MVEBU_DRAM_PHY_BASE			(MVEBU_REGS_BASE + 0x20000)
 
-#define MVEBU_CP_REGS_BASE(cp)			(0xF2000000 + (cp) * 0x2000000)
+#define MVEBU_CP_DEFAULT_BASE_ADDR		0xF2000000
+#define MVEBU_CP_DEFAULT_BASE_SIZE		0x2000000
 
-#define MVEBU_CP_MPP_REGS(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440000 + ((n) << 2))
-#define MVEBU_CP_GPIO_DATA_OUT(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440100 + ((n > 32) ? 0x40 : 0x00))
-#define MVEBU_CP_GPIO_DATA_OUT_EN(cp, n)	(MVEBU_CP_REGS_BASE(cp) + 0x440104 + ((n > 32) ? 0x40 : 0x00))
-#define MVEBU_CP_GPIO_DATA_IN(cp, n)		(MVEBU_CP_REGS_BASE(cp) + 0x440110 + ((n > 32) ? 0x40 : 0x00))
-
+#define MVEBU_CP_REGS_BASE(ap, cp)			(0xF2000000 + (cp) * 0x2000000)
 #define MVEBU_CP_DFX_OFFSET			(0x400200)
 
 #define MCI_MAX_UNIT_ID				8
