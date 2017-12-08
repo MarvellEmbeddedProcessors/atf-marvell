@@ -152,6 +152,10 @@
 							 MCI_CTRL_MCI_PHY_SET_PHY_MAX_SPEED(0x3) | \
 							 MCI_CTRL_MCI_PHY_SET_PHYCLK_SEL(0x2) | \
 							 MCI_CTRL_MCI_PHY_SET_REFCLK_FREQ_SEL(0x1))
+#define MCI_CTRL_MCI_PHY_SET_REG_DEF_VAL2		(MCI_CTRL_MCI_PHY_SET_DLO_FIFO_FULL_TRESH(0x3) | \
+							 MCI_CTRL_MCI_PHY_SET_PHY_MAX_SPEED(0x3) | \
+							 MCI_CTRL_MCI_PHY_SET_PHYCLK_SEL(0x5) | \
+							 MCI_CTRL_MCI_PHY_SET_REFCLK_FREQ_SEL(0x1))
 
 /* /HB /Units /IHB_REG /IHB_REGInterchip Hopping Bus Registers /IHB Mode Config */
 #define MCI_CTRL_IHB_MODE_CFG_REG_NUM			0x25
@@ -278,6 +282,27 @@ static int mci_poll_command_completion(int mci_index, int command_type)
 
 	debug_exit();
 	return ret;
+}
+
+int mci_read(int mci_idx, uint32_t cmd, uint32_t *value)
+{
+	int rval;
+
+	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_idx), cmd);
+
+	rval = mci_poll_command_completion(mci_idx, MCI_CMD_READ);
+
+	*value = mci_mmio_read_32(MCI_WRITE_READ_DATA_REG(mci_idx));
+
+	return rval;
+}
+
+int  mci_write(int mci_idx, uint32_t cmd, uint32_t data)
+{
+	mci_mmio_write_32(MCI_WRITE_READ_DATA_REG(mci_idx), data);
+	mci_mmio_write_32(MCI_ACCESS_CMD_REG(mci_idx), cmd);
+
+	return mci_poll_command_completion(mci_idx, MCI_CMD_WRITE);
 }
 
 /* Perform 3 configurations in one command: PCI mode, queues separation and cache bit */
@@ -628,6 +653,89 @@ int mci_configure(int mci_index)
 
 	debug_exit();
 	return 1;
+}
+
+int mci_get_link_status(void)
+{
+	uint32_t cmd, data;
+
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_STATUS_REG_NUM) |
+		MCI_INDIRECT_CTRL_LOCAL_PKT | MCI_INDIRECT_CTRL_READ_CMD);
+	if (mci_read(0, cmd, &data)) {
+		ERROR("Failed to read status register\n");
+		return -1;
+	}
+
+	/* Check if the link is ready */
+	if (data != MCI_CTRL_PHY_READY) {
+		ERROR("Bad link status %x\n", data);
+		return -1;
+	}
+
+	return 0;
+}
+
+void mci_turn_link_down(void)
+{
+	uint32_t cmd, data;
+	int rval = 0;
+
+	debug_enter();
+
+	/* Turn off auto-link */
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_MCI_PHY_SETTINGS_REG_NUM) |
+			MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = (MCI_CTRL_MCI_PHY_SET_REG_DEF_VAL2 | MCI_CTRL_MCI_PHY_SET_AUTO_LINK_EN(0));
+	rval = mci_write(0, cmd, data);
+	if (rval)
+		ERROR("Failed to turn off auto-link\n");
+
+	/* Reset AP PHY */
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = (MCI_PHY_CTRL_MCI_MINOR | MCI_PHY_CTRL_MCI_MAJOR |
+			MCI_PHY_CTRL_MCI_PHY_MODE_HOST | MCI_PHY_CTRL_MCI_PHY_RESET_CORE);
+	rval = mci_write(0, cmd, data);
+	if (rval)
+		ERROR("Failed to reset AP PHY\n");
+
+	/* Clear all status & CRC values */
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_LINK_CRC_CTRL_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = 0x0;
+	mci_write(0, cmd, data);
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_STATUS_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = 0x0;
+	rval = mci_write(0, cmd, data);
+	if (rval)
+		ERROR("Failed to reset AP PHY\n");
+
+	/* Wait 5ms before un-reset the PHY */
+	mdelay(5);
+
+	/* Un-reset AP PHY */
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_PHY_CTRL_REG_NUM) | MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = (MCI_PHY_CTRL_MCI_MINOR | MCI_PHY_CTRL_MCI_MAJOR | MCI_PHY_CTRL_MCI_PHY_MODE_HOST);
+	rval = mci_write(0, cmd, data);
+	if (rval)
+		ERROR("Failed to un-reset AP PHY\n");
+
+	debug_exit();
+}
+
+void mci_turn_link_on(void)
+{
+	uint32_t cmd, data;
+	int rval = 0;
+
+	debug_enter();
+	/* Turn on auto-link */
+	cmd = (MCI_INDIRECT_REG_CTRL_ADDR(MCI_CTRL_MCI_PHY_SETTINGS_REG_NUM) |
+			MCI_INDIRECT_CTRL_LOCAL_PKT);
+	data = (MCI_CTRL_MCI_PHY_SET_REG_DEF_VAL2 | MCI_CTRL_MCI_PHY_SET_AUTO_LINK_EN(1));
+	rval = mci_write(0, cmd, data);
+	if (rval)
+		ERROR("Failed to turn on auto-link\n");
+
+	debug_exit();
 }
 
 /* Initialize MCI for performance improvements */

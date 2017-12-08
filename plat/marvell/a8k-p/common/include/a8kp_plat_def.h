@@ -79,6 +79,9 @@
 #define MVEBU_CP_DFX_OFFSET			(0x400200)
 
 #define MCI_MAX_UNIT_ID				8
+#define MVEBU_MCI_REG_BASE_REMAP(index)		(0xFD000000)
+#define MVEBU_MCI_REG_SIZE_REMAP		(0x1000000)
+
 /*******************************************************************************
  * MVEBU memory map related constants
  ******************************************************************************/
