@@ -209,8 +209,7 @@ int init_ccu(int ap_index)
 	/* Get the array of the windows and fill the map data */
 	marvell_get_ccu_memory_map(ap_index, &win, &win_count);
 	if (win_count <= 0) {
-		INFO("no windows configurations found\n");
-		return 0;
+		INFO("No windows configurations found\n");
 	} else if (win_count > (MVEBU_CCU_MAX_WINS - 1)) {
 		ERROR("CCU memory map array greater than max available windows, set win_count to max %d\n",
 				MVEBU_CCU_MAX_WINS);
