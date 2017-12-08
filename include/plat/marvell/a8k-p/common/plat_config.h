@@ -14,6 +14,8 @@
 #include <ccu.h>
 #include <gwin.h>
 
+int marvell_get_mci_map(int, int);
+
 uint32_t marvell_get_io_win_gcr_target(int);
 uint32_t marvell_get_ccu_gcr_target(int);
 
