@@ -110,6 +110,12 @@ void bl31_plat_arch_setup(void)
 	** */
 	update_cp110_default_win();
 
+	/* configure AP810 address decode - call it after
+	** update_cp110_default_win to make sure that temporary windows do
+	** not override any window that will be configured in GWIN/CCU/IOWIN
+	** */
+	ap810_addr_decode_init();
+
 	/* In marvell_bl31_plat_arch_setup, el3 mmu is configured.
 	 * el3 mmu configuration MUST be called after ap810_init, if not,
 	 * this will cause an hang in init_io_win

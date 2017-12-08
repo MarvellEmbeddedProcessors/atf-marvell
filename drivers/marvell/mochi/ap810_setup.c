@@ -544,6 +544,24 @@ void ap810_generic_timer_init(void)
 	debug_exit();
 }
 
+void ap810_addr_decode_init(void)
+{
+	int ap_id;
+
+	debug_enter();
+
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		/* configure IO-WIN windows */
+		init_io_win(ap_id);
+		/* configure GWIN windows */
+		init_gwin(ap_id);
+		/* configure CCU windows */
+		init_ccu(ap_id);
+	}
+
+	debug_exit();
+}
+
 void ap810_init(void)
 {
 	int ap_id;
@@ -555,12 +573,6 @@ void ap810_init(void)
 		INFO("Initialize AP-%d\n", ap_id);
 		/* Setup Aurora2. */
 		ap810_init_aurora2(ap_id);
-		/* configure RFU windows */
-		init_io_win(ap_id);
-		/* configure GWIN windows */
-		init_gwin(ap_id);
-		/* configure CCU windows */
-		init_ccu(ap_id);
 		/* configure the SMMU */
 		ap810_setup_smmu(ap_id);
 		/* Open AP incoming access for all masters */
