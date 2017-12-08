@@ -13,53 +13,6 @@
 #include <iob.h>
 #include <ccu.h>
 #include <gwin.h>
-#include <pci_ep.h>
-
-/*
- * This struct supports skip image request
- * detection_method: the method used to detect the request "signal".
- * info:
- *	GPIO:
- *		detection_method: HIGH (pressed button), LOW (unpressed button),
- *		num (button mpp number).
- *	i2c:
- *		i2c_addr: the address of the i2c chosen.
- *		i2d_reg: the i2c register chosen.
- *	test:
- *		choose the DIE you picked the button in (AP or CP).
- *		in case of CP(cp_index = 0 if CP0, cp_index = 1 if CP1)
- */
-struct skip_image {
-	enum {
-		GPIO,
-		I2C,
-		USER_DEFINED
-	} detection_method;
-
-	struct {
-		struct {
-			int num;
-			enum {
-				HIGH,
-				LOW
-			} button_state;
-
-		} gpio;
-
-		struct {
-			int i2c_addr;
-			int i2c_reg;
-		} i2c;
-
-		struct {
-			enum {
-				CP,
-				AP
-			} cp_ap;
-			int cp_index;
-		} test;
-	} info;
-};
 
 uint32_t marvell_get_io_win_gcr_target(int);
 uint32_t marvell_get_ccu_gcr_target(int);
