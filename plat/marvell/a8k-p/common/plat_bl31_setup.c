@@ -9,6 +9,7 @@
 #include <plat_config.h>
 #include <plat_private.h>
 #include <ap810_setup.h>
+#include <cp110_setup.h>
 #include <marvell_pm.h>
 #include <mvebu.h>
 #include <mmio.h>
@@ -94,6 +95,16 @@ static void update_cp110_default_win(void)
 	debug_exit();
 }
 
+/* Initialize the CP110 in all APs */
+static void cp110_die_init(void)
+{
+	int ap_id, cp_id;
+
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++)
+		for (cp_id = 0; cp_id < get_connected_cp_per_ap(ap_id); cp_id++)
+			cp110_init(MVEBU_CP_REGS_BASE(ap_id, cp_id));
+}
+
 /* This function overruns the same function in marvell_bl31_setup.c */
 void bl31_plat_arch_setup(void)
 {
@@ -115,6 +126,9 @@ void bl31_plat_arch_setup(void)
 	** not override any window that will be configured in GWIN/CCU/IOWIN
 	** */
 	ap810_addr_decode_init();
+
+	/* Configure the connected CP110 (if any) */
+	cp110_die_init();
 
 	/* In marvell_bl31_plat_arch_setup, el3 mmu is configured.
 	 * el3 mmu configuration MUST be called after ap810_init, if not,
