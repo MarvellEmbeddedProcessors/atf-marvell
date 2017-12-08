@@ -55,6 +55,7 @@
 #define MVEBU_SAR_0_COHERENT_EN_MASK		0xf
 
 #define MVEBU_AP_MPP_REGS(ap, n)		(MVEBU_AR_RFU_BASE(ap) + 0x4000 + ((n) << 2))
+#define MVEBU_AP_IHBX4_CNTRL_BASE(ap, mci)	(MVEBU_AR_RFU_BASE(ap) + 0x4200 + 0x20 * mci)
 #define MVEBU_AP_MISC_SOC_BASE(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4300)
 #define MVEBU_AP_AXI_ATTR_REGS(ap)		(MVEBU_AR_RFU_BASE(ap) + 0x4580)
 #define MVEBU_AP_GPIO_REGS(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x5040)
@@ -74,6 +75,7 @@
 
 #define MVEBU_CP_DFX_OFFSET			(0x400200)
 
+#define MCI_MAX_UNIT_ID				8
 /*******************************************************************************
  * MVEBU memory map related constants
  ******************************************************************************/

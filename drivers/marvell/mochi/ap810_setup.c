@@ -39,6 +39,12 @@
 #define CCU_HTC_CR(ap)				(MVEBU_CCU_BASE(ap) + 0x200)
 #define CCU_SET_POC_OFFSET			5
 
+#define MVEBU_IHBX4_CONTROL_SR(ap, mci)		(MVEBU_AP_IHBX4_CNTRL_BASE(ap, mci) + 0xc)
+#define IHBX4_SR_COHERENT_PORT_OFFSET		7
+#define IHBX4_SR_COHERENT_PORT_MASK		(0x1 << IHBX4_SR_COHERENT_PORT_OFFSET)
+#define IHBX4_SR_IHB_READY_OFFSET		5
+#define IHBX4_SR_IHB_READY_MASK			(0x1 << IHBX4_SR_IHB_READY_OFFSET)
+
 #define GEVENT_CR_PORTx_EVENT_MASK(ap, port)	(MVEBU_AR_RFU_BASE(ap) + 0x500 + port * 0x4)
 
 /* Generic Timer System Controller */
@@ -93,6 +99,8 @@ uint32_t stream_id = 0xA0;
 
 /* Global AP count */
 int g_ap_count = -1;
+/* Global CP per AP count */
+int g_cp_per_ap[] = {-1, -1, -1, -1};
 
 /* Get AP count, by read how many coherent
  * ports connected to AP0. For now assume
@@ -123,6 +131,43 @@ int get_ap_count(void)
 
 	debug_exit();
 	return g_ap_count;
+}
+
+int get_connected_cp_per_ap(int ap_id)
+{
+	int mci_id, cp_per_ap = 0;
+	uint32_t reg;
+
+	if (g_cp_per_ap[ap_id] != -1)
+		return g_cp_per_ap[ap_id];
+
+	debug_enter();
+
+	for (mci_id = 0; mci_id < MCI_MAX_UNIT_ID; mci_id++) {
+		INFO("AP%d MCI-%d ", ap_id, mci_id);
+
+		reg = mmio_read_32(MVEBU_IHBX4_CONTROL_SR(ap_id, mci_id));
+		/* If MCI port is link down, skip this port */
+		if (!(reg & IHBX4_SR_IHB_READY_MASK)) {
+			INFO("- Port disabled\n");
+			continue;
+		}
+
+		/* If MCI port is a coherent port (connected to AP),
+		** skip this port */
+		if (reg & IHBX4_SR_COHERENT_PORT_MASK) {
+			INFO("- Port connected to AP\n");
+			continue;
+		}
+		INFO("- Found MCI port connected to CP\n");
+		cp_per_ap++;
+	}
+	INFO("Found %d CPs connected to AP-%d\n", cp_per_ap, ap_id);
+	g_cp_per_ap[ap_id] = cp_per_ap;
+
+	debug_exit();
+
+	return cp_per_ap;
 }
 
 /* function to open access RGF to access another ring*/
