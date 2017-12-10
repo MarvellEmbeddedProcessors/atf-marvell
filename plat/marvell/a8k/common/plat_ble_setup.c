@@ -314,7 +314,7 @@ static void ble_plat_avs_config(void)
 }
 
 /******************************************************************************
- * SVC flow - v0.8
+ * SVC flow - v0.10
  * The feature is inteded  to configure AVS value according to eFuse values
  * that are burned individually for each SoC during the test process.
  * Primary AVS value is stored in HD efuse and processed on power on by the HW engine
@@ -328,7 +328,7 @@ static void ble_plat_svc_config(void)
 	uint32_t reg_val, avs_workpoint, freq_pidi_mode;
 	uint64_t efuse;
 	uint32_t device_id, single_cluster;
-	uint8_t  svc[4], i, sw_ver;
+	uint8_t  svc[4], perr[4], i, sw_ver;
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
@@ -370,19 +370,14 @@ static void ble_plat_svc_config(void)
 	for (i = 0; i < 4; i++) {
 		uint8_t parity, bit;
 
+		perr[i] = 0;
+
 		for (bit = 1, parity = svc[i] & 1; bit < 7; bit++)
 			parity ^= (svc[i] >> bit) & 1;
 
-		if (parity != ((svc[i] >> 7) & 1)) {
-			/* Starting from SW version 2,
-			 * the parity check is mandatory
-			 */
-			if (sw_ver > 1) {
-				ERROR("Failed SVC WP[%d] parity check!\n", i);
-				ERROR("Ignoring the WP values\n");
-				return;
-			}
-		}
+		/* Starting from SW version 2, the parity check is mandatory */
+		if ((sw_ver > 1) && (parity != ((svc[i] >> 7) & 1)))
+			perr[i] = 1; /* register the error */
 	}
 
 	single_cluster = mmio_read_32(MVEBU_AP_LD0_220_189_EFUSE_OFFS);
@@ -394,31 +389,30 @@ static void ble_plat_svc_config(void)
 		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",
 			single_cluster == 0 ? "8040" : "8020", freq_pidi_mode);
 		switch (freq_pidi_mode) {
-		case CPU_2000_DDR_1200_RCLK_1200:
-		case CPU_2000_DDR_1050_RCLK_1050:
-			avs_workpoint = svc[0];
-			/* MAX speed is already in HD efuse,
-			 * the AVS should not be updated
-			 */
-			if (avs_workpoint != 0) {
-				NOTICE("SVC: AVS work point was not changed\n");
-				return;
-			}
-			break;
 		case CPU_1800_DDR_1200_RCLK_1200:
 		case CPU_1800_DDR_1050_RCLK_1050:
+			if (perr[1])
+				goto perror;
 			avs_workpoint = svc[1];
 			break;
 		case CPU_1600_DDR_1050_RCLK_1050:
 		case CPU_1600_DDR_900_RCLK_900_2:
+			if (perr[2])
+				goto perror;
 			avs_workpoint = svc[2];
 			break;
 		case CPU_1300_DDR_800_RCLK_800:
 		case CPU_1300_DDR_650_RCLK_650:
+			if (perr[3])
+				goto perror;
 			avs_workpoint = svc[3];
 			break;
+		case CPU_2000_DDR_1200_RCLK_1200:
+		case CPU_2000_DDR_1050_RCLK_1050:
 		default:
-			avs_workpoint = 0;
+			if (perr[0])
+				goto perror;
+			avs_workpoint = svc[0];
 			break;
 		}
 	} else if (device_id == MVEBU_70X0_DEV_ID) {
@@ -427,29 +421,49 @@ static void ble_plat_svc_config(void)
 			single_cluster == 0 ? "7040" : "7020", freq_pidi_mode);
 		switch (freq_pidi_mode) {
 		case CPU_1400_DDR_800_RCLK_800:
-			avs_workpoint = svc[0];
-			if (avs_workpoint == 0)
-				break;
-			/* MAX speed is already in HD efuse,
-			 * the AVS should not be updated for 7040/6040
-			 */
-			if (!single_cluster) {
-				NOTICE("SVC: AVS work point was not changed\n");
-				return;
+			if (single_cluster) {/* 7020 */
+				if (perr[1])
+					goto perror;
+				avs_workpoint = svc[1];
+			} else {
+				if (perr[0])
+					goto perror;
+				avs_workpoint = svc[0];
 			}
 			break;
 		case CPU_1200_DDR_800_RCLK_800:
-			avs_workpoint = svc[1];
+			if (single_cluster) {/* 7020 */
+				if (perr[2])
+					goto perror;
+				avs_workpoint = svc[2];
+			} else {
+				if (perr[1])
+					goto perror;
+				avs_workpoint = svc[1];
+			}
 			break;
 		case CPU_800_DDR_800_RCLK_800:
 		case CPU_1000_DDR_800_RCLK_800:
-			avs_workpoint = svc[2];
+			if (single_cluster) {/* 7020 */
+				if (perr[3])
+					goto perror;
+				avs_workpoint = svc[3];
+			} else {
+				if (perr[2])
+					goto perror;
+				avs_workpoint = svc[2];
+			}
 			break;
 		case CPU_600_DDR_800_RCLK_800:
-			avs_workpoint = svc[3];
+			if (perr[3])
+				goto perror;
+			avs_workpoint = svc[3]; /* Same for 6040 and 7020 */
 			break;
+		case CPU_1600_DDR_800_RCLK_800: /* 7020 only */
 		default:
-			avs_workpoint = 0;
+			if (perr[0])
+				goto perror;
+			avs_workpoint = svc[0];
 			break;
 		}
 	} else {
@@ -459,13 +473,12 @@ static void ble_plat_svc_config(void)
 
 	/* Set AVS control if needed */
 	if (avs_workpoint == 0) {
-		ERROR("SVC: Wrong SAR 0x%x for this BIN\n", freq_pidi_mode);
+		ERROR("SVC: AVS work point not changed\n");
 		return;
 	}
 
 	/* Remove parity bit */
-	if (sw_ver > 1)
-		avs_workpoint &= 0x7F;
+	avs_workpoint &= 0x7F;
 
 	reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
 	NOTICE("SVC: AVS work point changed from 0x%x to 0x%x\n",
@@ -476,6 +489,11 @@ static void ble_plat_svc_config(void)
 	reg_val |= avs_workpoint << AVS_HIGH_VDD_LIMIT_OFFSET;
 	reg_val |= avs_workpoint << AVS_LOW_VDD_LIMIT_OFFSET;
 	mmio_write_32(AVS_EN_CTRL_REG, reg_val);
+	return;
+
+perror:
+	ERROR("Failed SVC WP[%d] parity check!\n", i);
+	ERROR("Ignoring the WP values\n");
 }
 
 static int ble_skip_image_i2c(struct skip_image *skip_im)
