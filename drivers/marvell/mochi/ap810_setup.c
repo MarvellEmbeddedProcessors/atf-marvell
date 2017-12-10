@@ -65,6 +65,13 @@
 #define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
 
+/* AP810 revision ID */
+
+#define MVEBU_CSS_GWD_CTRL_IIDR2_REG(ap)	(MVEBU_AR_RFU_BASE(ap) + 0x240)
+#define GWD_IIDR2_REV_ID_OFFSET			16
+#define GWD_IIDR2_REV_ID_MASK			0xF
+#define AP810_REV_ID_A0				0
+
 /* define AP810 stops */
 enum ap810_stations {
 	AP810_S0_SMC0 = 0,	/* Stop memory contoler 0 */
@@ -598,6 +605,16 @@ void ap810_addr_decode_init(void)
 	}
 
 	debug_exit();
+}
+
+int ap810_rev_id_get(int ap_index)
+{
+	/* Returns:
+	 * - 0 (AP810_REV_ID_A0) for A0
+	 */
+	return (mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG(ap_index)) >>
+		GWD_IIDR2_REV_ID_OFFSET) &
+		GWD_IIDR2_REV_ID_MASK;
 }
 
 void ap810_init(void)
