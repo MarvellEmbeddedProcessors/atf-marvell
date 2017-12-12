@@ -683,6 +683,11 @@ __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 	unsigned int srcmd;
 	unsigned int sdram_reg;
 
+	if (is_pm_fw_running()) {
+		psci_power_down_wfi();
+		panic();
+	}
+
 	pm_cfg = (struct power_off_method *)plat_get_pm_cfg();
 
 	/* Prepare for power off */
