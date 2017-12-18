@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __CONTEXT_H__
@@ -70,12 +46,26 @@
 #define CTX_GPREG_SP_EL0	0xf8
 #define CTX_GPREGS_END		0x100
 
+#if WORKAROUND_CVE_2017_5715
+#define CTX_CVE_2017_5715_OFFSET	(CTX_GPREGS_OFFSET + CTX_GPREGS_END)
+#define CTX_CVE_2017_5715_QUAD0		0x0
+#define CTX_CVE_2017_5715_QUAD1		0x8
+#define	CTX_CVE_2017_5715_QUAD2		0x10
+#define CTX_CVE_2017_5715_QUAD3		0x18
+#define CTX_CVE_2017_5715_QUAD4		0x20
+#define CTX_CVE_2017_5715_QUAD5		0x28
+#define CTX_CVE_2017_5715_END		0x30
+#else
+#define CTX_CVE_2017_5715_OFFSET	CTX_GPREGS_OFFSET
+#define CTX_CVE_2017_5715_END		CTX_GPREGS_END
+#endif
+
 /*******************************************************************************
  * Constants that allow assembler code to access members of and the 'el3_state'
  * structure at their correct offsets. Note that some of the registers are only
  * 32-bits wide but are stored as 64-bit values for convenience
  ******************************************************************************/
-#define CTX_EL3STATE_OFFSET	(CTX_GPREGS_OFFSET + CTX_GPREGS_END)
+#define CTX_EL3STATE_OFFSET	(CTX_CVE_2017_5715_OFFSET + CTX_CVE_2017_5715_END)
 #define CTX_SCR_EL3		0x0
 #define CTX_RUNTIME_SP		0x8
 #define CTX_SPSR_EL3		0x10
@@ -205,6 +195,9 @@
 
 /* Constants to determine the size of individual context structures */
 #define CTX_GPREG_ALL		(CTX_GPREGS_END >> DWORD_SHIFT)
+#if WORKAROUND_CVE_2017_5715
+#define CTX_CVE_2017_5715_ALL	(CTX_CVE_2017_5715_END >> DWORD_SHIFT)
+#endif
 #define CTX_SYSREG_ALL		(CTX_SYSREGS_END >> DWORD_SHIFT)
 #if CTX_INCLUDE_FPREGS
 #define CTX_FPREG_ALL		(CTX_FPREGS_END >> DWORD_SHIFT)
@@ -219,6 +212,10 @@
  * exception handling, we need to save the callee registers too.
  */
 DEFINE_REG_STRUCT(gp_regs, CTX_GPREG_ALL);
+
+#if WORKAROUND_CVE_2017_5715
+DEFINE_REG_STRUCT(cve_2017_5715_regs, CTX_CVE_2017_5715_ALL);
+#endif
 
 /*
  * AArch64 EL1 system register context structure for preserving the
@@ -261,6 +258,9 @@ DEFINE_REG_STRUCT(el3_state, CTX_EL3STATE_ALL);
  */
 typedef struct cpu_context {
 	gp_regs_t gpregs_ctx;
+#if WORKAROUND_CVE_2017_5715
+	cve_2017_5715_regs_t cve_2017_5715_regs_ctx;
+#endif
 	el3_state_t el3state_ctx;
 	el1_sys_regs_t sysregs_ctx;
 #if CTX_INCLUDE_FPREGS
