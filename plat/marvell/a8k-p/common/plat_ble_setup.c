@@ -15,6 +15,7 @@
 #include <plat_def.h>
 #include <mv_ddr_if.h>
 #include <mvebu.h>
+#include <ap810_init_clocks.h>
 
 #define MAX_IFACES_PER_AP		2
 
@@ -161,6 +162,9 @@ int ble_plat_setup(int *skip)
 	ble_read_cpu_freq();
 
 	ap810_ble_init();
+
+	/* init clocks for single AP */
+	ap810_clocks_init(get_ap_count());
 
 	/* TODO: need to check if need early cpu powerdown */
 
