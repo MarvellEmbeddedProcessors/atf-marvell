@@ -14,6 +14,93 @@
 #include <mvebu.h>
 #include <mmio.h>
 #include <debug.h>
+#include <mci.h>
+
+/* MCIx_REG_START_ADDRESS */
+#define MVEBU_MCI_REG_START_ADDRESS(ap, mci)		(MVEBU_AR_RFU_BASE(ap) + 0x4158 + mci * 0x4)
+#define MVEBU_MCI_REG_START_ADDR_SHIFT			12
+
+/* Configure the threshold of every MCI */
+static int a8kp_mci_configure_threshold(void)
+{
+	int ap_id, mci_id, cp_id;
+	uintptr_t mci_base;
+	struct addr_map_win mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win;
+
+	debug_enter();
+
+	/* Got the MCI base to work with - need to open windows in different units
+	** GWIN - if MCI is on the remote AP, CCU, and IO-WIN
+	** */
+	mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
+
+	/* Prepare GWIN/CCU/IOWIN windows */
+	mci_gwin_temp_win.base_addr = mci_base;
+	mci_gwin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+
+	mci_ccu_temp_win.base_addr = mci_base;
+	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+	/* Target of the CCU to access CP should be IO */
+	mci_ccu_temp_win.target_id = IO_0_TID;
+
+	mci_iowin_temp_win.base_addr = mci_base;
+	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+
+	/* Run MCI WA for performance improvements */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		/* If initialize the MCIs in another APs, need to open
+		** window in GWIN to enable access from AP0 to APx
+		** */
+		if (ap_id > 0) {
+			mci_gwin_temp_win.target_id = ap_id;
+			/* All the initialization will be done from AP0,
+			** this GWIN configure the access to exit from AP0
+			** and reach the target AP
+			** */
+			gwin_temp_win_insert(0, &mci_gwin_temp_win, 1);
+
+			/* Open temp window for access to GWIN */
+			mci_ccu_temp_win.target_id = GLOBAL_TID;
+			ccu_temp_win_insert(0, &mci_ccu_temp_win, 1);
+		}
+
+		/* Open temp window in CCU unit */
+		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
+
+		/* Go over the MCIs in every APx */
+		for (cp_id = 0; cp_id < get_connected_cp_per_ap(ap_id); cp_id++) {
+			/* Get the MCI index */
+			mci_id = marvell_get_mci_map(ap_id, cp_id);
+			INFO("Configure threshold & ID assin AP%d MCI-%d\n", ap_id, mci_id);
+
+			/* Open temp window IO_WIN unit with relevant target ID */
+			mci_iowin_temp_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &mci_iowin_temp_win, 1);
+
+			/* Open window for MCI indirect access from APx */
+			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
+					mci_base >> MVEBU_MCI_REG_START_ADDR_SHIFT);
+
+			/* Run MCI WA for performance improvements */
+			mci_initialize(mci_id);
+
+			/* Remove the temporary IO-WIN window */
+			iow_temp_win_remove(ap_id, &mci_iowin_temp_win, 1);
+		}
+
+		/* Remove the temporary CCU window */
+		ccu_temp_win_remove(ap_id, &mci_ccu_temp_win, 1);
+
+		/* Remove the temporary GWIN window */
+		if (ap_id > 0) {
+			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
+			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
+		}
+	}
+
+	debug_exit();
+	return 0;
+}
 
 /* CP110 has configuration space address set by the default to 0xf200_0000
 ** In Armada-8k-plus family there is an option to connect more than
@@ -115,6 +202,9 @@ void bl31_plat_arch_setup(void)
 
 	/* Configure ap810 */
 	ap810_init();
+
+	/* Initialize the MCI threshold to improve performance */
+	a8kp_mci_configure_threshold();
 
 	/* Update configuration space of CP110 from 0xf200_0000, to the
 	** new address according to address map of Armada-8k-plus family.
