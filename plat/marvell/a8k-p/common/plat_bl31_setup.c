@@ -14,11 +14,289 @@
 #include <mvebu.h>
 #include <mmio.h>
 #include <debug.h>
+#include <delay_timer.h>
 #include <mci.h>
+
+#define MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap)	(MVEBU_AP_MISC_SOC_BASE(ap) + 0x54)
+/* For every MCI have 2 reset parameters MAIN/PHY SW reset */
+#define SOFT_RESET_IHBx_MAIN_SW_RESET(mci)		((0x1) << ((mci * 2) + 3))
+#define SOFT_RESET_IHBx_PHY_SW_RESET(mci)		((0x1) << ((mci * 2) + 4))
 
 /* MCIx_REG_START_ADDRESS */
 #define MVEBU_MCI_REG_START_ADDRESS(ap, mci)		(MVEBU_AR_RFU_BASE(ap) + 0x4158 + mci * 0x4)
 #define MVEBU_MCI_REG_START_ADDR_SHIFT			12
+
+#define MVEBU_IHB_CNTRL_REG_1(ap, mci_idx)		(MVEBU_MCI_PHY(ap, mci_idx) + 0x4)
+#define IHB_CNTRL_REG1_DEVICE_WDAT(val)			(((val) & 0xff) << 0)
+#define IHB_CNTRL_REG1_DEVICE_ADDR_BYTE_SEL(val)	(((val) & 0x3) << 16)
+#define IHB_CNTRL_REG1_DEVICE_ADDR(val)			(((val) & 0xff) << 18)
+#define IHB_CNTRL_REG1_DEVICE_REG_WEN(val)		(((val) & 0x1) << 28)
+#define IHB_CNTRL_REG1_DEVICE_WEN_DONE(val)		(((val) & 0x1) << 29)
+
+#define MVEBU_IHB_PWM_CTRL_REG3(ap, mci_idx)		(MVEBU_MCI_PHY(ap, mci_idx) + 0x1c)
+#define IHB_PWM_CTRL_REG3_AUTO_SPEED_OFFSET		0
+#define IHB_PWM_CTRL_REG3_AUTO_SPEED_MASK		(0xf << IHB_PWM_CTRL_REG3_AUTO_SPEED_OFFSET)
+
+#define MCI_RETRY_COUNT					10
+
+uint32_t mci_get_link_speed(int ap_idx, int mci_idx)
+{
+	return mmio_read_32(MVEBU_IHB_PWM_CTRL_REG3(ap_idx, mci_idx)) & IHB_PWM_CTRL_REG3_AUTO_SPEED_MASK;
+}
+
+void mci_phy_config(int ap_idx, int mci_idx)
+{
+	mmio_write_32(MVEBU_IHB_CNTRL_REG_1(ap_idx, mci_idx),
+				IHB_CNTRL_REG1_DEVICE_WDAT(0x50) |
+				IHB_CNTRL_REG1_DEVICE_ADDR_BYTE_SEL(0x1) |
+				IHB_CNTRL_REG1_DEVICE_ADDR(0x21) |
+				IHB_CNTRL_REG1_DEVICE_REG_WEN(0x1));
+	mdelay(5);
+
+	mmio_write_32(MVEBU_IHB_CNTRL_REG_1(ap_idx, mci_idx),
+				IHB_CNTRL_REG1_DEVICE_WDAT(0x50) |
+				IHB_CNTRL_REG1_DEVICE_ADDR_BYTE_SEL(0x1) |
+				IHB_CNTRL_REG1_DEVICE_ADDR(0x21) |
+				IHB_CNTRL_REG1_DEVICE_REG_WEN(0x0));
+	mdelay(5);
+}
+
+void ap810_mci_phy_soft_reset(int ap_id, int mci_idx)
+{
+	uint32_t reg;
+
+	/* For every MCI, there is MAIN SW reset & PHY SW reset */
+	reg = mmio_read_32(MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap_id));
+	reg &= ~(SOFT_RESET_IHBx_MAIN_SW_RESET(mci_idx) | SOFT_RESET_IHBx_PHY_SW_RESET(mci_idx));
+	mmio_write_32(MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap_id), reg);
+
+	/* Wait 5ms before get into reset */
+	mdelay(5);
+	reg |= (SOFT_RESET_IHBx_MAIN_SW_RESET(mci_idx) | SOFT_RESET_IHBx_PHY_SW_RESET(mci_idx));
+	mmio_write_32(MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap_id), reg);
+}
+
+static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin_win,
+				struct addr_map_win ccu_win, struct addr_map_win iowin_win)
+{
+	int ap_id, cp_id, mci_id;
+
+	/* Go over the APs and turn off the link of MCIs */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		/* If initialize the MCIs in another APs, need to open
+		** window in GWIN to enable access from AP0 to APx
+		** */
+		if (ap_id > 0) {
+			gwin_win.target_id = ap_id;
+			/* All the initialization will be done from AP0,
+			** this GWIN configure the access to exit from AP0
+			** and reach the target AP
+			** */
+			gwin_temp_win_insert(0, &gwin_win, 1);
+
+			/* Open temp window for access to GWIN */
+			ccu_win.target_id = GLOBAL_TID;
+			ccu_temp_win_insert(0, &ccu_win, 1);
+		}
+
+		/* Open temp window in CCU unit */
+		ccu_temp_win_insert(ap_id, &ccu_win, 1);
+
+		/* Go over the MCIs  */
+		for (cp_id = 0; cp_id < CP110_DIE_NUM; cp_id++) {
+			/* Get the MCI index */
+			mci_id = marvell_get_mci_map(ap_id, cp_id);
+			INFO("Turn link off for AP-%d MCI-%d\n", ap_id, mci_id);
+
+			/* Open temp window IO_WIN unit with relevant target ID */
+			iowin_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &iowin_win, 1);
+
+			/* Open window for MCI indirect access from APx */
+			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
+					mci_base >> MVEBU_MCI_REG_START_ADDR_SHIFT);
+			/* Turn link off */
+			mci_turn_link_down();
+			/* Remove the temporary IO-WIN window */
+			iow_temp_win_remove(ap_id, &iowin_win, 1);
+		}
+
+		/* Remove the temporary CCU window */
+		ccu_temp_win_remove(ap_id, &ccu_win, 1);
+
+		/* Remove the temporary GWIN window */
+		if (ap_id > 0) {
+			gwin_temp_win_remove(0, &gwin_win, 1);
+			ccu_temp_win_remove(0, &ccu_win, 1);
+		}
+	}
+}
+
+static void a8kp_mci_mpp_reset(int mpp)
+{
+	uint32_t val;
+
+	/* Set MPP to low */
+	val = mmio_read_32(MVEBU_AP_GPIO_DATA_IN(0));
+	val &= ~(0x1 << mpp);
+	mmio_write_32(MVEBU_AP_GPIO_DATA_IN(0), val);
+
+	/* Clear data out */
+	val = mmio_read_32(MVEBU_AP_GPIO_DATA_OUT_VAL(0));
+	val &= ~(0x1 << mpp);
+	mmio_write_32(MVEBU_AP_GPIO_DATA_OUT_VAL(0), val);
+
+	/* Enable data out */
+	val = mmio_read_32(MVEBU_AP_GPIO_DATA_OUT_EN(0));
+	val &= ~(0x1 << mpp);
+	mmio_write_32(MVEBU_AP_GPIO_DATA_OUT_EN(0), val);
+
+	INFO("Get out CPs from reset\n");
+	val = mmio_read_32(MVEBU_AP_GPIO_DATA_OUT_VAL(0));
+	val |= (0x1 << mpp);
+	mmio_write_32(MVEBU_AP_GPIO_DATA_OUT_VAL(0), val);
+
+	/* Wait until CP release from reset */
+	mdelay(2);
+}
+
+/* MCI initialize for all APs, the sequence split to 3 parts:
+** 1. Turn off the link on all MCIs
+** 2. Reset the CPs via MPP
+** 3. Re-init the MCI phy in AP side & in CP side
+** */
+static int mci_wa_initialize(void)
+{
+	int ap_id, mci_id, cp_id;
+	uintptr_t mci_base;
+	struct addr_map_win mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win;
+
+	debug_enter();
+
+	/* Got the MCI base to work with - need to open windows in different units
+	** GWIN - if MCI is on the remote AP, CCU, and IO-WIN
+	** */
+	mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
+
+	/* Prepare GWIN/CCU/IOWIN windows */
+	mci_gwin_temp_win.base_addr = mci_base;
+	mci_gwin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+
+	mci_ccu_temp_win.base_addr = mci_base;
+	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+	/* Target of the CCU to access CP should be IO */
+	mci_ccu_temp_win.target_id = IO_0_TID;
+
+	mci_iowin_temp_win.base_addr = mci_base;
+	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
+
+	/* 1st stage - Turn off the link on all MCIs */
+	a8kp_mci_turn_off_links(mci_base, mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win);
+
+	/* 2nd stage - reset CPs via MPP */
+	a8kp_mci_mpp_reset(MPP_MCI_RELEASE_FROM_RESET);
+
+	/* 3rd stage - Re-init the MCI phy in AP side & in CP side */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		/* If initialize the MCIs in another APs, need to open
+		** window in GWIN to enable access from AP0 to APx
+		** */
+		if (ap_id > 0) {
+			mci_gwin_temp_win.target_id = ap_id;
+			/* All the initialization will be done from AP0,
+			** this GWIN configure the access to exit from AP0
+			** and reach the target AP
+			** */
+			gwin_temp_win_insert(0, &mci_gwin_temp_win, 1);
+
+			/* Open temp window for access to GWIN */
+			mci_ccu_temp_win.target_id = GLOBAL_TID;
+			ccu_temp_win_insert(0, &mci_ccu_temp_win, 1);
+		}
+
+		/* Open temp window in CCU unit */
+		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
+
+		/* Go over the MCIs in every APx */
+		for (cp_id = 0; cp_id < CP110_DIE_NUM; cp_id++) {
+			uint32_t reg;
+			/* Get the MCI index */
+			mci_id = marvell_get_mci_map(ap_id, cp_id);
+			INFO("Turn link on & ID assign AP%d MCI-%d\n", ap_id, mci_id);
+
+			/* Config MCI phy on AP side */
+			mci_phy_config(ap_id, mci_id);
+
+			/* Reset MCI phy on AP side */
+			ap810_mci_phy_soft_reset(ap_id, mci_id);
+
+			/* Open temp window IO_WIN unit with relevant target ID */
+			mci_iowin_temp_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &mci_iowin_temp_win, 1);
+
+			/* Open window for MCI indirect access from APx */
+			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
+					mci_base >> MVEBU_MCI_REG_START_ADDR_SHIFT);
+
+			/* Turn on link on CP side */
+			mci_turn_link_on();
+
+			/* Wait 20ms, until link is stable*/
+			mdelay(20);
+
+			/* Check the link status on CP side */
+			reg = mci_get_link_status();
+			if (reg == -1) {
+				ERROR("bad link on MCI-%d - status register is %x\n", mci_id, reg);
+				return -1;
+			}
+
+			reg = mci_get_link_speed(ap_id, mci_id);
+			if (reg != 0x3) {
+				ERROR("link speed is not correct on MCI-%d - link speed is %x\n", mci_id, reg);
+				return -1;
+			}
+
+			INFO("MCI-%d link is 8G (speed = %x)\n", mci_id, reg);
+
+			/* Remove the temporary IO-WIN window */
+			iow_temp_win_remove(ap_id, &mci_iowin_temp_win, 1);
+		}
+
+		/* Remove the temporary CCU window */
+		ccu_temp_win_remove(ap_id, &mci_ccu_temp_win, 1);
+
+		/* Remove the temporary GWIN window */
+		if (ap_id > 0) {
+			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
+			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
+		}
+	}
+
+	debug_exit();
+	return 0;
+}
+
+/* Armada-8k-plus have bug on MCI, that link between AP & CP is
+** not stable and should be re-initialize.
+** */
+void a8kp_mci_wa_initialize(void)
+{
+	int retry = MCI_RETRY_COUNT;
+
+	/* Retry until success, if the MCI initialization failed, reset is required */
+	while (retry > 0) {
+		if (mci_wa_initialize() == 0)
+			break;
+		ERROR("MCIx failed to create link - retry again %d of %d\n", retry, MCI_RETRY_COUNT);
+		retry--;
+	}
+
+	if (retry == 0) {
+		ERROR("MCIx failed to create link after %d times, reset is required\n", MCI_RETRY_COUNT);
+		panic();
+	}
+}
 
 /* Configure the threshold of every MCI */
 static int a8kp_mci_configure_threshold(void)
@@ -202,6 +480,10 @@ void bl31_plat_arch_setup(void)
 
 	/* Configure ap810 */
 	ap810_init();
+
+	/* Re-init MCI connection due bug in Armada-8k-plus */
+	/* TODO; Check revision */
+	a8kp_mci_wa_initialize();
 
 	/* Initialize the MCI threshold to improve performance */
 	a8kp_mci_configure_threshold();
