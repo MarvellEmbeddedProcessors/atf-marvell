@@ -30,7 +30,7 @@
 #define MVEBU_A2_BANKED_STOP_BASE(ap, stop)	(MVEBU_REGS_BASE_AP(ap) + 0x800 + 0x400 * stop)
 
 #define MVEBU_CCU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x4000)
-#define MVEBU_CCU_MAX_WINS			(8)
+#define MVEBU_CCU_MAX_WINS			(5)
 #define MVEBU_CCU_GRU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x5200)
 
 #define MVEBU_GWIN_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x5400)
