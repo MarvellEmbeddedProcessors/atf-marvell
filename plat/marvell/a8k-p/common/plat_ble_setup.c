@@ -5,9 +5,15 @@
  * https://spdx.org/licenses
  */
 
+#include <plat_marvell.h>
+#include <plat_def.h>
+#include <ap810_setup.h>
+
 int ble_plat_setup(int *skip)
 {
 	int ret = 0;
+
+	ap810_ble_init();
 
 	/* TODO: need to check if need early cpu powerdown */
 

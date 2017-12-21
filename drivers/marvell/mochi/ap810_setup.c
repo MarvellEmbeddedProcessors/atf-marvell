@@ -605,7 +605,6 @@ void ap810_init(void)
 	int ap_id;
 
 	debug_enter();
-	ap810_enumeration_algo();
 
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
 		INFO("Initialize AP-%d\n", ap_id);
@@ -626,5 +625,14 @@ void ap810_init(void)
 	}
 
 	ap810_generic_timer_init();
+
 	debug_exit();
+}
+
+void ap810_ble_init(void)
+{
+	/* Initialize the enumeration alogethim in BLE stage to
+	** enable access to another APs
+	** */
+	ap810_enumeration_algo();
 }
