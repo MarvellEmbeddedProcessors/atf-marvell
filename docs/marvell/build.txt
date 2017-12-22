@@ -57,10 +57,13 @@ Build Instructions
 
 	- MARVELL_SECURE_BOOT: build trusted(=1)/non trusted(=0) image, default is non trusted.
 
-	- MV_DDR_PATH: For A7/8K only, use this parameter to point to mv_ddr driver sources to allow BLE build.
+	- MV_DDR_PATH:
+		For A7/8K, use this parameter to point to mv_ddr driver sources to allow BLE build. For A37x0,
+		it is used for ddr_tool build.
 		Usage example: MV_DDR_PATH=path/to/mv_ddr
-		when this parameter is not set, the mv_ddr sources are expected to be located at:
-		drivers/marvell/mv_ddr
+		The parameter is optional for A7/8K, when this parameter is not set, the mv_ddr
+		sources are expected to be located at: drivers/marvell/mv_ddr. However, the parameter
+		is neccesary for A37x0.
 
 	- DDR_TOPOLOGY: For Armada37x0 only, the DDR topology map index, default is 0.
 		Supported Options:
