@@ -229,8 +229,6 @@ void usage(void)
 	exit(-1);
 }
 
-#define EXT_FILENAME	"/tmp/ext_file"
-
 /* globals */
 options_t opts = {
 	.bin_ext_file = "NA",
@@ -1441,6 +1439,7 @@ int main(int argc, char *argv[])
 {
 	char in_file[MAX_FILENAME];
 	char out_file[MAX_FILENAME];
+	char ext_file[MAX_FILENAME];
 	FILE *in_fd = NULL;
 	FILE *out_fd = NULL;
 	int parse = 0;
@@ -1451,6 +1450,11 @@ int main(int argc, char *argv[])
 	uint8_t *image_buf = NULL;
 	int read;
 	uint32_t nand_block_size_kb, mlc_nand;
+
+	/* Create temporary file for building extensions
+	 * Use process ID for allowing multiple parallel runs
+	 */
+	snprintf(ext_file, MAX_FILENAME, "/tmp/ext_file-%x", getpid());
 
 	while ((opt = getopt(argc, argv, "hpms:i:l:e:a:b:u:n:t:c:k:")) != -1) {
 		switch (opt) {
@@ -1557,7 +1561,7 @@ int main(int argc, char *argv[])
 
 	/* Create a blob file from all extensions */
 	if (ext_cnt) {
-		ret = format_extensions(EXT_FILENAME);
+		ret = format_extensions(ext_file);
 		if (ret)
 			goto main_exit;
 	}
@@ -1568,7 +1572,7 @@ int main(int argc, char *argv[])
 		goto main_exit;
 	}
 
-	ret = write_prolog(ext_cnt, EXT_FILENAME, image_buf, image_size, out_fd);
+	ret = write_prolog(ext_cnt, ext_file, image_buf, image_size, out_fd);
 	if (ret)
 		goto main_exit;
 
@@ -1590,6 +1594,8 @@ main_exit:
 
 	if (image_buf)
 		free(image_buf);
+
+	unlink(ext_file);
 
 #ifdef CONFIG_MVEBU_SECURE_BOOT
 	if (opts.sec_opts) {
