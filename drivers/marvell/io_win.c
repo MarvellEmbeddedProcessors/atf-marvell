@@ -214,7 +214,7 @@ int init_io_win(int ap_index)
 	mmio_write_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
 
 	/* disable all IO windows */
-	for (win_id = 0; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++)
+	for (win_id = 1; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++)
 		io_win_disable_window(ap_index, win_id);
 
 	/* enable relevant windows, starting from win_id=1 because index 0 dedicated for BootRom */
