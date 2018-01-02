@@ -148,6 +148,29 @@ int get_ap_count(void)
 	return g_ap_count;
 }
 
+/* Returns static count of CPs assigned to a specific AP
+ * This CP count is defined by CP_NUM set during the compilation
+ * time and dynamically detected number of interconnected APs
+ */
+int get_static_cp_per_ap(int ap_id)
+{
+	const int ap_count = get_ap_count();
+	int cps_per_ap_id = CP110_DIE_NUM / ap_count;
+	int reminder = CP110_DIE_NUM % ap_count;
+
+	/* The reminder of the integer division counts the CPs that
+	 * cannot be evntly distributed across interconnected APs.
+	 * So only low numbered APs will receive these CPs.
+	 * If for instance the reminder is 2, the AP0 and AP1 will
+	 * increase the number of their connected CP by 1,
+	 * but AP2 and AP3 will keep this number intact.
+	 */
+	if (reminder && ((ap_id + 1) >= reminder))
+		cps_per_ap_id += 1;
+
+	return cps_per_ap_id;
+}
+
 int get_connected_cp_per_ap(int ap_id)
 {
 	int mci_id, cp_per_ap = 0;

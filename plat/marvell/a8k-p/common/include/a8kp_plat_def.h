@@ -27,7 +27,7 @@
 #define MVEBU_REGS_BASE				MVEBU_REGS_BASE_LOCAL_AP
 #define MVEBU_REGS_BASE_MASK			0xFF000000
 
-#define MVEBU_A2_BANKED_STOP_BASE(ap, stop)	(MVEBU_REGS_BASE_AP(ap) + 0x800 + 0x400 * stop)
+#define MVEBU_A2_BANKED_STOP_BASE(ap, stop)	(MVEBU_REGS_BASE_AP(ap) + 0x800 + 0x400 * (stop))
 
 #define MVEBU_CCU_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x4000)
 #define MVEBU_CCU_MAX_WINS			(5)
@@ -56,7 +56,7 @@
 
 
 #define MVEBU_DFX_SR_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x8000)
-#define MVEBU_DFX_SAR_REG(ap, sar)		(MVEBU_DFX_SR_BASE(ap) + 0x200 + 0x4 * sar)
+#define MVEBU_DFX_SAR_REG(ap, sar)		(MVEBU_DFX_SR_BASE(ap) + 0x200 + 0x4 * (sar))
 #define MVEBU_SAR_0_COHERENT_EN_OFFSET		15
 #define MVEBU_SAR_0_COHERENT_EN_MASK		0xf
 
@@ -80,7 +80,11 @@
 #define MVEBU_CP_DEFAULT_BASE_ADDR		0xF2000000
 #define MVEBU_CP_DEFAULT_BASE_SIZE		0x2000000
 
-#define MVEBU_CP_REGS_BASE(ap, cp)			(0xF2000000 + (cp) * 0x2000000)
+/* 116GB per AP starting on top of DRAM region - 516GB */
+#define MVEBU_AP_IO_BASE(ap)			(0x8100000000 + (ap) * 0x1d00000000)
+/* 28GB per each CP starting at AP base + 4GB for SPI/STM region */
+#define MVEBU_CP_REGS_BASE(ap, cp)		(MVEBU_AP_IO_BASE(ap) + (cp) * 0x700000000)
+
 #define MVEBU_CP_DFX_OFFSET			(0x400200)
 
 #define MCI_MAX_UNIT_ID				8
@@ -90,9 +94,13 @@
 /*******************************************************************************
  * MVEBU memory map related constants
  ******************************************************************************/
-/* Aggregate of all devices in the first GB */
-#define DEVICE0_BASE				MVEBU_REGS_BASE_AP(3)
-#define DEVICE0_SIZE				0x18000000
+/* Aggregate all AP configuration space in the first GB */
+#define AP_CFG_BASE				MVEBU_REGS_BASE_AP(3)
+#define AP_CFG_SIZE				0x24000000
+
+/* All 4 APs are located between 0x81_0000_0000 and 0x100_0000_0000, 116GB per AP */
+#define AP_IO_BASE				(0x008100000000ULL)
+#define AP_IO_SIZE				(0x010000000000ULL - AP_IO_BASE)
 
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants
@@ -104,7 +112,7 @@
 /*******************************************************************************
  * AXI Configuration
  ******************************************************************************/
-#define MVEBU_AP_AXI_ATTR_REG(ap, index)	(MVEBU_AP_AXI_ATTR_REGS(ap) + 0x4 * index)
+#define MVEBU_AP_AXI_ATTR_REG(ap, index)	(MVEBU_AP_AXI_ATTR_REGS(ap) + 0x4 * (index))
 
 #define MVEBU_AXI_ATTR_ARCACHE_OFFSET		4
 #define MVEBU_AXI_ATTR_ARCACHE_MASK		(0xF << \

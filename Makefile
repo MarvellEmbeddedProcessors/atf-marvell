@@ -56,6 +56,14 @@ ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
 PCI_EP_SUPPORT			:= 1
 endif
 
+ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
+ifeq (${PALLADIUM},1)
+CP_NUM				:= 0
+else
+CP_NUM				:= 2
+endif
+endif
+
 # Marvell images
 BOOT_IMAGE			:= boot-image.bin
 BOOT_ENC_IMAGE			:= boot-image-enc.bin
@@ -637,6 +645,7 @@ endif
 $(eval $(call add_define,PALLADIUM))
 $(eval $(call add_define,LLC_DISABLE))
 $(eval $(call add_define,PCI_EP_SUPPORT))
+$(eval $(call add_define,CP_NUM))
 
 ################################################################################
 # Include BL specific makefiles

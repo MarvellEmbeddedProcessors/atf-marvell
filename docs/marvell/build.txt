@@ -104,6 +104,16 @@ Build Instructions
 		can be found as a3700_utils.zip in the release.
 		Usage example: WTP=/path/to/a3700_utils
 
+	- CP_NUM: Total amount of CPs (South Bridge) chips wired to the interconnected APs.
+		When the parameter is omitted, the build is uses the default number of CPs equal to 2.
+		The parameter is valid for Armada 8K-plus SoC family (PLAT=a8xxy) and results in a build of images
+		suitable for a8xxY SoC, where "Y" is a number of connected CPs and "xx" is a number of CPU cores.
+		Valid values with CP_NUM is in a range of 0 to 8.
+		The CPs defined by this parameter are evenly distributed across interconnected APs that in turn
+		are dynamically detected. For instance, if the CP_NUM=6 and the ATF detects 2 interconnected
+		APs, each AP assumed to have 3 attached CPs. With the same amount of APs and CP_NUM=3, the AP0
+		will have 2 CPs connected and AP1 - a just single CP.
+
 	For example, in order to build the image in debug mode with log level up to 'notice' level run::
 
 		> make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
@@ -122,6 +132,7 @@ Build Instructions
 		- a70x0_cust (for customers)
 		- a80x0
 		- a80x0_mcbin (for MacciatoBin)
+		- a8xxy
 
 Special Build Flags
 --------------------

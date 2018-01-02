@@ -102,7 +102,8 @@
 #define PLAT_MARVELL_FIP_MAX_SIZE		0x4000000
 
 /* AP810 SoC parameters */
-#define PLAT_MARVELL_NORTHB_COUNT		4
+#define PLAT_MARVELL_NORTHB_COUNT		4	/* Number of interconnected APs */
+#define PLAT_MARVELL_SOUTHB_COUNT		4	/* Number of CPs connected to each AP */
 #define PLAT_MARVELL_CLUSTER_PER_NB		4
 #define PLAT_MARVELL_CLUSTER_CORE_COUNT		2
 

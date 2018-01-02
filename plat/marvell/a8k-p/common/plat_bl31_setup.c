@@ -103,7 +103,7 @@ static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin
 		ccu_temp_win_insert(ap_id, &ccu_win, 1);
 
 		/* Go over the MCIs  */
-		for (cp_id = 0; cp_id < CP110_DIE_NUM; cp_id++) {
+		for (cp_id = 0; cp_id < get_static_cp_per_ap(ap_id); cp_id++) {
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
 			INFO("Turn link off for AP-%d MCI-%d\n", ap_id, mci_id);
@@ -218,7 +218,7 @@ static int mci_wa_initialize(void)
 		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
 
 		/* Go over the MCIs in every APx */
-		for (cp_id = 0; cp_id < CP110_DIE_NUM; cp_id++) {
+		for (cp_id = 0; cp_id < get_static_cp_per_ap(ap_id); cp_id++) {
 			uint32_t reg;
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
