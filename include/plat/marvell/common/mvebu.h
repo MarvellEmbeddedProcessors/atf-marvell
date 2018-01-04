@@ -57,4 +57,7 @@
  */
 #define ROUND_UP_TO_POW_OF_2(number)	(1 << (32 - __builtin_clz(number - 1)))
 
+#define _1MB_				(1024ULL*1024ULL)
+#define _1GB_				(_1MB_*1024ULL)
+
 #endif	/* MVEBU_H */

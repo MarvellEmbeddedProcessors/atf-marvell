@@ -44,6 +44,8 @@ BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c 	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		\
 				$(MARVELL_DRV_BASE)/mochi/ap810_setup.c	\
+				$(MARVELL_DRV_BASE)/ccu.c	\
+				$(MARVELL_DRV_BASE)/gwin.c	\
 				$(BLE_PORTING_SOURCES)
 
 ifeq (${PCI_EP_SUPPORT}, 1)
