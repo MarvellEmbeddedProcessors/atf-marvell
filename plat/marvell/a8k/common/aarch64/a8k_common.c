@@ -54,7 +54,7 @@ const mmap_region_t plat_marvell_mmap[] = {
 const mmap_region_t plat_marvell_mmap[] = {
 	MARVELL_MAP_SHARED_RAM,
 	MAP_DEVICE0,
-	MARVELL_MAP_NS_DRAM1,
+	MARVELL_MAP_DRAM,
 	{0}
 };
 #endif
@@ -77,7 +77,7 @@ const mmap_region_t plat_marvell_mmap[] = {
 const mmap_region_t plat_marvell_mmap[] = {
 	MARVELL_MAP_SHARED_RAM,
 	MAP_DEVICE0,
-	MARVELL_MAP_NS_DRAM1,
+	MARVELL_MAP_DRAM,
 	{0}
 };
 #endif

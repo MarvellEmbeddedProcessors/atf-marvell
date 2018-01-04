@@ -313,8 +313,8 @@ void bl2_plat_set_bl33_ep_info(image_info_t *image,
  ******************************************************************************/
 void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
 {
-	bl33_meminfo->total_base = MARVELL_NS_DRAM1_BASE;
-	bl33_meminfo->total_size = MARVELL_NS_DRAM1_SIZE;
-	bl33_meminfo->free_base = MARVELL_NS_DRAM1_BASE;
-	bl33_meminfo->free_size = MARVELL_NS_DRAM1_SIZE;
+	bl33_meminfo->total_base = MARVELL_DRAM_BASE;
+	bl33_meminfo->total_size = MARVELL_DRAM_SIZE;
+	bl33_meminfo->free_base = MARVELL_DRAM_BASE;
+	bl33_meminfo->free_size = MARVELL_DRAM_SIZE;
 }
