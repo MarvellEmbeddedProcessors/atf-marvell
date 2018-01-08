@@ -200,7 +200,7 @@
  * BLE specific defines.
  ******************************************************************************/
 #define BLE_BASE			PLAT_MARVELL_SRAM_BASE
-#define BLE_LIMIT			PLAT_MARVELL_SRAM_END
+#define BLE_LIMIT			BLE_BASE + 0x100000
 
 /*******************************************************************************
  * BL2 specific defines.
