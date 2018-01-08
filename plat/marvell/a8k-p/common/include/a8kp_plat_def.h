@@ -73,6 +73,7 @@
 						(((n) / 2 + 1) * 0x1000) + 0x1000 * (n))
 
 #define MVEBU_SMMU_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x100000)
+#define MVEBU_AP_I2C_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x511000)
 
 #define MVEBU_DRAM_MAC_BASE			(MVEBU_REGS_BASE + 0x20000)
 #define MVEBU_DRAM_PHY_BASE			(MVEBU_REGS_BASE + 0x20000)

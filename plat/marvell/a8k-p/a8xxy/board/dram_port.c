@@ -11,6 +11,18 @@
 #include <mv_ddr_if.h>
 #include <plat_def.h>
 #include <mmio.h>
+#include <a8k_i2c.h>
+
+/*
+ * TODO: Move to the pin control driver API once it becomes available
+ */
+#define MVEBU_AP_MPP_CTRL16_23_REG		MVEBU_AP_MPP_REGS(0, 2)
+#define MVEBU_AP_MPP_CTRL18_OFFS		8
+#define MVEBU_AP_MPP_CTRL19_OFFS		12
+#define MVEBU_AP_MPP_CTRL4_I2C0_SDA_ENA		0x3
+#define MVEBU_AP_MPP_CTRL5_I2C0_SCK_ENA		0x3
+
+#define MVEBU_MPP_CTRL_MASK			0xf
 
 struct dram_config dram_cfg;
 
@@ -57,9 +69,31 @@ struct dram_config *mv_ddr_dram_config_get(void)
 	return &dram_cfg;
 }
 
+static void mpp_config(void)
+{
+	uintptr_t reg;
+	uint32_t val;
+
+	/*
+	 * The Ax0x0 A0 DB boards are using the AP0 i2c channel (MPP18 and MPP19)
+	 * for accessing all DIMM SPDs available on board.
+	 */
+	reg = MVEBU_AP_MPP_CTRL16_23_REG;
+	val = mmio_read_32(reg);
+
+	val &= ~((MVEBU_MPP_CTRL_MASK << MVEBU_AP_MPP_CTRL18_OFFS) |
+		(MVEBU_MPP_CTRL_MASK << MVEBU_AP_MPP_CTRL19_OFFS));
+	val |= ((MVEBU_AP_MPP_CTRL4_I2C0_SDA_ENA << MVEBU_AP_MPP_CTRL18_OFFS) |
+		(MVEBU_AP_MPP_CTRL5_I2C0_SCK_ENA << MVEBU_AP_MPP_CTRL19_OFFS));
+
+	mmio_write_32(reg, val);
+	val = mmio_read_32(reg);
+}
+
+
 /*
  * This function may modify the default DRAM parameters
- * based on information recieved from SPD or bootloader
+ * based on information received from SPD or bootloader
  * configuration located on non volatile storage
  */
 int update_dram_info(struct dram_config *cfg)
@@ -68,8 +102,17 @@ int update_dram_info(struct dram_config *cfg)
 
 	INFO("Gathering DRAM information\n");
 
-	if (tm->cfg_src == MV_DDR_CFG_SPD)
-		INFO("SPD functionality is not implemented\n");
+	if (tm->cfg_src == MV_DDR_CFG_SPD) {
+		/* configure MPPs to enable i2c */
+		mpp_config();
+		i2c_init((void *)MVEBU_AP_I2C_BASE(0));
+		/* select SPD memory page 0 to access DRAM configuration */
+		i2c_write(I2C_SPD_P0_SEL_ADDR, 0x0, 1, tm->spd_data.all_bytes, 1);
+		/* TODO: Support multiple intefaces when reading the SPD data */
+		/* read data from spd */
+		i2c_read(I2C_SPD_DATA_ADDR(0), 0x0, 1, tm->spd_data.all_bytes,
+			 sizeof(tm->spd_data.all_bytes));
+	}
 
 	return 0;
 }
