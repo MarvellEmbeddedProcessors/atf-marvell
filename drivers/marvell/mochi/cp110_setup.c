@@ -339,6 +339,7 @@ static void cp110_axi_attr_init(uintptr_t base)
 		}
 	}
 
+#if	!PALLADIUM
 	/* SATA IOCC supported, cache attributes
 	 * for SATA MBUS to AXI configuration.
 	 */
@@ -350,7 +351,7 @@ static void cp110_axi_attr_init(uintptr_t base)
 	data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
 		<< MVEBU_SATA_M2A_AXI_ARCACHE_OFFSET;
 	mmio_write_32(base + MVEBU_SATA_M2A_AXI_PORT_CTRL_REG, data);
-
+#endif
 	/* Set all IO's AXI attribute to non-secure access. */
 	for (index = 0; index < MVEBU_AXI_PROT_REGS_NUM; index++)
 		mmio_write_32(base + MVEBU_AXI_PROT_REG(index), DOMAIN_SYSTEM_SHAREABLE);
