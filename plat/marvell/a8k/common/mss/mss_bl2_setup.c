@@ -45,7 +45,10 @@
 #define IOW_GCR_OFFSET		(0x70)
 
 struct addr_map_win ccu_mem_map[] = {
+#if !PALLADIUM
+	/* empty table for Palladium to enable running Palladium model without CPs */
 	{MVEBU_CP_REGS_BASE(0), 0x4000000, IO_0_TID}
+#endif
 };
 
 /* Since the scp_bl2 image can contain firmware for cp1 and cp0 coprocessors,
