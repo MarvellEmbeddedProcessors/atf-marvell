@@ -74,7 +74,12 @@
 
 #define DMA_SIZE			128
 
+#if !PALLADIUM
 #define MSS_HANDSHAKE_TIMEOUT		50
+#else
+#define MSS_HANDSHAKE_TIMEOUT		5000
+#endif
+
 /* TODO: Fix this */
 #define AP_MSS_REG_BASE			(MVEBU_REGS_BASE + 0x580000)
 #define CP_MSS_REG_BASE(CP)		(MVEBU_CP_REGS_BASE(CP) + 0x280000)
