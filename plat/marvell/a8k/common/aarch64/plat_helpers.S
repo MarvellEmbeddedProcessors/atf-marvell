@@ -40,7 +40,6 @@
 	.globl	plat_get_my_entrypoint
 	.globl	plat_is_my_cpu_primary
 	.globl  plat_reset_handler
-	.globl  exit_bootrom
 
 	/* -----------------------------------------------------
 	 * void plat_secondary_cold_boot_setup (void);
@@ -137,12 +136,3 @@ func plat_reset_handler
 
         ret
 endfunc plat_reset_handler
-
-/*
- ***************************************************************************
- * PM helpers
- ***************************************************************************
- */
-func exit_bootrom
-	br	x0
-endfunc exit_bootrom
