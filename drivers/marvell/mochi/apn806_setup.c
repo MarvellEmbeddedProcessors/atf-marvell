@@ -73,6 +73,10 @@
 #define MVEBU_SYSRST_OUT_CONFIG_REG		(MVEBU_MISC_SOC_BASE + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
 
+/* Generic Timer System Controller */
+#define MVEBU_MSS_GTCR_REG				(MVEBU_REGS_BASE + 0x581000)
+#define MVEBU_MSS_GTCR_ENABLE_BIT		0x1
+
 /*
  * AXI Configuration.
  */
@@ -118,6 +122,18 @@ void setup_smmu(void)
 	reg = mmio_read_32(SMMU_sACR);
 	reg |= SMMU_sACR_PG_64K;
 	mmio_write_32(SMMU_sACR, reg);
+}
+
+
+void ap806_generic_timer_init(void)
+{
+	uint32_t gtc_cntcr = mmio_read_32(MVEBU_MSS_GTCR_REG);
+
+	/* Check if earlier SW enabled the generic timer */
+	if ((gtc_cntcr & MVEBU_MSS_GTCR_ENABLE_BIT) == 0x0) {
+		gtc_cntcr |= MVEBU_MSS_GTCR_ENABLE_BIT;
+		mmio_write_32(MVEBU_MSS_GTCR_REG, gtc_cntcr);
+	}
 }
 
 void init_aurora2(void)
@@ -248,4 +264,10 @@ void apn806_init(void)
 
 	/* misc configuration of the SoC */
 	misc_soc_configurations();
+
+#if PALLADIUM
+	/* This code required to Palladium run only, BootROM init the generic timer
+	   and BootROM isn't running for Palladium */
+	ap806_generic_timer_init();
+#endif
 }
