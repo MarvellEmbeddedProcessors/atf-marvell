@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -304,6 +304,39 @@ func check_errata_833471
 	b	cpu_rev_var_ls
 endfunc check_errata_833471
 
+	/* --------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #859972.
+	 * This applies only to revision <= r1p3 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber:
+	 * --------------------------------------------------
+	 */
+func errata_a57_859972_wa
+	mov	x17, x30
+	bl	check_errata_859972
+	cbz	x0, 1f
+	mrs	x1, CORTEX_A57_ACTLR_EL1
+	orr	x1, x1, #CORTEX_A57_ACTLR_EL1_DIS_INSTR_PREFETCH
+	msr	CORTEX_A57_ACTLR_EL1, x1
+1:
+	ret	x17
+endfunc errata_a57_859972_wa
+
+func check_errata_859972
+	mov	x1, #0x13
+	b	cpu_rev_var_ls
+endfunc check_errata_859972
+
+func check_errata_cve_2017_5715
+#if WORKAROUND_CVE_2017_5715
+	mov	x0, #ERRATA_APPLIES
+#else
+	mov	x0, #ERRATA_MISSING
+#endif
+	ret
+endfunc check_errata_cve_2017_5715
+
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A57.
 	 * Shall clobber: x0-x19
@@ -488,6 +521,8 @@ func cortex_a57_errata_report
 	report_errata ERRATA_A57_828024, cortex_a57, 828024
 	report_errata ERRATA_A57_829520, cortex_a57, 829520
 	report_errata ERRATA_A57_833471, cortex_a57, 833471
+	report_errata ERRATA_A57_859972, cortex_a57, 859972
+	report_errata WORKAROUND_CVE_2017_5715, cortex_a57, cve_2017_5715
 
 	ldp	x8, x30, [sp], #16
 	ret
