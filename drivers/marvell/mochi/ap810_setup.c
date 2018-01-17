@@ -165,7 +165,7 @@ int get_static_cp_per_ap(int ap_id)
 	 * increase the number of their connected CP by 1,
 	 * but AP2 and AP3 will keep this number intact.
 	 */
-	if (reminder && ((ap_id + 1) >= reminder))
+	if (reminder && (reminder > ap_id))
 		cps_per_ap_id += 1;
 
 	return cps_per_ap_id;
