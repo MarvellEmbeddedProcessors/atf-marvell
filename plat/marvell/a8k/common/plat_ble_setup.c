@@ -51,16 +51,9 @@
 /* CCU windows configuration defines */
 #define CCU_CFG_IO_WIN_NUM	(3)
 #define CCU_CFG_WIN_REGS_NUM	(4) /* CR + SCR + ALR + AHR */
-#define CCU_WIN_TARGET_OFFSET	(8)
-#define CCU_WIN_TARGET_MASK	(0xf)
 #define CCU_WIN_ADDR_SHIFT	(20)
 #define CCU_WIN_ADDR_OFFSET	(4)
 #define CCU_WIN_ADDR_MASK	(0xFFFFFFF)
-#define CCU_WIN_CR_OFFSET(w)	(0x0 + (w)*0x10)
-#define CCU_WIN_SCR_OFFSET(w)	(0x4 + (w)*0x10)
-#define CCU_WIN_ALR_OFFSET(w)	(0x8 + (w)*0x10)
-#define CCU_WIN_AHR_OFFSET(w)	(0xC + (w)*0x10)
-#define CCU_WIN_GCR_OFFSET	(0xD0)
 
 /* IO windows configuration */
 #define IOW_CFG_IO_WIN_NUM_ST	(2)
@@ -188,22 +181,21 @@ static void ble_plat_mmap_config(int restore)
 	static uint32_t ccu_win_regs[CCU_CFG_WIN_REGS_NUM];
 	static uint32_t io_win_regs[CP_COUNT];
 	static uint32_t ccu_gcr, iow_gcr;
-	uintptr_t ccu_base = MVEBU_CCU_BASE(MVEBU_AP0);
 	uintptr_t iow_base = MVEBU_IO_WIN_BASE(MVEBU_AP0);
 	uint32_t reg_val, win_num;
 
 	if (restore == MMAP_RESTORE_SAVED) {
 		/* Restore all orig. settings that were modified by BLE stage */
 		/* Restore CCU */
-		mmio_write_32(ccu_base + CCU_WIN_CR_OFFSET(CCU_CFG_IO_WIN_NUM),
+		mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 			      ccu_win_regs[0]);
-		mmio_write_32(ccu_base + CCU_WIN_SCR_OFFSET(CCU_CFG_IO_WIN_NUM),
+		mmio_write_32(CCU_WIN_SCR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 			      ccu_win_regs[1]);
-		mmio_write_32(ccu_base + CCU_WIN_ALR_OFFSET(CCU_CFG_IO_WIN_NUM),
+		mmio_write_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 			      ccu_win_regs[2]);
-		mmio_write_32(ccu_base + CCU_WIN_AHR_OFFSET(CCU_CFG_IO_WIN_NUM),
+		mmio_write_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 			      ccu_win_regs[3]);
-		mmio_write_32(ccu_base + CCU_WIN_GCR_OFFSET, ccu_gcr);
+		mmio_write_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0), ccu_gcr);
 		/* Restore IO Windows */
 		for (win_num = IOW_CFG_IO_WIN_NUM_ST;
 		     win_num < IOW_CFG_IO_WIN_NUM_END; win_num++)
@@ -215,15 +207,11 @@ static void ble_plat_mmap_config(int restore)
 	} else {
 		/* Store original values */
 		/* Save CCU */
-		ccu_win_regs[0] = mmio_read_32(ccu_base +
-					CCU_WIN_CR_OFFSET(CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[1] = mmio_read_32(ccu_base +
-					CCU_WIN_SCR_OFFSET(CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[2] = mmio_read_32(ccu_base +
-					CCU_WIN_ALR_OFFSET(CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[3] = mmio_read_32(ccu_base +
-					CCU_WIN_AHR_OFFSET(CCU_CFG_IO_WIN_NUM));
-		ccu_gcr = mmio_read_32(ccu_base + CCU_WIN_GCR_OFFSET);
+		ccu_win_regs[0] = mmio_read_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
+		ccu_win_regs[1] = mmio_read_32(CCU_WIN_SCR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
+		ccu_win_regs[2] = mmio_read_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
+		ccu_win_regs[3] = mmio_read_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
+		ccu_gcr = mmio_read_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0));
 		/* Save IO Windows */
 		for (win_num = IOW_CFG_IO_WIN_NUM_ST;
 		     win_num < IOW_CFG_IO_WIN_NUM_END; win_num++)
@@ -235,17 +223,16 @@ static void ble_plat_mmap_config(int restore)
 
 	/* The configuration saved, now all the changes can be done */
 	/* Set the default CCU target ID to DRAM 0 */
-	reg_val = ccu_gcr & ~(CCU_WIN_TARGET_MASK << CCU_WIN_TARGET_OFFSET);
-	reg_val |= (DRAM_0_TID & CCU_WIN_TARGET_MASK) << CCU_WIN_TARGET_OFFSET;
-	mmio_write_32(ccu_base + CCU_WIN_GCR_OFFSET, reg_val);
+	reg_val = ccu_gcr & ~(CCU_TARGET_ID_MASK << CCU_TARGET_ID_OFFSET);
+	reg_val |= (DRAM_0_TID & CCU_TARGET_ID_MASK) << CCU_TARGET_ID_OFFSET;
+	mmio_write_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0), reg_val);
 
 	/* Set CCU IO window for covering all available CP addresses */
 	/* Set the CCU IO window Low Address to the start of CP0 region */
-	mmio_write_32(ccu_base + CCU_WIN_CR_OFFSET(CCU_CFG_IO_WIN_NUM), 0);
+	mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM), 0);
 	reg_val = (MVEBU_CP_REGS_BASE(0) >> CCU_WIN_ADDR_SHIFT)
 		  << CCU_WIN_ADDR_OFFSET;
-	mmio_write_32(ccu_base +
-		      CCU_WIN_ALR_OFFSET(CCU_CFG_IO_WIN_NUM), reg_val);
+	mmio_write_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM), reg_val);
 
 	/*
 	 * Set the CCU IO window High Address to the end of
@@ -254,12 +241,12 @@ static void ble_plat_mmap_config(int restore)
 	reg_val = (MVEBU_CP_REGS_BASE(CP_COUNT - 1) >> CCU_WIN_ADDR_SHIFT)
 		   << CCU_WIN_ADDR_OFFSET;
 	reg_val |= 0xF << CCU_WIN_ADDR_OFFSET;
-	mmio_write_32(ccu_base + CCU_WIN_AHR_OFFSET(CCU_CFG_IO_WIN_NUM),
+	mmio_write_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 		      reg_val);
 
 	/* Set the CCU IO window Control target to IO and enable this window */
-	reg_val = (IO_0_TID << CCU_WIN_TARGET_OFFSET) | 0x1;
-	mmio_write_32(ccu_base + CCU_WIN_CR_OFFSET(CCU_CFG_IO_WIN_NUM),
+	reg_val = (IO_0_TID << CCU_TARGET_ID_OFFSET) | 0x1;
+	mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
 		      reg_val);
 
 	/* Set IO windows GCR (IO decode) to PIDI as a default (CP0) */

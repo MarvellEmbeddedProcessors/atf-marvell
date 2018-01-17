@@ -49,28 +49,6 @@
 #define ADDRESS_SHIFT			(20 - 4)
 #define ADDRESS_MASK			(0xFFFFFFF0)
 #define CCU_WIN_ALIGNMENT		(0x100000)
-
-/* AP registers */
-#define CCU_WIN_CR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x0 + (0x10 * (win)))
-#define CCU_TARGET_ID_OFFSET		(8)
-#define CCU_TARGET_ID_MASK		(0x7F)
-
-#define CCU_WIN_SCR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x4 + (0x10 * (win)))
-#define CCU_WIN_ENA_WRITE_SECURE	(0x1)
-#define CCU_WIN_ENA_READ_SECURE		(0x2)
-
-#define CCU_WIN_ALR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0x8 + (0x10 * (win)))
-#define CCU_WIN_AHR_OFFSET(ap, win)	(MVEBU_CCU_BASE(ap) + 0xC + (0x10 * (win)))
-
-#define CCU_WIN_GCR_OFFSET(ap)		(MVEBU_CCU_BASE(ap) + 0xD0)
-#define CCU_GCR_TARGET_OFFSET		(8)
-#define CCU_GCR_TARGET_MASK		(0xF)
-
-#define CCU_MC_RCR_OFFSET(ap, iface)	(MVEBU_REGS_BASE_AP(ap) + \
-					 0x1700 + (0x1400 * (iface)))
-#define CCU_MC_RSBR_OFFSET(ap, iface)	(CCU_MC_RCR_OFFSET(ap, iface) + 0x4)
-#define CCU_MC_RTBR_OFFSET(ap, iface)	(CCU_MC_RCR_OFFSET(ap, iface) + 0x8)
-
 #define REMAP_ADDR_OFFSET		10
 #define REMAP_ADDR_MASK			0xfffff
 #define REMAP_SIZE_OFFSET		20
@@ -78,9 +56,8 @@
 #define REMAP_ENABLE_MASK		0x1
 
 #define IS_DRAM_TARGET(tgt)		((((tgt) == DRAM_0_TID) || \
-					  ((tgt) == DRAM_1_TID) || \
-					  ((tgt) == RAR_TID)) ? 1 : 0)
-
+					((tgt) == DRAM_1_TID) || \
+					((tgt) == RAR_TID)) ? 1 : 0)
 #ifdef DEBUG_ADDR_MAP
 static void dump_ccu(int ap_index)
 {
