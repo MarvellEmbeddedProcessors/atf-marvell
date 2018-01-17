@@ -201,6 +201,17 @@ int get_connected_cp_per_ap(int ap_id)
 		cp_per_ap++;
 	}
 	INFO("Found %d CPs connected to AP-%d\n", cp_per_ap, ap_id);
+	/* In case the build was created for a ceratain number of CPs,
+	 * need to ignore the number of detected ones.
+	 * This is useful mainly for debug, but also prevents from fail
+	 * when early initialization stages processed lower number of CPs
+	 * then the number of CPs actually detected on system.
+	 */
+	if (cp_per_ap > get_static_cp_per_ap(ap_id)) {
+		cp_per_ap = get_static_cp_per_ap(ap_id);
+		INFO("Limiting AP-%d CPs number to %d (CP_NUM=%d)\n", ap_id, cp_per_ap, CP110_DIE_NUM);
+	}
+
 	g_cp_per_ap[ap_id] = cp_per_ap;
 
 	debug_exit();
