@@ -68,8 +68,8 @@ static void gwin_check(struct addr_map_win *win)
 {
 	/* The base is always 64M aligned */
 	if (IS_NOT_ALIGN(win->base_addr, GWIN_ALIGNMENT_64M)) {
-		win->base_addr = ALIGN_UP(win->base_addr, GWIN_ALIGNMENT_64M);
-		NOTICE("%s: Align up the base address to 0x%lx\n", __func__, win->base_addr);
+		win->base_addr &= ~(GWIN_ALIGNMENT_64M - 1);
+		NOTICE("%s: Align the base address to 0x%lx\n", __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
