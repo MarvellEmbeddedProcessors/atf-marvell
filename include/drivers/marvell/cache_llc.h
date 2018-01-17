@@ -19,6 +19,16 @@
 #ifndef _CACHE_LLC_H_
 #define _CACHE_LLC_H_
 
+#define LLC_CTRL(ap)			(MVEBU_LLC_BASE(ap) + 0x100)
+#define LLC_CACHE_SYNC(ap)		(MVEBU_LLC_BASE(ap) + 0x700)
+#define L2X0_INV_WAY(ap)		(MVEBU_LLC_BASE(ap) + 0x77C)
+#define L2X0_CLEAN_WAY(ap)		(MVEBU_LLC_BASE(ap) + 0x7BC)
+#define L2X0_CLEAN_INV_WAY(ap)		(MVEBU_LLC_BASE(ap) + 0x7FC)
+
+#define LLC_CTRL_EN			1
+#define LLC_EXCLUSIVE_EN		0x100
+#define LLC_WAY_MASK			0xFFFFFFFF
+
 void llc_cache_sync(int);
 void llc_flush_all(int);
 void llc_clean_all(int);
