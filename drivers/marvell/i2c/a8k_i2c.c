@@ -154,7 +154,7 @@ static int marvell_i2c_start_bit_set(void)
 
 	/* in case that the int flag was set before i.e. repeated start bit */
 	if (is_int_flag) {
-		INFO("%s: repeated start Bit\n", __func__);
+		VERBOSE("%s: repeated start Bit\n", __func__);
 		marvell_i2c_interrupt_clear();
 	}
 
@@ -171,7 +171,7 @@ static int marvell_i2c_start_bit_set(void)
 
 	/* check the status */
 	if (marvell_i2c_lost_arbitration(&status)) {
-		INFO("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
+		ERROR("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
 		return -EAGAIN;
 	}
 	if ((status != I2C_STATUS_START) && (status != I2C_STATUS_REPEATED_START)) {
@@ -208,7 +208,7 @@ static int marvell_i2c_stop_bit_set(void)
 
 	/* check the status */
 	if (marvell_i2c_lost_arbitration(&status)) {
-		INFO("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
+		ERROR("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
 		return -EAGAIN;
 	}
 	if (status != I2C_STATUS_IDLE) {
@@ -237,14 +237,14 @@ static int marvell_i2c_address_set(uint8_t chain, int command)
 
 	/* check the status */
 	if (marvell_i2c_lost_arbitration(&status)) {
-		INFO("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
+		ERROR("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
 		return -EAGAIN;
 	}
 	if (((status != I2C_STATUS_ADDR_R_ACK) && (command == I2C_CMD_READ)) ||
 	   ((status != I2C_STATUS_ADDR_W_ACK) && (command == I2C_CMD_WRITE))) {
 		/* only in debug, since in boot we try to read the SPD of both DRAM, and we don't
 		   want error messages in case DIMM doesn't exist. */
-		INFO("%s: ERROR - status %x addr in %s mode.\n", __func__, status, (command == I2C_CMD_WRITE) ?
+		ERROR("%s: ERROR - status %x addr in %s mode.\n", __func__, status, (command == I2C_CMD_WRITE) ?
 				"Write" : "Read");
 		return -EPERM;
 	}
@@ -286,7 +286,7 @@ static unsigned int marvell_i2c_bus_speed_set(unsigned int requested_speed)
 			}
 		}
 	}
-	INFO("%s: actual_n = %u, actual_m = %u\n", __func__, actual_n, actual_m);
+	VERBOSE("%s: actual_n = %u, actual_m = %u\n", __func__, actual_n, actual_m);
 	/* Set the baud rate */
 	mmio_write_32((uintptr_t)&base->u.baudrate, (actual_m << 3) | actual_n);
 
@@ -308,13 +308,13 @@ static int marvell_i2c_probe(uint8_t chip)
 	ret = marvell_i2c_address_set(chip, I2C_CMD_WRITE);
 	if (ret != 0) {
 		marvell_i2c_stop_bit_set();
-		INFO("%s - %d: %s", __func__, __LINE__, "marvell_i2c_address_set failed\n");
+		ERROR("%s - %d: %s", __func__, __LINE__, "marvell_i2c_address_set failed\n");
 		return -EPERM;
 	}
 
 	marvell_i2c_stop_bit_set();
 
-	INFO("%s: successful I2C probe\n", __func__);
+	VERBOSE("%s: successful I2C probe\n", __func__);
 
 	return ret;
 }
@@ -344,7 +344,7 @@ static int marvell_i2c_data_receive(uint8_t *p_block, uint32_t block_size)
 		}
 		/* check the status */
 		if (marvell_i2c_lost_arbitration(&status)) {
-			INFO("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
+			ERROR("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
 			return -EAGAIN;
 		}
 		if ((status != I2C_STATUS_DATA_R_ACK) && (block_size_read != 1)) {
@@ -358,7 +358,7 @@ static int marvell_i2c_data_receive(uint8_t *p_block, uint32_t block_size)
 
 		/* read the data */
 		*p_block = (uint8_t) mmio_read_32((uintptr_t)&base->data);
-		INFO("%s: place %d read %x\n", __func__, block_size - block_size_read, *p_block);
+		VERBOSE("%s: place %d read %x\n", __func__, block_size - block_size_read, *p_block);
 		p_block++;
 		block_size_read--;
 	}
@@ -378,7 +378,7 @@ static int marvell_i2c_data_transmit(uint8_t *p_block, uint32_t block_size)
 	while (block_size_write) {
 		/* write the data */
 		mmio_write_32((uintptr_t)&base->data, (uint32_t) *p_block);
-		INFO("%s: index = %d, data = %x\n", __func__, block_size - block_size_write, *p_block);
+		VERBOSE("%s: index = %d, data = %x\n", __func__, block_size - block_size_write, *p_block);
 		p_block++;
 		block_size_write--;
 
@@ -391,7 +391,7 @@ static int marvell_i2c_data_transmit(uint8_t *p_block, uint32_t block_size)
 
 		/* check the status */
 		if (marvell_i2c_lost_arbitration(&status)) {
-			INFO("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
+			ERROR("%s - %d: Lost arbitration, got status %x\n", __func__, __LINE__, status);
 			return -EAGAIN;
 		}
 		if (status != I2C_STATUS_DATA_W_ACK) {
@@ -416,7 +416,7 @@ static int marvell_i2c_target_offset_set(uint8_t chip, uint32_t addr, int alen)
 		off_block[0] = addr & 0xff;
 		off_size = 1;
 	}
-	INFO("%s: off_size = %x addr1 = %x addr2 = %x\n", __func__, off_size, off_block[0], off_block[1]);
+	VERBOSE("%s: off_size = %x addr1 = %x addr2 = %x\n", __func__, off_size, off_block[0], off_block[1]);
 	return marvell_i2c_data_transmit(off_block, off_size);
 }
 
@@ -426,16 +426,16 @@ static int marvell_i2c_unstuck(int ret)
 
 	if (ret != -ETIMEDOUT)
 		return ret;
-	INFO("Trying to \"unstuck i2c\"... ");
+	VERBOSE("Trying to \"unstuck i2c\"... ");
 	i2c_init(base);
 	mmio_write_32((uintptr_t)&base->unstuck, I2C_UNSTUCK_TRIGGER);
 	do {
 		v = mmio_read_32((uintptr_t)&base->unstuck);
 	} while (v & I2C_UNSTUCK_ONGOING);
 	if (v & I2C_UNSTUCK_ERROR) {
-		INFO("failed - soft reset i2c\n");
+		VERBOSE("failed - soft reset i2c\n");
 	} else {
-		INFO("ok\n");
+		VERBOSE("ok\n");
 		i2c_init(base);
 		ret = -EAGAIN;
 	}
