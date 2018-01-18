@@ -14,14 +14,14 @@
  *          CP1 connected via MCI2
  *          CP2 connected via MCI1
  *          CP3 connected via MCI0
- * For AP1: CP0 connected via MCI4
- *          CP1 connected via MCI5
- *          CP2 connected via MCI6
- *          CP3 connected via MCI7
+ * For AP1: CP0 connected via MCI7
+ *          CP1 connected via MCI6
+ *          CP2 connected via MCI5
+ *          CP3 connected via MCI4
  */
 /* TODO - add mapping for AP2 and AP3 interconnection */
 int ap0_mci_connect_cps[] = {3, 2, 1, 0};
-int ap1_mci_connect_cps[] = {4, 5, 6, 7};
+int ap1_mci_connect_cps[] = {7, 6, 5, 4};
 
 /* Return the MCI index that connect cp_id in ap_id */
 int marvell_get_mci_map(int ap_id, int cp_id)
