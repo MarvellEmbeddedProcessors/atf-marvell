@@ -37,6 +37,27 @@
 
 #include <addr_map.h>
 
+/* CCU registers definitions */
+#define CCU_WIN_CR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x0 + (0x10 * win))
+#define CCU_TARGET_ID_OFFSET			(8)
+#define CCU_TARGET_ID_MASK			(0x7F)
+
+#define CCU_WIN_SCR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x4 + (0x10 * win))
+#define CCU_WIN_ENA_WRITE_SECURE		(0x1)
+#define CCU_WIN_ENA_READ_SECURE			(0x2)
+
+#define CCU_WIN_ALR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x8 + (0x10 * win))
+#define CCU_WIN_AHR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0xC + (0x10 * win))
+
+#define CCU_WIN_GCR_OFFSET(ap)			(MVEBU_CCU_BASE(ap) + 0xD0)
+#define CCU_GCR_TARGET_OFFSET			(8)
+#define CCU_GCR_TARGET_MASK			(0xF)
+
+#define CCU_MC_RCR_OFFSET(ap, iface)		(MVEBU_REGS_BASE_AP(ap) + \
+						0x1700 + (0x1400 * (iface)))
+#define CCU_MC_RSBR_OFFSET(ap, iface)		(CCU_MC_RCR_OFFSET(ap, iface) + 0x4)
+#define CCU_MC_RTBR_OFFSET(ap, iface)		(CCU_MC_RCR_OFFSET(ap, iface) + 0x8)
+
 int init_ccu(int);
 void ccu_win_check(struct addr_map_win *win);
 void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id);
