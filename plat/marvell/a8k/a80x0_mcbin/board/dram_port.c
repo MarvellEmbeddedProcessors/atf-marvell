@@ -111,7 +111,7 @@ static void mpp_config(void)
  * based on information recieved from SPD or bootloader
  * configuration located on non volatile storage
  */
-int update_dram_info(struct dram_config *cfg)
+void plat_dram_update_topology(void)
 {
 	struct mv_ddr_topology_map *tm = mv_ddr_topology_map_get();
 
@@ -128,14 +128,9 @@ int update_dram_info(struct dram_config *cfg)
 		i2c_read(I2C_SPD_ADDR, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
 	}
-
-	return 0;
 }
 
 void *plat_get_dram_data(void)
 {
-	/* Update DRAM for dynamic platforms */
-	update_dram_info(&dram_cfg);
-
 	return &dram_cfg;
 }

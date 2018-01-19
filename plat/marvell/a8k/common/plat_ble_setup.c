@@ -569,7 +569,6 @@ static int  ble_skip_current_image(void)
 int ble_plat_setup(int *skip)
 {
 	int ret;
-	struct dram_config *cfg;
 
 	/* Power down unused CPUs */
 	plat_marvell_early_cpu_powerdown();
@@ -600,8 +599,8 @@ int ble_plat_setup(int *skip)
 	init_aro();
 #endif
 
-	/* Get dram data from platform */
-	cfg = (struct dram_config *)plat_get_dram_data();
+	/* Update DRAM topology (scan DIMM SPDs) */
+	plat_dram_update_topology();
 
 	/* Kick it in */
 	ret = dram_init();
@@ -610,7 +609,7 @@ int ble_plat_setup(int *skip)
 	ble_plat_mmap_config(MMAP_RESTORE_SAVED);
 
 	/* Pass DRAM information to bootloader */
-	pass_dram_sys_info(cfg);
+	pass_dram_sys_info((struct dram_config *)plat_get_dram_data());
 
 	return ret;
 }

@@ -168,7 +168,7 @@ int ble_plat_setup(int *skip)
 
 	/* TODO: check if SVC is needed */
 
-	/* Scan DIMM SPDs */
+	/* Update DRAM topology (scan DIMM SPDs) */
 	plat_dram_update_topology();
 
 	/* Trigger DRAM driver initialization */
