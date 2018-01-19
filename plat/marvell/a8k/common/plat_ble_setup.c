@@ -604,7 +604,7 @@ int ble_plat_setup(int *skip)
 	cfg = (struct dram_config *)plat_get_dram_data();
 
 	/* Kick it in */
-	ret = dram_init(cfg);
+	ret = dram_init();
 
 	/* Restore the original CCU configuration before exit from BLE */
 	ble_plat_mmap_config(MMAP_RESTORE_SAVED);

@@ -170,8 +170,9 @@ int ble_plat_setup(int *skip)
 
 	/* Scan DIMM SPDs */
 	plat_dram_update_topology();
+
 	/* Trigger DRAM driver initialization */
-	ret = dram_init(NULL);
+	ret = dram_init();
 	if (!ret)
 		ret = ble_dram_config();
 
