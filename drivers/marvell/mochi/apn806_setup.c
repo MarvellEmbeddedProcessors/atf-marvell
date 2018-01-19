@@ -52,6 +52,8 @@
 #define CCU_LTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x300)
 #define CCU_CLEAN_INV_WRITE_OFFSET		8
 
+#define CCU_RGF(win)				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x90 + 4 * (win))
+
 #define DSS_CR0					(MVEBU_RFU_BASE + 0x100)
 #define DVM_48BIT_VA_ENABLE			(1 << 21)
 
@@ -136,6 +138,20 @@ void ap806_generic_timer_init(void)
 	}
 }
 
+static void apn806_errata_wa_init(void)
+{
+	/*
+	 * EERATA ID: RES-3033912 - Internal Address Space Init state causes
+	 * a hang upon accesses to [0xf070_0000, 0xf07f_ffff]
+	 * Workaround: Boot Firmware (ATF) should configure CCU_RGF_WIN(4) to
+	 * split [0x6e_0000, 0xff_ffff] to values [0x6e_0000, 0x6f_ffff] and
+	 * [0x80_0000, 0xff_ffff] that cause accesses to the
+	 * segment of [0xf070_0000, 0xf07f_ffff] to act as RAZWI.
+	 */
+	mmio_write_32(CCU_RGF(4), 0x37f9b809);
+	mmio_write_32(CCU_RGF(5), 0x7ffa0009);
+}
+
 void init_aurora2(void)
 {
 	uint32_t reg;
@@ -165,6 +181,8 @@ void init_aurora2(void)
 		mmio_write_32(CCU_LTC_CR, reg);
 	}
 #endif /* !LLC_DISABLE */
+
+	apn806_errata_wa_init();
 }
 
 
