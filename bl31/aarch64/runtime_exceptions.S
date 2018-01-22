@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -170,7 +146,14 @@ interrupt_exit_\label:
 	.endm
 
 
-	.macro save_x18_to_x29_sp_el0
+	.macro save_x4_to_x29_sp_el0
+	stp	x4, x5, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X4]
+	stp	x6, x7, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X6]
+	stp	x8, x9, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X8]
+	stp	x10, x11, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X10]
+	stp	x12, x13, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X12]
+	stp	x14, x15, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X14]
+	stp	x16, x17, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X16]
 	stp	x18, x19, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X18]
 	stp	x20, x21, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X20]
 	stp	x22, x23, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X22]
@@ -328,37 +311,16 @@ smc_handler32:
 	/* Check whether aarch32 issued an SMC64 */
 	tbnz	x0, #FUNCID_CC_SHIFT, smc_prohibited
 
-	/* -----------------------------------------------------
-	 * Since we're are coming from aarch32, x8-x18 need to
-	 * be saved as per SMC32 calling convention. If a lower
-	 * EL in aarch64 is making an SMC32 call then it must
-	 * have saved x8-x17 already therein.
-	 * -----------------------------------------------------
-	 */
-	stp	x8, x9, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X8]
-	stp	x10, x11, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X10]
-	stp	x12, x13, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X12]
-	stp	x14, x15, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X14]
-	stp	x16, x17, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X16]
-
-	/* x4-x7, x18, sp_el0 are saved below */
-
 smc_handler64:
-	/* -----------------------------------------------------
-	 * Populate the parameters for the SMC handler. We
-	 * already have x0-x4 in place. x5 will point to a
-	 * cookie (not used now). x6 will point to the context
-	 * structure (SP_EL3) and x7 will contain flags we need
-	 * to pass to the handler Hence save x5-x7. Note that x4
-	 * only needs to be preserved for AArch32 callers but we
-	 * do it for AArch64 callers as well for convenience
-	 * -----------------------------------------------------
+	/*
+	 * Populate the parameters for the SMC handler.
+	 * We already have x0-x4 in place. x5 will point to a cookie (not used
+	 * now). x6 will point to the context structure (SP_EL3) and x7 will
+	 * contain flags we need to pass to the handler.
+	 *
+	 * Save x4-x29 and sp_el0.  Refer to SMCCC v1.1.
 	 */
-	stp	x4, x5, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X4]
-	stp	x6, x7, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X6]
-
-	/* Save rest of the gpregs and sp_el0*/
-	save_x18_to_x29_sp_el0
+	save_x4_to_x29_sp_el0
 
 	mov	x5, xzr
 	mov	x6, sp
