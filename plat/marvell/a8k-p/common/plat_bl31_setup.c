@@ -100,6 +100,7 @@ static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin
 		}
 
 		/* Open temp window in CCU unit */
+		ccu_win.target_id = IO_0_TID;
 		ccu_temp_win_insert(ap_id, &ccu_win, 1);
 
 		/* Go over the MCIs  */
@@ -127,6 +128,7 @@ static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin
 		/* Remove the temporary GWIN window */
 		if (ap_id > 0) {
 			gwin_temp_win_remove(0, &gwin_win, 1);
+			ccu_win.target_id = GLOBAL_TID;
 			ccu_temp_win_remove(0, &ccu_win, 1);
 		}
 	}
@@ -184,8 +186,6 @@ static int mci_wa_initialize(void)
 
 	mci_ccu_temp_win.base_addr = mci_base;
 	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-	/* Target of the CCU to access CP should be IO */
-	mci_ccu_temp_win.target_id = IO_0_TID;
 
 	mci_iowin_temp_win.base_addr = mci_base;
 	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
@@ -215,6 +215,8 @@ static int mci_wa_initialize(void)
 		}
 
 		/* Open temp window in CCU unit */
+		/* Target of the CCU to access CP should be IO */
+		mci_ccu_temp_win.target_id = IO_0_TID;
 		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
 
 		/* Go over the MCIs in every APx */
@@ -269,6 +271,7 @@ static int mci_wa_initialize(void)
 		/* Remove the temporary GWIN window */
 		if (ap_id > 0) {
 			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
+			mci_ccu_temp_win.target_id = GLOBAL_TID;
 			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
 		}
 	}
@@ -318,8 +321,6 @@ static int a8kp_mci_configure_threshold(void)
 
 	mci_ccu_temp_win.base_addr = mci_base;
 	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-	/* Target of the CCU to access CP should be IO */
-	mci_ccu_temp_win.target_id = IO_0_TID;
 
 	mci_iowin_temp_win.base_addr = mci_base;
 	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
@@ -343,6 +344,8 @@ static int a8kp_mci_configure_threshold(void)
 		}
 
 		/* Open temp window in CCU unit */
+		/* Target of the CCU to access CP should be IO */
+		mci_ccu_temp_win.target_id = IO_0_TID;
 		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
 
 		/* Go over the MCIs in every APx */
@@ -372,6 +375,7 @@ static int a8kp_mci_configure_threshold(void)
 		/* Remove the temporary GWIN window */
 		if (ap_id > 0) {
 			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
+			mci_ccu_temp_win.target_id = GLOBAL_TID;
 			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
 		}
 	}
@@ -405,8 +409,6 @@ static void update_cp110_default_win(void)
 
 	ccu_temp_win.base_addr = cp110_temp_base;
 	ccu_temp_win.win_size = MVEBU_CP_DEFAULT_BASE_SIZE;
-	/* Target of the CCU to access CP should be IO */
-	ccu_temp_win.target_id = IO_0_TID;
 
 	iowin_temp_win.base_addr = cp110_temp_base;
 	iowin_temp_win.win_size = MVEBU_CP_DEFAULT_BASE_SIZE;
@@ -425,9 +427,15 @@ static void update_cp110_default_win(void)
 			** remote APs.
 			** */
 			gwin_temp_win_insert(0, &gwin_temp_win, 1);
+
+			/* Open temp window for access to GWIN */
+			ccu_temp_win.target_id = GLOBAL_TID;
+			ccu_temp_win_insert(0, &ccu_temp_win, 1);
 		}
 
 		/* Open temp window in CCU unit */
+		/* Target of the CCU to access CP should be IO */
+		ccu_temp_win.target_id = IO_0_TID;
 		ccu_temp_win_insert(ap_id, &ccu_temp_win, 1);
 
 		/* Go over the connected CPx in the APx */
@@ -453,8 +461,11 @@ static void update_cp110_default_win(void)
 		ccu_temp_win_remove(ap_id, &ccu_temp_win, 1);
 
 		/* Remove the temporary GWIN window */
-		if (ap_id > 0)
+		if (ap_id > 0) {
 			gwin_temp_win_remove(0, &gwin_temp_win, 1);
+			ccu_temp_win.target_id = GLOBAL_TID;
+			ccu_temp_win_remove(0, &ccu_temp_win, 1);
+		}
 	}
 
 	debug_exit();
