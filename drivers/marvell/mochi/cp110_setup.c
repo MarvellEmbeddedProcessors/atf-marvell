@@ -296,16 +296,26 @@ static void cp110_pcie_clk_cfg(uintptr_t base)
 /* Set a unique stream id for all DMA capable devices */
 static void cp110_stream_id_init(uintptr_t base)
 {
-	int i = 0;
+	int i = 0, sata_stream_id = -1;
 	uint32_t stream_id = MAX_PCIE_STREAM_ID;
 
 	while (stream_id_reg[i]) {
 		/* SATA port 0/1 are in the same SATA unit, and they should use
 		** the same STREAM ID number */
-		if (stream_id_reg[i] == SATA_0_STREAM_ID_REG)
-			mmio_write_32(base + stream_id_reg[i++], stream_id);
-		else
-			mmio_write_32(base + stream_id_reg[i++], stream_id++);
+		if (((stream_id_reg[i] == SATA_0_STREAM_ID_REG) ||
+		    (stream_id_reg[i] == SATA_1_STREAM_ID_REG)) &&
+		    sata_stream_id != -1) {
+			mmio_write_32(base + stream_id_reg[i],
+				      sata_stream_id << 16 | sata_stream_id);
+		} else {
+			mmio_write_32(base + stream_id_reg[i],
+				      stream_id << 16 | stream_id);
+			if ((stream_id_reg[i] == SATA_0_STREAM_ID_REG) ||
+			    (stream_id_reg[i] == SATA_1_STREAM_ID_REG))
+				sata_stream_id = stream_id;
+			stream_id++;
+		}
+		i++;
 	}
 }
 
