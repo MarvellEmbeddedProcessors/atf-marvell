@@ -154,7 +154,7 @@ void gwin_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 		base >>= ADDRESS_LSHIFT;
 		base <<= ADDRESS_RSHIFT;
 
-		if ((win->target_id != target) || (win->base_addr != base)) {
+		if (win->target_id != target) {
 			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
 			continue;
 		}
