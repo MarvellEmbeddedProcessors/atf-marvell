@@ -61,6 +61,53 @@ void mci_phy_config(int ap_idx, int mci_idx)
 	mdelay(5);
 }
 
+static void ap810_win_route_open(int ap_id, uint64_t base_addr, uint64_t addr_sz, uint32_t target_id)
+{
+	struct addr_map_win gwin_temp_win;
+	struct addr_map_win ccu_temp_win;
+
+	ccu_temp_win.base_addr = base_addr;
+	ccu_temp_win.win_size = addr_sz;
+
+	/* If this is a remote AP */
+	if (ap_id > 0) {
+		gwin_temp_win.base_addr = base_addr;
+		gwin_temp_win.win_size  = addr_sz;
+		gwin_temp_win.target_id = ap_id;
+		gwin_temp_win_insert(0, &gwin_temp_win, 1);
+
+		/* Open temp window for access to GWIN */
+		ccu_temp_win.target_id = GLOBAL_TID;
+		ccu_temp_win_insert(0, &ccu_temp_win, 1);
+	}
+
+	ccu_temp_win.target_id = target_id;
+	ccu_temp_win_insert(ap_id, &ccu_temp_win, 1);
+}
+
+static void ap810_win_route_close(int ap_id, uint64_t base_addr, uint64_t addr_sz, uint32_t target_id)
+{
+	struct addr_map_win gwin_temp_win;
+	struct addr_map_win ccu_temp_win;
+
+	ccu_temp_win.base_addr = base_addr;
+	ccu_temp_win.win_size  = addr_sz;
+	ccu_temp_win.target_id = target_id;
+	ccu_temp_win_remove(ap_id, &ccu_temp_win, 1);
+
+	/* If this is a remote AP */
+	if (ap_id > 0) {
+		gwin_temp_win.base_addr = base_addr;
+		gwin_temp_win.win_size  = addr_sz;
+		gwin_temp_win.target_id = ap_id;
+		gwin_temp_win_remove(0, &gwin_temp_win, 1);
+
+		/* Open temp window for access to GWIN */
+		ccu_temp_win.target_id = GLOBAL_TID;
+		ccu_temp_win_remove(0, &ccu_temp_win, 1);
+	}
+}
+
 void ap810_mci_phy_soft_reset(int ap_id, int mci_idx)
 {
 	uint32_t reg;
@@ -76,42 +123,27 @@ void ap810_mci_phy_soft_reset(int ap_id, int mci_idx)
 	mmio_write_32(MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap_id), reg);
 }
 
-static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin_win,
-				struct addr_map_win ccu_win, struct addr_map_win iowin_win)
+static void a8kp_mci_turn_off_links(uintptr_t mci_base)
 {
 	int ap_id, cp_id, mci_id;
 
 	/* Go over the APs and turn off the link of MCIs */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
-		/* If initialize the MCIs in another APs, need to open
-		** window in GWIN to enable access from AP0 to APx
-		** */
-		if (ap_id > 0) {
-			gwin_win.target_id = ap_id;
-			/* All the initialization will be done from AP0,
-			** this GWIN configure the access to exit from AP0
-			** and reach the target AP
-			** */
-			gwin_temp_win_insert(0, &gwin_win, 1);
-
-			/* Open temp window for access to GWIN */
-			ccu_win.target_id = GLOBAL_TID;
-			ccu_temp_win_insert(0, &ccu_win, 1);
-		}
-
-		/* Open temp window in CCU unit */
-		ccu_win.target_id = IO_0_TID;
-		ccu_temp_win_insert(ap_id, &ccu_win, 1);
+		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs  */
 		for (cp_id = 0; cp_id < get_static_cp_per_ap(ap_id); cp_id++) {
+			struct addr_map_win iowin_temp_win = {
+				.base_addr = mci_base,
+				.win_size = MVEBU_MCI_REG_SIZE_REMAP,
+			};
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
 			INFO("Turn link off for AP-%d MCI-%d\n", ap_id, mci_id);
 
 			/* Open temp window IO_WIN unit with relevant target ID */
-			iowin_win.target_id = mci_id;
-			iow_temp_win_insert(ap_id, &iowin_win, 1);
+			iowin_temp_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &iowin_temp_win, 1);
 
 			/* Open window for MCI indirect access from APx */
 			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
@@ -119,18 +151,10 @@ static void a8kp_mci_turn_off_links(uintptr_t mci_base, struct addr_map_win gwin
 			/* Turn link off */
 			mci_turn_link_down();
 			/* Remove the temporary IO-WIN window */
-			iow_temp_win_remove(ap_id, &iowin_win, 1);
+			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);
 		}
 
-		/* Remove the temporary CCU window */
-		ccu_temp_win_remove(ap_id, &ccu_win, 1);
-
-		/* Remove the temporary GWIN window */
-		if (ap_id > 0) {
-			gwin_temp_win_remove(0, &gwin_win, 1);
-			ccu_win.target_id = GLOBAL_TID;
-			ccu_temp_win_remove(0, &ccu_win, 1);
-		}
+		ap810_win_route_close(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 	}
 }
 
@@ -170,58 +194,27 @@ static void a8kp_mci_mpp_reset(int mpp)
 static int mci_wa_initialize(void)
 {
 	int ap_id, mci_id, cp_id;
-	uintptr_t mci_base;
-	struct addr_map_win mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win;
+	uintptr_t mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
 
 	debug_enter();
 
-	/* Got the MCI base to work with - need to open windows in different units
-	** GWIN - if MCI is on the remote AP, CCU, and IO-WIN
-	** */
-	mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
-
-	/* Prepare GWIN/CCU/IOWIN windows */
-	mci_gwin_temp_win.base_addr = mci_base;
-	mci_gwin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
-	mci_ccu_temp_win.base_addr = mci_base;
-	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
-	mci_iowin_temp_win.base_addr = mci_base;
-	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
 	/* 1st stage - Turn off the link on all MCIs */
-	a8kp_mci_turn_off_links(mci_base, mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win);
+	a8kp_mci_turn_off_links(mci_base);
 
 	/* 2nd stage - reset CPs via MPP */
 	a8kp_mci_mpp_reset(MPP_MCI_RELEASE_FROM_RESET);
 
 	/* 3rd stage - Re-init the MCI phy in AP side & in CP side */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
-		/* If initialize the MCIs in another APs, need to open
-		** window in GWIN to enable access from AP0 to APx
-		** */
-		if (ap_id > 0) {
-			mci_gwin_temp_win.target_id = ap_id;
-			/* All the initialization will be done from AP0,
-			** this GWIN configure the access to exit from AP0
-			** and reach the target AP
-			** */
-			gwin_temp_win_insert(0, &mci_gwin_temp_win, 1);
-
-			/* Open temp window for access to GWIN */
-			mci_ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_insert(0, &mci_ccu_temp_win, 1);
-		}
-
-		/* Open temp window in CCU unit */
-		/* Target of the CCU to access CP should be IO */
-		mci_ccu_temp_win.target_id = IO_0_TID;
-		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
+		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs in every APx */
 		for (cp_id = 0; cp_id < get_static_cp_per_ap(ap_id); cp_id++) {
 			uint32_t reg;
+			struct addr_map_win iowin_temp_win = {
+				.base_addr = mci_base,
+				.win_size = MVEBU_MCI_REG_SIZE_REMAP,
+			};
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
 			INFO("Turn link on & ID assign AP%d MCI-%d\n", ap_id, mci_id);
@@ -233,8 +226,8 @@ static int mci_wa_initialize(void)
 			ap810_mci_phy_soft_reset(ap_id, mci_id);
 
 			/* Open temp window IO_WIN unit with relevant target ID */
-			mci_iowin_temp_win.target_id = mci_id;
-			iow_temp_win_insert(ap_id, &mci_iowin_temp_win, 1);
+			iowin_temp_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &iowin_temp_win, 1);
 
 			/* Open window for MCI indirect access from APx */
 			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
@@ -262,18 +255,10 @@ static int mci_wa_initialize(void)
 			INFO("MCI-%d link is 8G (speed = %x)\n", mci_id, reg);
 
 			/* Remove the temporary IO-WIN window */
-			iow_temp_win_remove(ap_id, &mci_iowin_temp_win, 1);
+			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);
 		}
 
-		/* Remove the temporary CCU window */
-		ccu_temp_win_remove(ap_id, &mci_ccu_temp_win, 1);
-
-		/* Remove the temporary GWIN window */
-		if (ap_id > 0) {
-			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
-			mci_ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
-		}
+		ap810_win_route_close(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 	}
 
 	debug_exit();
@@ -305,58 +290,27 @@ void a8kp_mci_wa_initialize(void)
 static int a8kp_mci_configure_threshold(void)
 {
 	int ap_id, mci_id, cp_id;
-	uintptr_t mci_base;
-	struct addr_map_win mci_gwin_temp_win, mci_ccu_temp_win, mci_iowin_temp_win;
+	uintptr_t mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
 
 	debug_enter();
 
-	/* Got the MCI base to work with - need to open windows in different units
-	** GWIN - if MCI is on the remote AP, CCU, and IO-WIN
-	** */
-	mci_base = MVEBU_MCI_REG_BASE_REMAP(0);
-
-	/* Prepare GWIN/CCU/IOWIN windows */
-	mci_gwin_temp_win.base_addr = mci_base;
-	mci_gwin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
-	mci_ccu_temp_win.base_addr = mci_base;
-	mci_ccu_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
-	mci_iowin_temp_win.base_addr = mci_base;
-	mci_iowin_temp_win.win_size = MVEBU_MCI_REG_SIZE_REMAP;
-
 	/* Run MCI WA for performance improvements */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
-		/* If initialize the MCIs in another APs, need to open
-		** window in GWIN to enable access from AP0 to APx
-		** */
-		if (ap_id > 0) {
-			mci_gwin_temp_win.target_id = ap_id;
-			/* All the initialization will be done from AP0,
-			** this GWIN configure the access to exit from AP0
-			** and reach the target AP
-			** */
-			gwin_temp_win_insert(0, &mci_gwin_temp_win, 1);
-
-			/* Open temp window for access to GWIN */
-			mci_ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_insert(0, &mci_ccu_temp_win, 1);
-		}
-
-		/* Open temp window in CCU unit */
-		/* Target of the CCU to access CP should be IO */
-		mci_ccu_temp_win.target_id = IO_0_TID;
-		ccu_temp_win_insert(ap_id, &mci_ccu_temp_win, 1);
+		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs in every APx */
 		for (cp_id = 0; cp_id < get_connected_cp_per_ap(ap_id); cp_id++) {
+			struct addr_map_win iowin_temp_win = {
+				.base_addr = mci_base,
+				.win_size = MVEBU_MCI_REG_SIZE_REMAP,
+			};
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
 			INFO("Configure threshold & ID assin AP%d MCI-%d\n", ap_id, mci_id);
 
 			/* Open temp window IO_WIN unit with relevant target ID */
-			mci_iowin_temp_win.target_id = mci_id;
-			iow_temp_win_insert(ap_id, &mci_iowin_temp_win, 1);
+			iowin_temp_win.target_id = mci_id;
+			iow_temp_win_insert(ap_id, &iowin_temp_win, 1);
 
 			/* Open window for MCI indirect access from APx */
 			mmio_write_32(MVEBU_MCI_REG_START_ADDRESS(ap_id, mci_id),
@@ -366,18 +320,10 @@ static int a8kp_mci_configure_threshold(void)
 			mci_initialize(mci_id);
 
 			/* Remove the temporary IO-WIN window */
-			iow_temp_win_remove(ap_id, &mci_iowin_temp_win, 1);
+			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);
 		}
 
-		/* Remove the temporary CCU window */
-		ccu_temp_win_remove(ap_id, &mci_ccu_temp_win, 1);
-
-		/* Remove the temporary GWIN window */
-		if (ap_id > 0) {
-			gwin_temp_win_remove(0, &mci_gwin_temp_win, 1);
-			mci_ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_remove(0, &mci_ccu_temp_win, 1);
-		}
+		ap810_win_route_close(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 	}
 
 	debug_exit();
@@ -396,53 +342,27 @@ static void update_cp110_default_win(void)
 {
 	int ap_id, cp_id, mci_id;
 	uintptr_t cp110_base, cp110_temp_base;
-	struct addr_map_win gwin_temp_win, ccu_temp_win, iowin_temp_win;
 
 	debug_enter();
 
 	/* CP110 default configuration address space */
 	cp110_temp_base = MVEBU_CP_DEFAULT_BASE_ADDR;
 
-	/* Prepare GWIN/CCU/IOWIN windows */
-	gwin_temp_win.base_addr = cp110_temp_base;
-	gwin_temp_win.win_size = MVEBU_CP_DEFAULT_BASE_SIZE;
-
-	ccu_temp_win.base_addr = cp110_temp_base;
-	ccu_temp_win.win_size = MVEBU_CP_DEFAULT_BASE_SIZE;
-
-	iowin_temp_win.base_addr = cp110_temp_base;
-	iowin_temp_win.win_size = MVEBU_CP_DEFAULT_BASE_SIZE;
-
 	/* Go over the APs and update every CP with
 	** the new configuration address
 	** */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
-		/* If initialize the MCIs in another APs, need to open
-		** window in GWIN to enable access from AP0 to APx
-		** */
-		if (ap_id > 0) {
-			gwin_temp_win.target_id = ap_id;
-			/* All the initialization will be done from AP0,
-			** these GWIN settings allow the control to reach
-			** remote APs.
-			** */
-			gwin_temp_win_insert(0, &gwin_temp_win, 1);
-
-			/* Open temp window for access to GWIN */
-			ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_insert(0, &ccu_temp_win, 1);
-		}
-
-		/* Open temp window in CCU unit */
-		/* Target of the CCU to access CP should be IO */
-		ccu_temp_win.target_id = IO_0_TID;
-		ccu_temp_win_insert(ap_id, &ccu_temp_win, 1);
+		ap810_win_route_open(ap_id, cp110_temp_base, MVEBU_CP_DEFAULT_BASE_SIZE, IO_0_TID);
 
 		/* Go over the connected CPx in the APx */
 		for (cp_id = 0; cp_id < get_connected_cp_per_ap(ap_id); cp_id++) {
+			struct addr_map_win iowin_temp_win = {
+				.base_addr = cp110_temp_base,
+				.win_size = MVEBU_CP_DEFAULT_BASE_SIZE,
+			};
 			/* Get the MCI index */
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
-			INFO("AP%d MCI-%d CP-%d\n", ap_id, mci_id, cp_id);
+			INFO("AP-%d MCI-%d CP-%d\n", ap_id, mci_id, cp_id);
 
 			/* Open temp window in IO_WIN unit with relevant target ID */
 			iowin_temp_win.target_id = mci_id;
@@ -457,15 +377,7 @@ static void update_cp110_default_win(void)
 			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);
 		}
 
-		/* Remove the temporary CCU window */
-		ccu_temp_win_remove(ap_id, &ccu_temp_win, 1);
-
-		/* Remove the temporary GWIN window */
-		if (ap_id > 0) {
-			gwin_temp_win_remove(0, &gwin_temp_win, 1);
-			ccu_temp_win.target_id = GLOBAL_TID;
-			ccu_temp_win_remove(0, &ccu_temp_win, 1);
-		}
+		ap810_win_route_close(ap_id, cp110_temp_base, MVEBU_CP_DEFAULT_BASE_SIZE, IO_0_TID);
 	}
 
 	debug_exit();
