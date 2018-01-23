@@ -198,6 +198,11 @@ void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
  */
 static uint32_t ccu_dram_target_get(int ap_index)
 {
+#if PALLADIUM
+	/* no BLE for Palladium */
+	return DRAM_0_TID;
+#endif
+
 	/* On BLE stage the AP0 DRAM window is opened by the BootROM at index 2.
 	 * All the rest of detected APs will use window at index 1.
 	 * The AP0 DRAM window is moved from index 2 to 1 during init_ccu() execution.
