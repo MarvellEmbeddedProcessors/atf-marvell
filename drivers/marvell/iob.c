@@ -38,6 +38,7 @@
 #include <mvebu.h>
 #include <iob.h>
 #include <plat_config.h>
+#include <arch_helpers.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -149,6 +150,11 @@ void iob_cfg_space_update(int ap_idx, int cp_idx, uintptr_t base, uintptr_t new_
 	mmio_write_32(IOB_WIN_ALR_OFFSET(0), new_base >> ADDRESS_SHIFT);
 
 	iob_base = new_base + MVEBU_IOB_OFFSET;
+
+	/* Make sure the address was configured by the CPU before
+	 * any possibe access to the CP.
+	 */
+	dsb();
 
 	debug_exit();
 }
