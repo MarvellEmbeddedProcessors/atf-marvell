@@ -76,3 +76,4 @@ BL31_SOURCES		+=	${RK_GIC_SOURCES}				\
 				${RK_PLAT_SOC}/drivers/ddr/ddr_rk3368.c		\
 
 ENABLE_PLAT_COMPAT	:=      0
+WORKAROUND_CVE_2017_5715	:=	0
