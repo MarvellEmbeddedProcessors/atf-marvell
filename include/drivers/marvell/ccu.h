@@ -51,7 +51,7 @@
 
 #define CCU_WIN_GCR_OFFSET(ap)			(MVEBU_CCU_BASE(ap) + 0xD0)
 #define CCU_GCR_TARGET_OFFSET			(8)
-#define CCU_GCR_TARGET_MASK			(0xF)
+#define CCU_GCR_TARGET_MASK			(0xFF)
 
 #define CCU_MC_RCR_OFFSET(ap, iface)		(MVEBU_REGS_BASE_AP(ap) + \
 						0x1700 + (0x1400 * (iface)))
