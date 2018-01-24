@@ -82,3 +82,4 @@ BL31_SOURCES		+=	plat/hisilicon/hikey/hisi_sip_svc.c			\
 				lib/pmf/pmf_smc.c
 endif
 
+WORKAROUND_CVE_2017_5715	:=	0
