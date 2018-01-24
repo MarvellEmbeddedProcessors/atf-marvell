@@ -50,6 +50,6 @@ enum target_ids_iob {
 };
 
 int init_iob(uintptr_t);
-void iob_cfg_space_update(int cp_idx, uintptr_t base, uintptr_t new_base);
+void iob_cfg_space_update(int ap_idx, int cp_idx, uintptr_t base, uintptr_t new_base);
 
 #endif /* _IOB_H_ */

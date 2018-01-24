@@ -451,7 +451,7 @@ static void update_cp110_default_win(void)
 			/* Calculate the new CP110 - base address */
 			cp110_base = MVEBU_CP_REGS_BASE(ap_id, cp_id);
 			/* Go and update the CP110 configuration address space */
-			iob_cfg_space_update(cp_id, cp110_temp_base, cp110_base);
+			iob_cfg_space_update(ap_id, cp_id, cp110_temp_base, cp110_base);
 
 			/* Remove the temporary IO-WIN window */
 			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);

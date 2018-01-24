@@ -139,13 +139,13 @@ static void dump_iob(void)
 }
 #endif
 
-void iob_cfg_space_update(int cp_idx, uintptr_t base, uintptr_t new_base)
+void iob_cfg_space_update(int ap_idx, int cp_idx, uintptr_t base, uintptr_t new_base)
 {
 	debug_enter();
 
 	iob_base = base + MVEBU_IOB_OFFSET;
 
-	NOTICE("Change the base address of CP-%d to %lx\n", cp_idx, new_base);
+	NOTICE("Change the base address of AP%d-CP%d to %lx\n", ap_idx, cp_idx, new_base);
 	mmio_write_32(IOB_WIN_ALR_OFFSET(0), new_base >> ADDRESS_SHIFT);
 
 	iob_base = new_base + MVEBU_IOB_OFFSET;
