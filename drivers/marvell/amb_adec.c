@@ -118,6 +118,7 @@ static void dump_amb_adec(void)
 	uint32_t size, size_count;
 
 	/* Dump all AMB windows */
+	printf("============= AMB @ 0x%012lx ==============\n", amb_base - MVEBU_AMB_ADEC_OFFSET);
 	printf("bank  attribute     base          size\n");
 	printf("--------------------------------------------\n");
 	for (win_id = 0; win_id < AMB_MAX_WIN_ID; win_id++) {
@@ -130,6 +131,7 @@ static void dump_amb_adec(void)
 			printf("amb   0x%04x        0x%08x    0x%08x\n", attr, base, size);
 		}
 	}
+	printf("============= AMB @ 0x%012lx ==============\n", amb_base - MVEBU_AMB_ADEC_OFFSET);
 
 	return;
 }

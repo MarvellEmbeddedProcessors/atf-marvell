@@ -169,7 +169,7 @@ static void dump_gwin(int ap_index)
 	uint32_t win_num;
 
 	/* Dump all GWIN windows */
-	printf("GWIN for AP%d\n", ap_index);
+	printf("==================== AP-%d  GWIN ====================\n", ap_index);
 	printf("win\ttarget\tstart\t\t\tend\n");
 	printf("----------------------------------------------------\n");
 	for (win_num = 0; win_num < MVEBU_GWIN_MAX_WINS; win_num++) {
@@ -187,8 +187,9 @@ static void dump_gwin(int ap_index)
 			ahr = (ahr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
 			printf("0x%016lx 0x%016lx\n", alr, ahr);
 		} else
-			printf("\t Disabled\n");
+			printf("\t D I S A B L E D\n");
 	}
+	printf("==================== AP-%d  GWIN ====================\n", ap_index);
 	return;
 }
 #endif
