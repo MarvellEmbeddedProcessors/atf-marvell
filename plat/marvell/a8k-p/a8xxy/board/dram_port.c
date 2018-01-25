@@ -12,6 +12,7 @@
 #include <plat_def.h>
 #include <mmio.h>
 #include <a8k_i2c.h>
+#include <ap810_init_clocks.h>
 
 /*
  * TODO: Move to the pin control driver API once it becomes available
@@ -126,4 +127,10 @@ void plat_dram_update_topology(void)
 		i2c_read(I2C_SPD_DATA_ADDR(0), 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
 	}
+}
+
+void dram_freq_update(enum ddr_freq freq_option)
+{
+	struct mv_ddr_topology_map *tm = mv_ddr_topology_map_get();
+	tm->interface_params[0].memory_freq = freq_option;
 }

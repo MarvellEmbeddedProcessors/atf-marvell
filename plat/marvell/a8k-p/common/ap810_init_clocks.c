@@ -8,6 +8,7 @@
 #include <eawg.h>
 #include <ap810_aro.h>
 #include <ap810_setup.h>
+#include <ap810_init_clocks.h>
 #include <plat_def.h>
 #include <stdio.h>
 #include <errno.h>
@@ -56,48 +57,49 @@ enum pll_type {
 	DSS,
 	PLL_LAST,
 	CPU_FREQ,
+	DDR_FREQ,
 };
 
 unsigned int pll_freq_tables[SAR_SUPPORTED_TABLES]
 			    [SAR_SUPPORTED_OPTIONS]
-			    [PLL_LAST + 1] = {
+			    [PLL_LAST + 2] = {
 	{
 		/* RING, IO, PIDI, DSS, CPU_FREQ*/
 		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800,
-		 TARGET_FREQ_1600},
+		 TARGET_FREQ_1600, DDR_FREQ_800},
 		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2000},
+		 TARGET_FREQ_2000, DDR_FREQ_1200},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2000},
+		 TARGET_FREQ_2000, DDR_FREQ_1200},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2200},
+		 TARGET_FREQ_2200, DDR_FREQ_1200},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333,
-		 TARGET_FREQ_2200},
+		 TARGET_FREQ_2200, DDR_FREQ_1333},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2500},
+		 TARGET_FREQ_2500, DDR_FREQ_1200},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1466,
-		 TARGET_FREQ_2500},
+		 TARGET_FREQ_2500, DDR_FREQ_1466},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1600,
-		 TARGET_FREQ_2700},
+		 TARGET_FREQ_2700, DDR_FREQ_1600},
 	},
 	{
 		/* RING, IO, PIDI, DSS, CPU_FREQ*/
 		{PLL_FREQ_800, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800,
-		 TARGET_FREQ_1200},
+		 TARGET_FREQ_1200, DDR_FREQ_800},
 		{PLL_FREQ_1000, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_1800},
+		 TARGET_FREQ_1800, DDR_FREQ_1200},
 		{PLL_FREQ_1100, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_1800},
+		 TARGET_FREQ_1800, DDR_FREQ_1200},
 		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_1800},
+		 TARGET_FREQ_1800, DDR_FREQ_1200},
 		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_1800},
+		 TARGET_FREQ_1800, DDR_FREQ_1200},
 		{PLL_FREQ_1100, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2000},
+		 TARGET_FREQ_2000, DDR_FREQ_1200},
 		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2000},
+		 TARGET_FREQ_2000, DDR_FREQ_1200},
 		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 TARGET_FREQ_2000},
+		 TARGET_FREQ_2000, DDR_FREQ_1200},
 	},
 };
 
@@ -209,7 +211,7 @@ int ap810_clocks_init(int ap_count)
 	struct eawg_transaction primary_cpu_trans[PRIMARY_CPU_TRANS];
 	uint32_t plls_clocks_vals[PLL_LAST];
 	uint32_t freq_mode, clk_config;
-	int cpu_clock_val;
+	int cpu_clock_val, ddr_clock_option;
 	int ap;
 
 	/* check if the total number of transactions doesn't exceeds EAWG's
@@ -232,6 +234,9 @@ int ap810_clocks_init(int ap_count)
 	plls_clocks_vals[PIDI] = pll_freq_tables[freq_mode][clk_config][PIDI];
 	plls_clocks_vals[DSS] = pll_freq_tables[freq_mode][clk_config][DSS];
 	cpu_clock_val = pll_freq_tables[freq_mode][clk_config][CPU_FREQ - 1];
+	ddr_clock_option = pll_freq_tables[freq_mode][clk_config][DDR_FREQ - 1];
+
+	dram_freq_update(ddr_clock_option);
 
 	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, primary_cpu_trans))
 		return -1;
