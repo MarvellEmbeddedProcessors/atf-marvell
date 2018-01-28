@@ -461,9 +461,12 @@ static void ble_plat_svc_config(void)
 			break;
 		case CPU_1600_DDR_800_RCLK_800: /* 7020 only */
 		default:
-			if (perr[0])
-				goto perror;
-			avs_workpoint = svc[0];
+			if (single_cluster) {/* 7020 */
+				if (perr[0])
+					goto perror;
+				avs_workpoint = svc[0];
+			} else
+				avs_workpoint = 0;
 			break;
 		}
 	} else {
