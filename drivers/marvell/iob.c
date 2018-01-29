@@ -93,16 +93,17 @@ static void iob_enable_win(struct addr_map_win *win, uint32_t win_id)
 	uint32_t alr, ahr;
 	uint64_t end_addr;
 
-	iob_win_reg = WIN_ENABLE_BIT;
-	iob_win_reg |= (win->target_id & IOB_TARGET_ID_MASK) << IOB_TARGET_ID_OFFSET;
-	mmio_write_32(IOB_WIN_CR_OFFSET(win_id), iob_win_reg);
-
 	end_addr = (win->base_addr + win->win_size - 1);
 	alr = (uint32_t)((win->base_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 	ahr = (uint32_t)((end_addr >> ADDRESS_SHIFT) & ADDRESS_MASK);
 
 	mmio_write_32(IOB_WIN_ALR_OFFSET(win_id), alr);
 	mmio_write_32(IOB_WIN_AHR_OFFSET(win_id), ahr);
+
+	iob_win_reg = WIN_ENABLE_BIT;
+	iob_win_reg |= (win->target_id & IOB_TARGET_ID_MASK) << IOB_TARGET_ID_OFFSET;
+	mmio_write_32(IOB_WIN_CR_OFFSET(win_id), iob_win_reg);
+
 }
 
 #ifdef DEBUG_ADDR_MAP
