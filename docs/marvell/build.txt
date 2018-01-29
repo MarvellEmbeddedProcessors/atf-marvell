@@ -129,6 +129,7 @@ Build Instructions
 	Supported MARVELL_PLATFORM are:
 		- a3700
 		- a70x0
+		- a70x0_amc (for AMC board)
 		- a70x0_cust (for customers)
 		- a80x0
 		- a80x0_mcbin (for MacciatoBin)
