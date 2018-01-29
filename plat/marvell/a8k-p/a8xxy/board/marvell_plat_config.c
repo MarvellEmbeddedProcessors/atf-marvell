@@ -20,8 +20,8 @@
  *          CP3 connected via MCI4
  */
 /* TODO - add mapping for AP2 and AP3 interconnection */
-int ap0_mci_connect_cps[] = {3, 2, 1, 0};
-int ap1_mci_connect_cps[] = {7, 6, 5, 4};
+int ap0_mci_connect_cps[] = {MCI_3_TID, MCI_2_TID, MCI_1_TID, MCI_0_TID};
+int ap1_mci_connect_cps[] = {MCI_7_TID, MCI_6_TID, MCI_5_TID, MCI_4_TID};
 
 /* Return the MCI index that connect cp_id in ap_id */
 int marvell_get_mci_map(int ap_id, int cp_id)
