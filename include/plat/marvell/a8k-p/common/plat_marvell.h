@@ -106,5 +106,6 @@ void marvell_bl1_setup_mpps(void);
 const mmap_region_t *plat_marvell_get_mmap(void);
 void ble_prepare_exit(void);
 int jtag_init_ihb_dual_ap(void);
+int gic600_multi_chip_init(void);
 
 #endif /* __PLAT_MARVELL_H__ */

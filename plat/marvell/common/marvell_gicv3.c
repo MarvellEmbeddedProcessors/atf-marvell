@@ -62,6 +62,7 @@
  */
 
 #include <arm_def.h>
+#include <debug.h>
 #include <gicv3.h>
 #include <plat_marvell.h>
 #include <platform.h>
@@ -76,7 +77,6 @@
 #pragma weak plat_marvell_gic_cpuif_enable
 #pragma weak plat_marvell_gic_cpuif_disable
 #pragma weak plat_marvell_gic_pcpu_init
-
 
 /* The GICv3 driver only needs to be initialized in EL3 */
 static uintptr_t rdistif_base_addrs[PLATFORM_CORE_COUNT];
@@ -121,6 +121,15 @@ void plat_marvell_gic_driver_init(void)
  *****************************************************************************/
 void plat_marvell_gic_init(void)
 {
+	/* Initialize GIC-600 Multi Chip feature,
+	 * only if the maximum number of north bridges
+	 * is more than 1 - otherwise no need for multi
+	 * chip feature initialization
+	 */
+#if (PLAT_MARVELL_NORTHB_COUNT > 1)
+	if (gic600_multi_chip_init())
+		ERROR("GIC-600 Multi Chip initialization failed\n");
+#endif
 	gicv3_distif_init();
 	gicv3_rdistif_init(plat_my_core_pos());
 	gicv3_cpuif_enable(plat_my_core_pos());
@@ -183,4 +192,3 @@ void plat_marvell_gic_irq_pcpu_restore(void)
 	gicv3_irq_pcpu_restore(marvell_gic_data.rdistif_base_addrs[plat_my_core_pos()],
 			       plat_my_core_pos());
 }
-
