@@ -116,7 +116,6 @@ static void dump_iob(void)
 					      "PEX0 ", "NAND ", "RUNIT", "MCI1 "};
 
 	/* Dump all IOB windows */
-	printf("============= IOB @ 0x%012lx ==============\n", iob_base - MVEBU_IOB_OFFSET);
 	printf("bank  id target  start              end\n");
 	printf("----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_IOB_MAX_WINS; win_id++) {
@@ -137,7 +136,6 @@ static void dump_iob(void)
 					, win_id, iob_target_name[target_id], start, end);
 		}
 	}
-	printf("============= IOB @ 0x%012lx ==============\n", iob_base - MVEBU_IOB_OFFSET);
 
 	return;
 }

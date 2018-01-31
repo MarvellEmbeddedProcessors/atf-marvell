@@ -172,7 +172,6 @@ static void dump_io_win(int ap_index)
 	uint64_t start, end;
 
 	/* Dump all IO windows */
-	printf("==================== AP-%d  IOW =====================\n", ap_index);
 	printf("bank  target     start              end\n");
 	printf("----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++) {
@@ -187,7 +186,6 @@ static void dump_io_win(int ap_index)
 		}
 	}
 	printf("io-win gcr is %x\n", mmio_read_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET));
-	printf("==================== AP-%d  IOW =====================\n", ap_index);
 
 	return;
 }
