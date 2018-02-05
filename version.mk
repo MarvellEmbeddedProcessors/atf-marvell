@@ -1,1 +1,1 @@
-SUBVERSION = armada-17.10.6
+SUBVERSION = armada-17.10.7
