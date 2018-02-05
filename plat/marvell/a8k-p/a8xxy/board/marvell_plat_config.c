@@ -223,12 +223,14 @@ struct addr_map_win io_win_memory_map2_ap0[] = {
 	{0x8800000000,	0x700000000,	MCI_2_TID}, /* AP0-CP1 */
 	{0x8f00000000,	0x700000000,	MCI_1_TID}, /* AP0-CP2 */
 	{0x9600000000,	0x700000000,	MCI_0_TID}, /* AP0-CP3 */
+	{0x9d00000000,	0x010000000,	SPI_TID},   /* AP0-SPI direct */
 };
 struct addr_map_win io_win_memory_map2_ap1[] = {
 	{0x9e00000000,	0x700000000,	MCI_7_TID}, /* AP1-CP0 */
 	{0xa500000000,	0x700000000,	MCI_6_TID}, /* AP1-CP1 */
 	{0xac00000000,	0x700000000,	MCI_5_TID}, /* AP1-CP2 */
 	{0xb300000000,	0x700000000,	MCI_4_TID}, /* AP1-CP3 */
+	{0xba00000000,	0x010000000,	SPI_TID},   /* AP1-SPI direct */
 };
 /* TODO: 3 to 4 interconnected APs maps */
 
