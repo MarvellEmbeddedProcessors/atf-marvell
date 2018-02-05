@@ -48,7 +48,7 @@ struct addr_map_win amb_memory_map[] = {
 	{0xf900,	0x1000000,	AMB_SPI1_CS0_ID},
 };
 
-int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size)
+int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
 	*win = amb_memory_map;
 	if (*win == NULL)

@@ -147,7 +147,7 @@ int init_amb_adec(uintptr_t base)
 	amb_base = base + MVEBU_AMB_ADEC_OFFSET;
 
 	/* Get the array of the windows and its size */
-	marvell_get_amb_memory_map(&win, &win_count);
+	marvell_get_amb_memory_map(&win, &win_count, base);
 	if (win_count <= 0)
 		INFO("no windows configurations found\n");
 

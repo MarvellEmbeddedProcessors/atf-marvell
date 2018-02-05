@@ -526,19 +526,46 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 /*******************************************************************************
  * AMB Configuration
  ******************************************************************************/
-struct addr_map_win *amb_memory_map = NULL;
+struct addr_map_win *amb_map[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUNT] = {
+	/* AP0 */
+	{ NULL, NULL, NULL, NULL },
+	/* AP1 */
+	{ NULL, NULL, NULL, NULL },
+	/* AP2 */
+	{ NULL, NULL, NULL, NULL },
+	/* AP3 */
+	{ NULL, NULL, NULL, NULL },
+};
 
-int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size)
+uint32_t amb_map_size[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUNT] = {
+	/* AP0 */
+	{ 0, 0, 0, 0 },
+	/* AP1 */
+	{ 0, 0, 0, 0 },
+	/* AP2 */
+	{ 0, 0, 0, 0 },
+	/* AP3 */
+	{ 0, 0, 0, 0 },
+};
+
+int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
 {
-	*win = amb_memory_map;
-	if (*win == NULL)
-		*size = 0;
-	else
-		*size = sizeof(amb_memory_map)/sizeof(amb_memory_map[0]);
+	int  ap, cp;
 
-	return 0;
+	for (ap = 0; ap < get_ap_count(); ap++) {
+		for (cp = 0; cp < get_connected_cp_per_ap(ap); cp++) {
+			if (MVEBU_CP_REGS_BASE(ap, cp) == base) {
+				*win = amb_map[ap][cp];
+				*size = amb_map_size[ap][cp];
+				return 0;
+			}
+		}
+	}
+
+	*win = NULL;
+	*size = 0;
+	return -1;
 }
-
 /*******************************************************************************
  * SoC PM configuration
  ******************************************************************************/
