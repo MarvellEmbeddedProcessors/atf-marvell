@@ -19,13 +19,11 @@
 
 #define MAX_IFACES_PER_AP		2
 
-/* The whole DRAM is mapped to the first 516GB of the address space strarting 0x0
+/* The whole DRAM is mapped to the first 512GB of the address space strarting 0x0
  * For setups with up to 2 interconnected APs each AP maps 256GB of the physical DRAM
  * When 3 or 4 APs are connected together, each AP maps 128GB pf physical DRAM.
- * Beside physical memory, each AP reserves additional 1GB for the internal registers
- * memory space remapping in order to eliminate memory waste.
  */
-#define AP_DRAM_SIZE(ap_cnt)		((ap_cnt) < 3 ? (257 * _1GB_) : (129 * _1GB_))
+#define AP_DRAM_SIZE(ap_cnt)		((ap_cnt) < 3 ? (256 * _1GB_) : (128 * _1GB_))
 #define AP_DRAM_BASE_ADDR(ap, ap_cnt)	((ap) * AP_DRAM_SIZE(ap_cnt))
 #define AP0_BOOTROM_DRAM_SIZE		0xec000000
 

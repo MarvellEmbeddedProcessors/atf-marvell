@@ -37,42 +37,42 @@ int marvell_get_mci_map(int ap_id, int cp_id)
  ******************************************************************************/
 /* Up to 2 interconnected APs maps */
 struct addr_map_win gwin_memory_map2_ap0[] = {
-	{0x4040000000,	0x4040000000,	0x1}, /* AP1 DRAM - 257GB */
+	{0x4000000000,	0x4000000000,	0x1}, /* AP1 DRAM - 256GB */
 	{0x9e00000000,	0x1d00000000,	0x1}, /* AP1 IO - 116GB */
 };
 struct addr_map_win gwin_memory_map2_ap1[] = {
-	{0x0000000000,	0x4040000000,	0x0}, /* AP0 DRAM - 257GB */
+	{0x0000000000,	0x4000000000,	0x0}, /* AP0 DRAM - 256GB */
 	{0x8100000000,	0x1d00000000,	0x0}, /* AP0 IO - 116GB */
 };
 /* 3 to 4 interconnected APs maps */
 struct addr_map_win gwin_memory_map4_ap0[] = {
-	{0x2040000000,	0x2040000000,	0x1}, /* AP1 DRAM - 129GB */
-	{0x4080000000,	0x2040000000,	0x2}, /* AP2 DRAM - 129GB */
-	{0x60c0000000,	0x2040000000,	0x3}, /* AP3 DRAM - 129GB */
+	{0x2000000000,	0x2000000000,	0x1}, /* AP1 DRAM - 128GB */
+	{0x4000000000,	0x2000000000,	0x2}, /* AP2 DRAM - 128GB */
+	{0x6000000000,	0x2000000000,	0x3}, /* AP3 DRAM - 128GB */
 	{0x9e00000000,	0x1d00000000,	0x1}, /* AP1 IO - 116GB */
 	{0xbb00000000,	0x1d00000000,	0x2}, /* AP2 IO - 116GB */
 	{0xd800000000,	0x1d00000000,	0x3}, /* AP3 IO - 116GB */
 };
 struct addr_map_win gwin_memory_map4_ap1[] = {
-	{0x0000000000,	0x2040000000,	0x0}, /* AP0 DRAM - 129GB */
-	{0x4080000000,	0x2040000000,	0x2}, /* AP2 DRAM - 129GB */
-	{0x60c0000000,	0x2040000000,	0x3}, /* AP3 DRAM - 129GB */
+	{0x0000000000,	0x2000000000,	0x0}, /* AP0 DRAM - 128GB */
+	{0x4000000000,	0x2000000000,	0x2}, /* AP2 DRAM - 128GB */
+	{0x6000000000,	0x2000000000,	0x3}, /* AP3 DRAM - 128GB */
 	{0x8100000000,	0x1d00000000,	0x0}, /* AP0 IO - 116GB */
 	{0xbb00000000,	0x1d00000000,	0x2}, /* AP2 IO - 116GB */
 	{0xd800000000,	0x1d00000000,	0x3}, /* AP3 IO - 116GB */
 };
 struct addr_map_win gwin_memory_map4_ap2[] = {
-	{0x0000000000,	0x2040000000,	0x0}, /* AP0 DRAM - 129GB */
-	{0x2040000000,	0x2040000000,	0x1}, /* AP1 DRAM - 129GB */
-	{0x60c0000000,	0x2040000000,	0x3}, /* AP3 DRAM - 129GB */
+	{0x0000000000,	0x2000000000,	0x0}, /* AP0 DRAM - 128GB */
+	{0x2000000000,	0x2000000000,	0x1}, /* AP1 DRAM - 128GB */
+	{0x6000000000,	0x2000000000,	0x3}, /* AP3 DRAM - 128GB */
 	{0x8100000000,	0x1d00000000,	0x0}, /* AP0 IO - 116GB */
 	{0x9e00000000,	0x1d00000000,	0x1}, /* AP1 IO - 116GB */
 	{0xd800000000,	0x1d00000000,	0x3}, /* AP3 IO - 116GB */
 };
 struct addr_map_win gwin_memory_map4_ap3[] = {
-	{0x0000000000,	0x2040000000,	0x0}, /* AP0 DRAM - 129GB */
-	{0x2040000000,	0x2040000000,	0x1}, /* AP1 DRAM - 129GB */
-	{0x4080000000,	0x2040000000,	0x2}, /* AP2 DRAM - 129GB */
+	{0x0000000000,	0x2000000000,	0x0}, /* AP0 DRAM - 128GB */
+	{0x2000000000,	0x2000000000,	0x1}, /* AP1 DRAM - 128GB */
+	{0x4000000000,	0x2000000000,	0x2}, /* AP2 DRAM - 128GB */
 	{0x8100000000,	0x1d00000000,	0x0}, /* AP0 IO - 116GB */
 	{0x9e00000000,	0x1d00000000,	0x1}, /* AP1 IO - 116GB */
 	{0xbb00000000,	0x1d00000000,	0x2}, /* AP2 IO - 116GB */
@@ -139,28 +139,28 @@ int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *siz
  */
 /* 1 to 2 APs map */
 struct addr_map_win ccu_memory_map2_ap0[] = {
-	{0x0000000000,	0x4040000000,	RAR_TID}, /* 256GB DRAM + 1GB for remapping */
+	{0x0000000000,	0x4000000000,	RAR_TID}, /* 256GB DRAM + 1GB for remapping */
 	{0x8100000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 struct addr_map_win ccu_memory_map2_ap1[] = {
-	{0x4040000000,	0x4040000000,	RAR_TID}, /* 256GB DRAM + 1GB for remapping */
+	{0x4000000000,	0x4000000000,	RAR_TID}, /* 256GB DRAM + 1GB for remapping */
 	{0x9e00000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 /* 3 to 4 APs map */
 struct addr_map_win ccu_memory_map_ap0[] = {
-	{0x0000000000,	0x2040000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
+	{0x0000000000,	0x2000000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
 	{0x8100000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 struct addr_map_win ccu_memory_map_ap1[] = {
-	{0x2040000000,	0x2040000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
+	{0x2000000000,	0x2000000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
 	{0x9e00000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 struct addr_map_win ccu_memory_map_ap2[] = {
-	{0x4080000000,	0x2040000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
+	{0x4000000000,	0x2000000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
 	{0xbb00000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 struct addr_map_win ccu_memory_map_ap3[] = {
-	{0x60c0000000,	0x2040000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
+	{0x6000000000,	0x2000000000,	RAR_TID}, /* 128GB DRAM + 1GB for remapping */
 	{0xd800000000,	0x1d00000000,	IO_0_TID}, /* 116GB local IO */
 };
 
