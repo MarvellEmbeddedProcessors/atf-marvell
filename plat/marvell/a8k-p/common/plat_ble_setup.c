@@ -18,8 +18,6 @@
 #include <mvebu.h>
 #include <ap810_init_clocks.h>
 
-#define MAX_IFACES_PER_AP		2
-
 /* The whole DRAM is mapped to the first 512GB of the address space strarting 0x0
  * For setups with up to 2 interconnected APs each AP maps 256GB of the physical DRAM
  * When 3 or 4 APs are connected together, each AP maps 128GB pf physical DRAM.
@@ -32,7 +30,7 @@ static int ble_dram_config(void)
 {
 	const int ap_cnt = get_ap_count();
 	int  iface_id, iface_cnt, iface_mode, ap_id, ap_dram_tgt;
-	uint64_t ap_dram_size, iface_size[MAX_IFACES_PER_AP];
+	uint64_t ap_dram_size, iface_size[DDR_MAX_UNIT_PER_AP];
 	struct addr_map_win gwin_temp_win, ccu_dram_win;
 
 	/* Walk through interconnected APs for the attached memory
@@ -42,7 +40,7 @@ static int ble_dram_config(void)
 		/* Test every interface of the AP memory controller
 		 * for a DIMM presence and its size
 		 */
-		for (iface_id = 0, iface_cnt = 0; iface_id < MAX_IFACES_PER_AP; iface_id++) {
+		for (iface_id = 0, iface_cnt = 0; iface_id < DDR_MAX_UNIT_PER_AP; iface_id++) {
 			iface_size[iface_id] = ap_dram_iface_info_get(ap_id, iface_id);
 			if (iface_size[iface_id])
 				iface_cnt++;
