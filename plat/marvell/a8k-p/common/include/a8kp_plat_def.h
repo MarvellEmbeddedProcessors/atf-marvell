@@ -9,6 +9,7 @@
 #define __MVEBU_A8K_DEF_H__
 
 #include <arm_def.h>
+#include <mvebu.h>
 
 #define MVEBU_PRIMARY_CPU			0x0
 #define MVEBU_AP0				0x0
@@ -93,6 +94,14 @@
 #define MVEBU_MCI_REG_SIZE_REMAP		(0x1000000)
 
 #define DDR_MAX_UNIT_PER_AP			2
+/* The whole DRAM is mapped to the first 512GB of the address space strarting 0x0
+ * For setups with up to 2 interconnected APs each AP maps 256GB of the physical DRAM
+ * When 3 or 4 APs are connected together, each AP maps 128GB pf physical DRAM.
+ */
+#define AP_DRAM_SIZE(ap_cnt)		((ap_cnt) < 3 ? (256 * _1GB_) : (128 * _1GB_))
+#define AP_DRAM_BASE_ADDR(ap, ap_cnt)	((ap) * AP_DRAM_SIZE(ap_cnt))
+#define AP0_BOOTROM_DRAM_SIZE		0xec000000
+
 
 /*******************************************************************************
  * MVEBU memory map related constants

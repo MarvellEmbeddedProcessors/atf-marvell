@@ -15,16 +15,7 @@
 #include <plat_def.h>
 #include <plat_dram.h>
 #include <mv_ddr_if.h>
-#include <mvebu.h>
 #include <ap810_init_clocks.h>
-
-/* The whole DRAM is mapped to the first 512GB of the address space strarting 0x0
- * For setups with up to 2 interconnected APs each AP maps 256GB of the physical DRAM
- * When 3 or 4 APs are connected together, each AP maps 128GB pf physical DRAM.
- */
-#define AP_DRAM_SIZE(ap_cnt)		((ap_cnt) < 3 ? (256 * _1GB_) : (128 * _1GB_))
-#define AP_DRAM_BASE_ADDR(ap, ap_cnt)	((ap) * AP_DRAM_SIZE(ap_cnt))
-#define AP0_BOOTROM_DRAM_SIZE		0xec000000
 
 static int ble_dram_config(void)
 {
