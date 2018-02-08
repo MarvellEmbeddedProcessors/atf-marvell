@@ -14,6 +14,15 @@
 #include <ap810_setup.h>
 #include <ap810_init_clocks.h>
 
+#define CCU_RGF_WIN0_REG(ap)		(MVEBU_CCU_BASE(ap) + 0x90)
+#define CCU_RGF_WIN_UNIT_ID_OFFS	2
+#define CCU_RGF_WIN_UNIT_ID_MASK	0xf
+
+#define DSS_SCR_REG(ap, iface)		(MVEBU_AR_RFU_BASE(ap) + 0x208 + ((iface) * 0x4))
+#define DSS_PPROT_OFFS			4
+#define DSS_PPROT_MASK			0x7
+#define DSS_PPROT_PRIV_SECURE_DATA	0x1
+
 /* Extern the parameters from porting file */
 extern struct dram_config dram_cfg;
 extern struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP];
@@ -121,6 +130,28 @@ void plat_dram_update_topology(struct mv_ddr_topology_map *tm)
 	}
 }
 
+static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
+{
+	uint32_t reg_val, dram_target;
+
+	if (iface_id == 1)
+		dram_target = DRAM_1_TID;
+	else
+		dram_target = DRAM_0_TID;
+
+	/* Update PHY destination in RGF window */
+	reg_val = mmio_read_32(CCU_RGF_WIN0_REG(ap_id));
+	reg_val &= ~(CCU_RGF_WIN_UNIT_ID_MASK << CCU_RGF_WIN_UNIT_ID_OFFS);
+	reg_val |= ((dram_target & CCU_RGF_WIN_UNIT_ID_MASK) << CCU_RGF_WIN_UNIT_ID_OFFS);
+	mmio_write_32(CCU_RGF_WIN0_REG(ap_id), reg_val);
+
+	/* Update DSS port access permission to DSS_PHY */
+	reg_val = mmio_read_32(DSS_SCR_REG(ap_id, iface_id));
+	reg_val &= ~(DSS_PPROT_MASK << DSS_PPROT_OFFS);
+	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) << DSS_PPROT_OFFS);
+	mmio_write_32(DSS_SCR_REG(ap_id, iface_id), reg_val);
+}
+
 int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
@@ -137,6 +168,9 @@ int plat_dram_init(void)
 			/* Skip if not exist */
 			if (iface->state == MV_DDR_IFACE_DNE)
 				continue;
+
+			/* Set phy accesses */
+			plat_dram_phy_access_config(ap_id, iface->id);
 
 			/* Update DRAM topology (scan DIMM SPDs) */
 			plat_dram_update_topology(&iface->tm);
