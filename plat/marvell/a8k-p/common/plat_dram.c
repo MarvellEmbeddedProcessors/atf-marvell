@@ -24,7 +24,6 @@
 #define DSS_PPROT_PRIV_SECURE_DATA	0x1
 
 /* Extern the parameters from porting file */
-extern struct dram_config dram_cfg;
 extern struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP];
 extern struct mv_ddr_iface *ptr_iface;
 
@@ -54,12 +53,6 @@ struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
 {
 	/* Return the board topology as defined in the board code */
 	return &ptr_iface->tm;
-}
-
-struct dram_config *mv_ddr_dram_config_get(void)
-{
-	/* Return dram configuration as defined in the board code */
-	return &dram_cfg;
 }
 
 /*

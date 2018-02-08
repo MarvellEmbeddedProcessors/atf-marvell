@@ -9,8 +9,6 @@
 #include <mv_ddr_if.h>
 #include <plat_def.h>
 
-struct dram_config dram_cfg;
-
 /*
  * This struct provides the DRAM training code with
  * the appropriate board DRAM configuration
