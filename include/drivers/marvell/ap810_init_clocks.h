@@ -27,7 +27,7 @@ enum ddr_freq {
 };
 
 int ap810_clocks_init(int ap_count);
-void dram_freq_update(enum ddr_freq freq_option);
+void plat_dram_freq_update(enum ddr_freq freq_option);
 
 #endif /* AP810_INIT_CLOCKS_H_ */
 

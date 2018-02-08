@@ -94,10 +94,17 @@ static void mpp_config(void)
 	val = mmio_read_32(reg);
 }
 
-void dram_freq_update(enum ddr_freq freq_option)
+void plat_dram_freq_update(enum ddr_freq freq_option)
 {
-	struct mv_ddr_topology_map *tm = mv_ddr_topology_map_get();
-	tm->interface_params[0].memory_freq = freq_option;
+	struct mv_ddr_iface *iface = NULL;
+	uint32_t ifaces_size, i, ap_id;
+
+	/* Update DDR topology for all APs for all interfaces */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
+		for (i = 0; i < ifaces_size; i++, iface++)
+			iface->tm.interface_params[0].memory_freq = freq_option;
+	}
 }
 
 /*

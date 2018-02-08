@@ -236,7 +236,7 @@ int ap810_clocks_init(int ap_count)
 	cpu_clock_val = pll_freq_tables[freq_mode][clk_config][CPU_FREQ - 1];
 	ddr_clock_option = pll_freq_tables[freq_mode][clk_config][DDR_FREQ - 1];
 
-	dram_freq_update(ddr_clock_option);
+	plat_dram_freq_update(ddr_clock_option);
 
 	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, primary_cpu_trans))
 		return -1;
