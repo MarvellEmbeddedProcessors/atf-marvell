@@ -15,7 +15,6 @@
  */
 struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 	{
-		.ap_base = MVEBU_REGS_BASE_AP(0),
 		.state = MV_DDR_IFACE_NRDY,
 		.id = 0,
 		.tm = {

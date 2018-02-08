@@ -32,8 +32,15 @@ int i2c_init_done = 0;
 
 int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size)
 {
-	*size = sizeof(dram_iface_ap0)/sizeof(dram_iface_ap0[0]);
-	*ifaces = dram_iface_ap0;
+	/* For now support DRAM on AP0 - TODO: add support for all APs */
+	if (ap_id == 0) {
+		*size = sizeof(dram_iface_ap0)/sizeof(dram_iface_ap0[0]);
+		*ifaces = dram_iface_ap0;
+	} else {
+		*ifaces = NULL;
+		*size = 0;
+	}
+
 
 	return 0;
 }
@@ -155,25 +162,60 @@ static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
-	uint32_t ifaces_size, i, ap_id, ret;
+	uint32_t ifaces_size, i, ap_id, ret, iface_cnt;
+
+	/* Go over the interfaces, and update the topology */
+	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		iface_cnt = 0;
+		/* Get interfaces of AP-ID */
+		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
+		/* Go over the interfaces of AP and initialize them */
+		for (i = 0; i < ifaces_size; i++, iface++) {
+			/* Skip if not exist */
+			if (iface->state == MV_DDR_IFACE_DNE)
+				continue;
+			/* Update AP base address */
+			iface->ap_base = MVEBU_REGS_BASE_AP(ap_id);
+			/* Initialize iface mode with single interface */
+			iface->iface_mode = MV_DDR_RAR_DIS;
+			/* Update base address of interface */
+			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, get_ap_count());
+			/* Update DRAM topology (scan DIMM SPDs) */
+			plat_dram_update_topology(&iface->tm);
+			/* Count number of interfaces are ready */
+			iface_cnt++;
+		}
+		/* If the number of interfaces equal to MAX (enable RAR) */
+		if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
+			/* Get interfaces of AP-ID */
+			plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
+			/* Go over the interfaces of AP and initialize them */
+			for (i = 0; i < ifaces_size; i++, iface++) {
+				iface->iface_mode = MV_DDR_RAR_ENA;
+				/* If the base address not 0x0, need to divide
+				** the base address, the dram region will be
+				** splited into dual DRAMs
+				** */
+				iface->iface_base_addr >>= 1;
+				/* TODO: add EERATA */
+				if (iface->id == 1)
+					iface->iface_base_addr |= 1UL << 43;
+			}
+		}
+	}
 
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		/* Go over the interfaces of AP and initialize them */
 		for (i = 0; i < ifaces_size; i++, iface++) {
+			if (iface->state == MV_DDR_IFACE_DNE)
+				continue;
 			/* Set the pointer to current interface */
 			plat_dram_iface_set(iface);
 
-			/* Skip if not exist */
-			if (iface->state == MV_DDR_IFACE_DNE)
-				continue;
-
 			/* Set phy accesses */
 			plat_dram_phy_access_config(ap_id, iface->id);
-
-			/* Update DRAM topology (scan DIMM SPDs) */
-			plat_dram_update_topology(&iface->tm);
 
 			/* Call DRAM init per interface */
 			ret = dram_init();
