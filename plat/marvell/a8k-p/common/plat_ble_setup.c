@@ -20,7 +20,7 @@
 static int ble_dram_config(void)
 {
 	const int ap_cnt = get_ap_count();
-	int  iface_id, iface_cnt, iface_mode, ap_id, ap_dram_tgt;
+	int  iface_id, iface_cnt, ap_id, ap_dram_tgt;
 	uint64_t ap_dram_size, iface_size[DDR_MAX_UNIT_PER_AP];
 	struct addr_map_win gwin_temp_win, ccu_dram_win;
 
@@ -61,16 +61,13 @@ static int ble_dram_config(void)
 		if (iface_cnt == 1) {
 			if (iface_size[0]) {
 				ap_dram_tgt = DRAM_0_TID;
-				iface_mode = SINGLE_DRAM_0;
 				ap_dram_size = iface_size[0];
 			} else {
 				ap_dram_tgt = DRAM_1_TID;
-				iface_mode = SINGLE_DRAM_1;
 				ap_dram_size = iface_size[1];
 			}
 		} else {
 			ap_dram_tgt = RAR_TID;
-			iface_mode = DUAL_DRAM;
 			ap_dram_size = iface_size[0] + iface_size[1];
 		}
 		ccu_dram_win.base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
@@ -79,9 +76,6 @@ static int ble_dram_config(void)
 
 		/* Create a memory window with the approriate target in CCU */
 		ccu_dram_win_config(ap_id, &ccu_dram_win);
-
-		/* Do the proper memory controller configuration for the choosen interface mode */
-		dram_mmap_config(ap_id, iface_mode, AP_DRAM_BASE_ADDR(ap_id, ap_cnt), ap_dram_size);
 
 		/* Remap the physical memory shadowed by the internal registers configration
 		 * address space to the top of the detected memory area.
