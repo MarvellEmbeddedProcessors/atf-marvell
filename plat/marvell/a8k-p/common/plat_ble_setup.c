@@ -13,6 +13,7 @@
 #include <gwin.h>
 #include <plat_marvell.h>
 #include <plat_def.h>
+#include <plat_dram.h>
 #include <mv_ddr_if.h>
 #include <mvebu.h>
 #include <ap810_init_clocks.h>
@@ -170,11 +171,8 @@ int ble_plat_setup(int *skip)
 
 	/* TODO: check if SVC is needed */
 
-	/* Update DRAM topology (scan DIMM SPDs) */
-	plat_dram_update_topology();
-
 	/* Trigger DRAM driver initialization */
-	ret = dram_init();
+	ret = plat_dram_init();
 	if (!ret)
 		ret = ble_dram_config();
 

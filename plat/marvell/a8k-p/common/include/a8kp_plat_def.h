@@ -78,9 +78,6 @@
 #define MVEBU_SMMU_BASE(ap)			(MVEBU_AR_RFU_BASE(ap) + 0x100000)
 #define MVEBU_AP_I2C_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x511000)
 
-#define MVEBU_DRAM_MAC_BASE			(MVEBU_REGS_BASE + 0x20000)
-#define MVEBU_DRAM_PHY_BASE			(MVEBU_REGS_BASE + 0x20000)
-
 #define MVEBU_CP_DEFAULT_BASE_ADDR		0xF2000000
 #define MVEBU_CP_DEFAULT_BASE_SIZE		0x2000000
 
@@ -94,6 +91,8 @@
 #define MCI_MAX_UNIT_ID				8
 #define MVEBU_MCI_REG_BASE_REMAP(index)		(0xFD000000)
 #define MVEBU_MCI_REG_SIZE_REMAP		(0x1000000)
+
+#define DDR_MAX_UNIT_PER_AP			2
 
 /*******************************************************************************
  * MVEBU memory map related constants
