@@ -25,6 +25,16 @@
 							iface_tid) + 0x304)
 #define CCU_MC_RTBR_OFFSET(ap, iface_tid)	(MVEBU_A2_BANKED_STOP_BASE(ap, \
 							iface_tid) + 0x308)
+#define CCU_MC_ITR_OFFSET(ap, iface_tid)	(MVEBU_A2_BANKED_STOP_BASE(ap, \
+							iface_tid) + 0x314)
+#define CCU_MC_RAR_OFFSET(ap, iface_tid)	(MVEBU_CCU_BASE(ap) + \
+						((iface_tid == DRAM_0_TID) ? \
+							0xe0 : 0xe4))
+#define MC_RAR_ENABLE			1
+#define MC_RAR_TID_OFFSET		4
+#define MC_RAR_ADDR_MASK_OFFSET		20
+#define MC_RAR_ADDR_VALUE_OFFSET	8
+#define MC_INTERLEAVE_SHIFT		6
 
 #define REMAP_ADDR_OFFSET		10
 #define REMAP_ADDR_MASK			0xfffff
@@ -178,6 +188,31 @@ static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 	mmio_write_32(DSS_SCR_REG(ap_id, iface_id), reg_val);
 }
 
+/* Setup RAR interleave value and enable RAR mode (data striping) for AP DRAM */
+static void plat_dram_rar_mode_set(uint32_t ap_id)
+{
+	uint32_t val;
+	uint32_t interleave = dram_rar_interleave() >> MC_INTERLEAVE_SHIFT;
+
+	/* Enable ITR for the DDR interface */
+	mmio_write_32(CCU_MC_ITR_OFFSET(ap_id, DRAM_0_TID),
+		      interleave);
+	mmio_write_32(CCU_MC_ITR_OFFSET(ap_id, DRAM_1_TID),
+		      interleave);
+	/* Configure RAR registers:
+	 * For RAR 0: mask = interleave, value = 0x0, target = 0x3, enable =0x1.
+	 * For RAR 1: mask = interleave, value = interleave, target = 0x8, enable =0x1
+	 */
+	val = interleave << MC_RAR_ADDR_MASK_OFFSET;
+	val |= (DRAM_0_TID << MC_RAR_TID_OFFSET) | MC_RAR_ENABLE;
+	mmio_write_32(CCU_MC_RAR_OFFSET(ap_id, DRAM_0_TID), val);
+
+	val = interleave << MC_RAR_ADDR_MASK_OFFSET;
+	val |= interleave << MC_RAR_ADDR_VALUE_OFFSET |
+			(DRAM_1_TID << MC_RAR_TID_OFFSET) | MC_RAR_ENABLE;
+	mmio_write_32(CCU_MC_RAR_OFFSET(ap_id, DRAM_1_TID), val);
+}
+
 /* Remap Physical address range to Memory Controller addrress range (PA->MCA) */
 void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to, uint64_t size)
 {
@@ -314,6 +349,9 @@ int plat_dram_init(void)
 		 */
 		if ((ap_id == 0)  && (ap_dram_size > (3 * _1GB_)))
 			plat_dram_mca_remap(0, ap_dram_tgt, ap_dram_size, 3 * _1GB_, _1GB_);
+
+		if (ap_dram_tgt == RAR_TID)
+			plat_dram_rar_mode_set(ap_id);
 	}
 
 	return 0;

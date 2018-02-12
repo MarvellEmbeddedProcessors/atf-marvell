@@ -14,5 +14,6 @@
 void plat_dram_iface_set(struct mv_ddr_iface *iface);
 int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size);
 int plat_dram_init(void);
+uint32_t dram_rar_interleave(void);
 
 #endif /* __PLAT_DRAM_H__ */

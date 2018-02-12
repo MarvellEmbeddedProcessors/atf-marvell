@@ -9,6 +9,13 @@
 #include <mv_ddr_if.h>
 #include <plat_def.h>
 
+#define MC_RAR_INTERLEAVE_SZ		(128) /* Also possible to set to 4Kb */
+
+uint32_t dram_rar_interleave(void)
+{
+	return MC_RAR_INTERLEAVE_SZ;
+}
+
 /*
  * This struct provides the DRAM training code with
  * the appropriate board DRAM configuration
