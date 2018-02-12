@@ -9,6 +9,17 @@
 #include <mv_ddr_if.h>
 #include <plat_def.h>
 
+/* DB-88F8160-MODULAR has 4 DIMMs on board that are connected to
+ * AP2 I2C bus-0 at the following addresses:
+ * AP0 DIMM0 - 0x53
+ * AP0 DIMM1 - 0x54
+ * AP1 DIMM0 - 0x55
+ * AP1 DIMM1 - 0x56
+ */
+#define I2C_SPD_BASE_ADDR		0x53
+#define I2C_SPD_DATA_ADDR(ap_id, iface)	(I2C_SPD_BASE_ADDR + (ap_id * DDR_MAX_UNIT_PER_AP) + (iface))
+#define I2C_SPD_P0_SEL_ADDR		0x36	/* Select SPD data page 0 */
+
 #define MC_RAR_INTERLEAVE_SZ		(128) /* Also possible to set to 4Kb */
 
 uint32_t dram_rar_interleave(void)
@@ -24,6 +35,8 @@ struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 	{
 		.state = MV_DDR_IFACE_NRDY,
 		.id = 0,
+		.spd_data_addr = I2C_SPD_DATA_ADDR(0, 0),
+		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
@@ -59,6 +72,8 @@ struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP] = {
 	{
 		.state = MV_DDR_IFACE_NRDY,
 		.id = 0,
+		.spd_data_addr = I2C_SPD_DATA_ADDR(1, 0),
+		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
