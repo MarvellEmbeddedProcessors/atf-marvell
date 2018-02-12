@@ -100,7 +100,7 @@
  */
 #define AP_DRAM_SIZE(ap_cnt)		((ap_cnt) < 3 ? (256 * _1GB_) : (128 * _1GB_))
 #define AP_DRAM_BASE_ADDR(ap, ap_cnt)	((ap) * AP_DRAM_SIZE(ap_cnt))
-#define AP0_BOOTROM_DRAM_SIZE		0xec000000
+#define AP0_BOOTROM_DRAM_SIZE		0xdc000000
 
 
 /*******************************************************************************
