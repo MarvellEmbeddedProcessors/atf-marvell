@@ -141,8 +141,10 @@ void plat_dram_freq_update(enum ddr_freq freq_option)
  * based on information received from SPD or bootloader
  * configuration located on non volatile storage
  */
-void plat_dram_update_topology(struct mv_ddr_topology_map *tm)
+void plat_dram_update_topology(struct mv_ddr_iface *iface)
 {
+	struct mv_ddr_topology_map *tm = &iface->tm;
+
 	INFO("Update DRAM information\n");
 
 	if (tm->cfg_src == MV_DDR_CFG_SPD) {
@@ -157,11 +159,10 @@ void plat_dram_update_topology(struct mv_ddr_topology_map *tm)
 			/* Mark done */
 			i2c_init_done = 1;
 		}
-		/* select SPD memory page 0 to access DRAM configuration */
-		i2c_write(I2C_SPD_P0_SEL_ADDR, 0x0, 1, tm->spd_data.all_bytes, 1);
-		/* TODO: Support multiple intefaces when reading the SPD data */
-		/* read data from spd */
-		i2c_read(I2C_SPD_DATA_ADDR(0), 0x0, 1, tm->spd_data.all_bytes,
+		/* Select SPD memory page to access DRAM configuration */
+		i2c_write(iface->spd_page_sel_addr, 0x0, 1, tm->spd_data.all_bytes, 1);
+		/* Read data from SPD */
+		i2c_read(iface->spd_data_addr, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
 	}
 }
@@ -287,7 +288,7 @@ int plat_dram_init(void)
 			/* Update base address of interface */
 			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, get_ap_count());
 			/* Update DRAM topology (scan DIMM SPDs) */
-			plat_dram_update_topology(&iface->tm);
+			plat_dram_update_topology(iface);
 			/* Count number of interfaces are ready */
 			iface_cnt++;
 		}
