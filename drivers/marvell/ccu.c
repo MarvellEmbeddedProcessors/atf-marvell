@@ -49,11 +49,6 @@
 #define ADDRESS_SHIFT			(20 - 4)
 #define ADDRESS_MASK			(0xFFFFFFF0)
 #define CCU_WIN_ALIGNMENT		(0x100000)
-#define REMAP_ADDR_OFFSET		10
-#define REMAP_ADDR_MASK			0xfffff
-#define REMAP_SIZE_OFFSET		20
-#define REMAP_SIZE_MASK			0xfff
-#define REMAP_ENABLE_MASK		0x1
 
 #define IS_DRAM_TARGET(tgt)		((((tgt) == DRAM_0_TID) || \
 					((tgt) == DRAM_1_TID) || \
@@ -256,64 +251,6 @@ void ccu_dram_win_config(int ap_index, struct addr_map_win *win)
 	ccu_enable_win(ap_index, win, win_id);
 
 	return;
-}
-
-/* Remap Physical address range to Memory Controller addrress range (PA->MCA) */
-void ccu_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to, uint64_t size)
-{
-	uint8_t dram_if, if_start, if_stop;
-
-	switch (dram_tgt) {
-	case RAR_TID:
-		if_start = 0;
-		if_stop = 1;
-		break;
-	case DRAM_0_TID:
-		if_start = 0;
-		if_stop = 0;
-		break;
-	case DRAM_1_TID:
-		if_start = 1;
-		if_stop = 1;
-		break;
-	default:
-		/* Bad target */
-		ERROR("Invalid remap target %x\n", dram_tgt);
-		return;
-	}
-
-	/* Size should be non-zero, up to 4GB and multiple of 1MB */
-	if (!size || (size >> 32) || (size % (1 << 20))) {
-		ERROR("Invalid remap size %lx\n", size);
-		return;
-	}
-
-	/* Remap addresses must be multiple of remap size */
-	if ((from % size) || (to % size)) {
-		ERROR("Invalid remap address %lx -> %lx\n", from, to);
-		return;
-	}
-
-	from >>= 20; /* bit[39:20] */
-	to   >>= 20; /* bit[39:20] */
-	size >>= 20; /* Size is in 1MB chunks */
-	for (dram_if = if_start; dram_if <= if_stop; dram_if++) {
-		uint32_t val;
-		/* set mc remap source base to the top of dram */
-		val = (from & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
-		mmio_write_32(CCU_MC_RSBR_OFFSET(ap_index, dram_if), val);
-
-		/* set mc remap target base to the overlapped dram region */
-		val = (to & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
-		mmio_write_32(CCU_MC_RTBR_OFFSET(ap_index, dram_if), val);
-
-		/* set mc remap size to the size of the overlapped dram region */
-		/* up to 4GB region for remapping */
-		val = ((size - 1) & REMAP_SIZE_MASK) << REMAP_SIZE_OFFSET;
-		/* enable remapping */
-		val |= REMAP_ENABLE_MASK;
-		mmio_write_32(CCU_MC_RCR_OFFSET(ap_index, dram_if), val);
-	}
 }
 
 int init_ccu(int ap_index)

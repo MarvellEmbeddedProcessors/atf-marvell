@@ -77,23 +77,12 @@ static int ble_dram_config(void)
 		/* Create a memory window with the approriate target in CCU */
 		ccu_dram_win_config(ap_id, &ccu_dram_win);
 
-		/* Remap the physical memory shadowed by the internal registers configration
-		 * address space to the top of the detected memory area.
-		 * Regardless the fact that all APs are reserving extra 1GB for this purpose,
-		 * only the AP0 overlaps this configuration area with the DRAM, so only its memory
-		 * controller has to remap the overlapped region to the upper memory.
-		 * With less than 3GB of DRAM the internal registers space remapping is not needed
-		 * since there is no overlap between DRAM and the configuration address spaces
-		 */
-		if ((ap_id == 0)  && (ap_dram_size > (3 * _1GB_)))
-			ccu_dram_mca_remap(0, ap_dram_tgt, ap_dram_size, 3 * _1GB_, _1GB_);
-
 		/* Scrub the DRAM for ECC support */
 		dram_scrubbing(ap_id, AP_DRAM_BASE_ADDR(ap_id, ap_cnt), ap_dram_size);
 
 		/* Restore the original DRAM size on AP0 before returning to the BootROM.
 		 * Access to entire DRAM is required only during DDR initialization and scrubbing.
-		 * The correct DRAM size will be set back by ccu_init() at BL31 stage.
+		 * The correct DRAM size will be set back by init_ccu() at later stage.
 		 */
 		if (ap_id == 0) {
 			ccu_dram_win.win_size = AP0_BOOTROM_DRAM_SIZE;

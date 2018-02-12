@@ -55,11 +55,6 @@
 #define CCU_GCR_TARGET_OFFSET			(8)
 #define CCU_GCR_TARGET_MASK			(0xFF)
 
-#define CCU_MC_RCR_OFFSET(ap, iface)		(MVEBU_REGS_BASE_AP(ap) + \
-						0x1700 + (0x1400 * (iface)))
-#define CCU_MC_RSBR_OFFSET(ap, iface)		(CCU_MC_RCR_OFFSET(ap, iface) + 0x4)
-#define CCU_MC_RTBR_OFFSET(ap, iface)		(CCU_MC_RCR_OFFSET(ap, iface) + 0x8)
-
 #define CCU_SRAM_WIN_CR				CCU_WIN_CR_OFFSET(MVEBU_AP0, 1)
 
 #ifndef __ASSEMBLY__
@@ -70,7 +65,6 @@ void ccu_temp_win_insert(int ap_index, struct addr_map_win *win, int size);
 void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size);
 void ccu_dram_win_config(int ap_index, struct addr_map_win *win);
 void ccu_dram_target_set(int ap_index, uint32_t target);
-void ccu_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to, uint64_t size);
 #endif
 
 #endif /* _CCU_H_ */

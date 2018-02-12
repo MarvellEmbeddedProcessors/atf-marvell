@@ -18,7 +18,22 @@
 #define CCU_RGF_WIN_UNIT_ID_OFFS	2
 #define CCU_RGF_WIN_UNIT_ID_MASK	0xf
 
-#define DSS_SCR_REG(ap, iface)		(MVEBU_AR_RFU_BASE(ap) + 0x208 + ((iface) * 0x4))
+/* In the below macros the "iftid" is either DRAM_0_TID or DRAM_1_TID */
+#define CCU_MC_RCR_OFFSET(ap, iface_tid)	(MVEBU_A2_BANKED_STOP_BASE(ap, \
+							iface_tid) + 0x300)
+#define CCU_MC_RSBR_OFFSET(ap, iface_tid)	(MVEBU_A2_BANKED_STOP_BASE(ap, \
+							iface_tid) + 0x304)
+#define CCU_MC_RTBR_OFFSET(ap, iface_tid)	(MVEBU_A2_BANKED_STOP_BASE(ap, \
+							iface_tid) + 0x308)
+
+#define REMAP_ADDR_OFFSET		10
+#define REMAP_ADDR_MASK			0xfffff
+#define REMAP_SIZE_OFFSET		20
+#define REMAP_SIZE_MASK			0xfff
+#define REMAP_ENABLE_MASK		0x1
+
+/* iface is 0 or 1 */
+#define DSS_SCR_REG(ap, iface)         (MVEBU_AR_RFU_BASE(ap) + 0x208 + ((iface) * 0x4))
 #define DSS_PPROT_OFFS			4
 #define DSS_PPROT_MASK			0x7
 #define DSS_PPROT_PRIV_SECURE_DATA	0x1
@@ -163,10 +178,62 @@ static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 	mmio_write_32(DSS_SCR_REG(ap_id, iface_id), reg_val);
 }
 
+/* Remap Physical address range to Memory Controller addrress range (PA->MCA) */
+void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to, uint64_t size)
+{
+	int dram_if[] = { -1, -1 };
+	int if_idx;
+
+	if (dram_tgt == RAR_TID) {
+		dram_if[0] = DRAM_0_TID;
+		dram_if[1] = DRAM_1_TID;
+	} else {
+		dram_if[0] = dram_tgt;
+	}
+
+	/* Size should be non-zero, up to 4GB and multiple of 1MB */
+	if (!size || (size >> 32) || (size % (1 << 20))) {
+		ERROR("Invalid remap size %lx\n", size);
+		return;
+	}
+
+	/* Remap addresses must be multiple of remap size */
+	if ((from % size) || (to % size)) {
+		ERROR("Invalid remap address %lx -> %lx\n", from, to);
+		return;
+	}
+
+	from >>= 20; /* bit[39:20] */
+	to   >>= 20; /* bit[39:20] */
+	size >>= 20; /* Size is in 1MB chunks */
+	for (if_idx = 0; if_idx < DDR_MAX_UNIT_PER_AP; if_idx++) {
+		uint32_t val;
+
+		if (dram_if[if_idx] == -1)
+			break;
+		/* set mc remap source base to the top of dram */
+		val = (from & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
+		mmio_write_32(CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]), val);
+
+		/* set mc remap target base to the overlapped dram region */
+		val = (to & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
+		mmio_write_32(CCU_MC_RTBR_OFFSET(ap_index, dram_if[if_idx]), val);
+
+		/* set mc remap size to the size of the overlapped dram region */
+		/* up to 4GB region for remapping */
+		val = ((size - 1) & REMAP_SIZE_MASK) << REMAP_SIZE_OFFSET;
+		/* enable remapping */
+		val |= REMAP_ENABLE_MASK;
+		mmio_write_32(CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]), val);
+	}
+}
+
 int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
 	uint32_t ifaces_size, i, ap_id, ret, iface_cnt;
+	uint64_t ap_dram_size;
+	uint32_t ap_dram_tgt = DRAM_0_TID;
 
 	/* Go over the interfaces, and update the topology */
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
@@ -209,6 +276,7 @@ int plat_dram_init(void)
 	}
 
 	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+		ap_dram_size = 0;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		/* Go over the interfaces of AP and initialize them */
@@ -228,7 +296,24 @@ int plat_dram_init(void)
 
 			/* Update status of interface */
 			iface->state = MV_DDR_IFACE_RDY;
+
+			ap_dram_size += iface->iface_byte_size;
+			if (iface->iface_mode == MV_DDR_RAR_ENA)
+				ap_dram_tgt = RAR_TID;
+			else if (iface->id == 1)
+				ap_dram_tgt = DRAM_1_TID;
+			else
+				ap_dram_tgt = DRAM_0_TID;
 		}
+		/* Remap the physical memory shadowed by the internal registers configration
+		 * address space to the top of the detected memory area.
+		 * Only the AP0 overlaps this configuration area with the DRAM, so only its memory
+		 * controller has to remap the overlapped region to the upper memory.
+		 * With less than 3GB of DRAM the internal registers space remapping is not needed
+		 * since there is no overlap between DRAM and the configuration address spaces
+		 */
+		if ((ap_id == 0)  && (ap_dram_size > (3 * _1GB_)))
+			plat_dram_mca_remap(0, ap_dram_tgt, ap_dram_size, 3 * _1GB_, _1GB_);
 	}
 
 	return 0;
