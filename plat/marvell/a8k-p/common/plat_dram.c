@@ -25,6 +25,7 @@
 
 /* Extern the parameters from porting file */
 extern struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP];
+extern struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP];
 extern struct mv_ddr_iface *ptr_iface;
 
 /* Use global varibale to check if i2c initialization done */
@@ -32,10 +33,13 @@ int i2c_init_done = 0;
 
 int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size)
 {
-	/* For now support DRAM on AP0 - TODO: add support for all APs */
+	/* For now support DRAM on AP0/AP1 - TODO: add support for all APs */
 	if (ap_id == 0) {
 		*size = sizeof(dram_iface_ap0)/sizeof(dram_iface_ap0[0]);
 		*ifaces = dram_iface_ap0;
+	} else if (ap_id == 1) {
+		*size = sizeof(dram_iface_ap1)/sizeof(dram_iface_ap1[0]);
+		*ifaces = dram_iface_ap1;
 	} else {
 		*ifaces = NULL;
 		*size = 0;
