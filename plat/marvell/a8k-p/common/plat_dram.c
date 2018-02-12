@@ -149,6 +149,8 @@ static void plat_dram_update_topology(uint32_t ap_id, struct mv_ddr_iface *iface
 	struct mv_ddr_topology_map *tm = &iface->tm;
 	int ret;
 
+	debug_enter();
+
 	if (tm->cfg_src != MV_DDR_CFG_SPD)
 		return;
 	/* Initialize I2C of AP-0 to read SPD
@@ -176,11 +178,15 @@ static void plat_dram_update_topology(uint32_t ap_id, struct mv_ddr_iface *iface
 		INFO("AP-%d DRAM-%d - OK\n", ap_id, iface->id);
 		iface->state = MV_DDR_IFACE_NRDY;
 	}
+
+	debug_exit();
 }
 
 static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 {
 	uint32_t reg_val, dram_target;
+
+	debug_enter();
 
 	if (iface_id == 1)
 		dram_target = DRAM_1_TID;
@@ -198,6 +204,8 @@ static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 	reg_val &= ~(DSS_PPROT_MASK << DSS_PPROT_OFFS);
 	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) << DSS_PPROT_OFFS);
 	mmio_write_32(DSS_SCR_REG(ap_id, iface_id), reg_val);
+
+	debug_exit();
 }
 
 /* Setup RAR interleave value and enable RAR mode (data striping) for AP DRAM */
@@ -206,7 +214,11 @@ static void plat_dram_rar_mode_set(uint32_t ap_id)
 	uint32_t val;
 	uint32_t interleave = dram_rar_interleave() >> MC_INTERLEAVE_SHIFT;
 
+	debug_enter();
+
 	/* Enable ITR for the DDR interface */
+	VERBOSE("Enable AP-%d DRAM_RAR mode with interleave of %d Bytes\n",
+		ap_id, dram_rar_interleave());
 	mmio_write_32(CCU_MC_ITR_OFFSET(ap_id, DRAM_0_TID),
 		      interleave);
 	mmio_write_32(CCU_MC_ITR_OFFSET(ap_id, DRAM_1_TID),
@@ -223,6 +235,8 @@ static void plat_dram_rar_mode_set(uint32_t ap_id)
 	val |= interleave << MC_RAR_ADDR_VALUE_OFFSET |
 			(DRAM_1_TID << MC_RAR_TID_OFFSET) | MC_RAR_ENABLE;
 	mmio_write_32(CCU_MC_RAR_OFFSET(ap_id, DRAM_1_TID), val);
+
+	debug_exit();
 }
 
 /* Remap Physical address range to Memory Controller addrress range (PA->MCA) */
@@ -230,6 +244,8 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 {
 	int dram_if[] = { -1, -1 };
 	int if_idx;
+
+	debug_enter();
 
 	if (dram_tgt == RAR_TID) {
 		dram_if[0] = DRAM_0_TID;
@@ -260,10 +276,14 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 			break;
 		/* set mc remap source base to the top of dram */
 		val = (from & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
+		VERBOSE("AP-%d DRAM%d RSBR(0x%x) <== 0x%x\n",
+			ap_index, if_idx, CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]), val);
 		mmio_write_32(CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]), val);
 
 		/* set mc remap target base to the overlapped dram region */
 		val = (to & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
+		VERBOSE("AP-%d DRAM%d RTBR(0x%x) <== 0x%x\n",
+			ap_index, if_idx, CCU_MC_RTBR_OFFSET(ap_index, dram_if[if_idx]), val);
 		mmio_write_32(CCU_MC_RTBR_OFFSET(ap_index, dram_if[if_idx]), val);
 
 		/* set mc remap size to the size of the overlapped dram region */
@@ -271,8 +291,12 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 		val = ((size - 1) & REMAP_SIZE_MASK) << REMAP_SIZE_OFFSET;
 		/* enable remapping */
 		val |= REMAP_ENABLE_MASK;
+		VERBOSE("AP-%d DRAM%d RCR(0x%x) <== 0x%x\n",
+			ap_index, if_idx, CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]), val);
 		mmio_write_32(CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]), val);
 	}
+
+	debug_exit();
 }
 
 static void plat_dram_interfaces_update(void)
@@ -280,6 +304,8 @@ static void plat_dram_interfaces_update(void)
 	struct mv_ddr_iface *iface = NULL;
 	uint32_t ifaces_size, i, ap_id, iface_cnt;
 	const uint32_t ap_cnt = get_ap_count();
+
+	debug_enter();
 
 	/* Go over the interfaces, and update the topology */
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
@@ -302,12 +328,14 @@ static void plat_dram_interfaces_update(void)
 			/* Count number of interfaces are ready */
 			iface_cnt++;
 		}
+		VERBOSE("Found %d DRAM interfaces on AP-%d\n", iface_cnt, ap_id);
 		/* If the number of interfaces equal to MAX (enable RAR) */
 		if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
 			/* Get interfaces of AP-ID */
 			plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 			/* Go over the interfaces of AP and initialize them */
 			for (i = 0; i < ifaces_size; i++, iface++) {
+				VERBOSE("AP-%d set DRAM%d into RAR mode\n", ap_id, i);
 				iface->iface_mode = MV_DDR_RAR_ENA;
 				/* If the base address not 0x0, need to divide
 				** the base address, the dram region will be
@@ -409,6 +437,8 @@ int plat_dram_init(void)
 			else
 				ap_dram_tgt = DRAM_0_TID;
 		}
+		INFO("AP-%d DRAM size is 0x%lx (%lldGB)\n",
+		     ap_id, ap_dram_size, ap_dram_size/_1GB_);
 		/* Remap the physical memory shadowed by the internal registers configration
 		 * address space to the top of the detected memory area.
 		 * Only the AP0 overlaps this configuration area with the DRAM, so only its memory
@@ -435,6 +465,8 @@ int plat_dram_init(void)
 		 */
 		plat_dram_addr_decode_remove(ap_id, &gwin_temp_win, &ccu_dram_win);
 	}
+
+	debug_exit();
 
 	return 0;
 }
