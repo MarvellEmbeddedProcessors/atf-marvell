@@ -141,11 +141,10 @@ void plat_dram_freq_update(enum ddr_freq freq_option)
  * based on information received from SPD or bootloader
  * configuration located on non volatile storage
  */
-void plat_dram_update_topology(struct mv_ddr_iface *iface)
+static void plat_dram_update_topology(uint32_t ap_id, struct mv_ddr_iface *iface)
 {
 	struct mv_ddr_topology_map *tm = &iface->tm;
-
-	INFO("Update DRAM information\n");
+	int ret;
 
 	if (tm->cfg_src == MV_DDR_CFG_SPD) {
 		/* Initialize I2C of AP-0 to read SPD
@@ -162,8 +161,16 @@ void plat_dram_update_topology(struct mv_ddr_iface *iface)
 		/* Select SPD memory page to access DRAM configuration */
 		i2c_write(iface->spd_page_sel_addr, 0x0, 1, tm->spd_data.all_bytes, 1);
 		/* Read data from SPD */
-		i2c_read(iface->spd_data_addr, 0x0, 1, tm->spd_data.all_bytes,
+		ret = i2c_read(iface->spd_data_addr, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
+		/* Mark the interface as non-existing if the SPD read fails */
+		if (ret < 0) {
+			NOTICE("AP-%d DRAM-%d - EMPTY\n", ap_id, iface->id);
+			iface->state = MV_DDR_IFACE_DNE;
+		} else {
+			INFO("AP-%d DRAM-%d - OK\n", ap_id, iface->id);
+			iface->state = MV_DDR_IFACE_NRDY;
+		}
 	}
 }
 
@@ -278,6 +285,8 @@ int plat_dram_init(void)
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		/* Go over the interfaces of AP and initialize them */
 		for (i = 0; i < ifaces_size; i++, iface++) {
+			/* Update DRAM topology (scan DIMM SPDs) */
+			plat_dram_update_topology(ap_id, iface);
 			/* Skip if not exist */
 			if (iface->state == MV_DDR_IFACE_DNE)
 				continue;
@@ -287,8 +296,6 @@ int plat_dram_init(void)
 			iface->iface_mode = MV_DDR_RAR_DIS;
 			/* Update base address of interface */
 			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, get_ap_count());
-			/* Update DRAM topology (scan DIMM SPDs) */
-			plat_dram_update_topology(iface);
 			/* Count number of interfaces are ready */
 			iface_cnt++;
 		}
