@@ -56,7 +56,7 @@ extern struct mv_ddr_iface *ptr_iface;
 /* Use global varibale to check if i2c initialization done */
 int i2c_init_done = 0;
 
-int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size)
+static int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size)
 {
 	/* For now support DRAM on AP0/AP1 - TODO: add support for all APs */
 	if (ap_id == 0) {
@@ -74,7 +74,7 @@ int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *s
 	return 0;
 }
 
-void plat_dram_iface_set(struct mv_ddr_iface *iface)
+static void plat_dram_iface_set(struct mv_ddr_iface *iface)
 {
 	ptr_iface = iface;
 }
