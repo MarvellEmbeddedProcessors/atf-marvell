@@ -244,7 +244,7 @@ static int marvell_i2c_address_set(uint8_t chain, int command)
 	   ((status != I2C_STATUS_ADDR_W_ACK) && (command == I2C_CMD_WRITE))) {
 		/* only in debug, since in boot we try to read the SPD of both DRAM, and we don't
 		   want error messages in case DIMM doesn't exist. */
-		ERROR("%s: ERROR - status %x addr in %s mode.\n", __func__, status, (command == I2C_CMD_WRITE) ?
+		INFO("%s: ERROR - status %x addr in %s mode.\n", __func__, status, (command == I2C_CMD_WRITE) ?
 				"Write" : "Read");
 		return -EPERM;
 	}
@@ -432,8 +432,10 @@ static int marvell_i2c_unstuck(int ret)
 	do {
 		v = mmio_read_32((uintptr_t)&base->unstuck);
 	} while (v & I2C_UNSTUCK_ONGOING);
+
 	if (v & I2C_UNSTUCK_ERROR) {
 		VERBOSE("failed - soft reset i2c\n");
+		ret = -EPERM;
 	} else {
 		VERBOSE("ok\n");
 		i2c_init(base);
@@ -537,12 +539,14 @@ int i2c_read(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 		ret =  marvell_i2c_stop_bit_set();
 	} while ((ret == -EAGAIN) && (counter < I2C_MAX_RETRY_CNT));
 
-	if (counter == I2C_MAX_RETRY_CNT)
+	if (counter == I2C_MAX_RETRY_CNT) {
 		ERROR("I2C transactions failed, got EAGAIN %d times\n", I2C_MAX_RETRY_CNT);
+		ret = -EPERM;
+	}
 	mmio_write_32((uintptr_t)&base->control, mmio_read_32((uintptr_t)&base->control) | I2C_CONTROL_ACK);
 
 	udelay(1);
-	return 0;
+	return ret;
 }
 
 /*
@@ -598,9 +602,11 @@ int i2c_write(uint8_t chip, uint32_t addr, int alen, uint8_t *buffer, int len)
 		ret = marvell_i2c_stop_bit_set();
 	} while ((ret == -EAGAIN) && (counter < I2C_MAX_RETRY_CNT));
 
-	if (counter == I2C_MAX_RETRY_CNT)
+	if (counter == I2C_MAX_RETRY_CNT) {
 		ERROR("I2C transactions failed, got EAGAIN %d times\n", I2C_MAX_RETRY_CNT);
+		ret = -EPERM;
+	}
 
 	udelay(1);
-	return 0;
+	return ret;
 }
