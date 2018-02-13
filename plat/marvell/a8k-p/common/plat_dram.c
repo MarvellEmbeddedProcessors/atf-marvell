@@ -146,31 +146,32 @@ static void plat_dram_update_topology(uint32_t ap_id, struct mv_ddr_iface *iface
 	struct mv_ddr_topology_map *tm = &iface->tm;
 	int ret;
 
-	if (tm->cfg_src == MV_DDR_CFG_SPD) {
-		/* Initialize I2C of AP-0 to read SPD
-		** need to initialize the I2C once.
-		** */
-		if (i2c_init_done == 0) {
-			/* Configure MPPs to enable i2c */
-			mpp_config();
-			/* Enable I2C on AP0 */
-			i2c_init((void *)MVEBU_AP_I2C_BASE(0));
-			/* Mark done */
-			i2c_init_done = 1;
-		}
-		/* Select SPD memory page to access DRAM configuration */
-		i2c_write(iface->spd_page_sel_addr, 0x0, 1, tm->spd_data.all_bytes, 1);
-		/* Read data from SPD */
-		ret = i2c_read(iface->spd_data_addr, 0x0, 1, tm->spd_data.all_bytes,
-			 sizeof(tm->spd_data.all_bytes));
-		/* Mark the interface as non-existing if the SPD read fails */
-		if (ret < 0) {
-			NOTICE("AP-%d DRAM-%d - EMPTY\n", ap_id, iface->id);
-			iface->state = MV_DDR_IFACE_DNE;
-		} else {
-			INFO("AP-%d DRAM-%d - OK\n", ap_id, iface->id);
-			iface->state = MV_DDR_IFACE_NRDY;
-		}
+	if (tm->cfg_src != MV_DDR_CFG_SPD)
+		return;
+	/* Initialize I2C of AP-0 to read SPD
+	** need to initialize the I2C once.
+	**
+	*/
+	if (i2c_init_done == 0) {
+		/* Configure MPPs to enable i2c */
+		mpp_config();
+		/* Enable I2C on AP0 */
+		i2c_init((void *)MVEBU_AP_I2C_BASE(0));
+		/* Mark done */
+		i2c_init_done = 1;
+	}
+	/* Select SPD memory page to access DRAM configuration */
+	i2c_write(iface->spd_page_sel_addr, 0x0, 1, tm->spd_data.all_bytes, 1);
+	/* Read data from SPD */
+	ret = i2c_read(iface->spd_data_addr, 0x0, 1, tm->spd_data.all_bytes,
+		 sizeof(tm->spd_data.all_bytes));
+	/* Mark the interface as non-existing if the SPD read fails */
+	if (ret < 0) {
+		NOTICE("AP-%d DRAM-%d - EMPTY\n", ap_id, iface->id);
+		iface->state = MV_DDR_IFACE_DNE;
+	} else {
+		INFO("AP-%d DRAM-%d - OK\n", ap_id, iface->id);
+		iface->state = MV_DDR_IFACE_NRDY;
 	}
 }
 
