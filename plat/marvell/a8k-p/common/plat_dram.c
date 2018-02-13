@@ -7,6 +7,9 @@
 
 #include <mmio.h>
 #include <debug.h>
+#include <addr_map.h>
+#include <ccu.h>
+#include <gwin.h>
 #include <plat_def.h>
 #include <plat_dram.h>
 #include <mv_ddr_if.h>
@@ -319,6 +322,49 @@ static void plat_dram_interfaces_update(void)
 	}
 }
 
+static void plat_dram_addr_decode_insert(uint32_t ap_id, uint32_t dram_tgt,
+					struct addr_map_win *gwin_temp_win,
+					struct addr_map_win *ccu_dram_win)
+{
+	const uint32_t ap_cnt = get_ap_count();
+
+	/* Add a single GWIN entry to AP0 for enabling remote APs access
+	 * There is no need to open GWIN on other APs, since only AP0
+	 * is involved at this stage.
+	 */
+	if (ap_id != 0) {
+		gwin_temp_win->base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
+		gwin_temp_win->win_size = AP_DRAM_SIZE(ap_cnt);
+		gwin_temp_win->target_id = ap_id;
+		gwin_temp_win_insert(0, gwin_temp_win, 1);
+	}
+	/* Add CCU window for DRAM access:
+	 * Single DIMM on this AP, CCU target = DRAM 0/1
+	 * Multiple DIMMs on this AP, CCU target = RAR
+	 * The RAR target allows access to both DRAM interfaces
+	 * in parallel, increasing the total memory bandwidth.
+	 */
+	ccu_dram_win->base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
+	ccu_dram_win->win_size = AP_DRAM_SIZE(ap_cnt);
+	ccu_dram_win->target_id = dram_tgt;
+
+	/* Create a memory window with the approriate target in CCU */
+	ccu_dram_win_config(ap_id, ccu_dram_win);
+}
+
+static void plat_dram_addr_decode_remove(uint32_t ap_id,
+					struct addr_map_win *gwin_temp_win,
+					struct addr_map_win *ccu_dram_win)
+{
+	if (ap_id == 0) {
+		ccu_dram_win->win_size = AP0_BOOTROM_DRAM_SIZE;
+		ccu_dram_win_config(0, ccu_dram_win);
+	} else {
+		/* Remove the earlier configured GWIN entry from AP0 */
+		gwin_temp_win_remove(0, gwin_temp_win, 1);
+	}
+}
+
 int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
@@ -332,6 +378,8 @@ int plat_dram_init(void)
 
 	/* Go over DRAM interfaces, run remapping and scrubbing */
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
+		struct addr_map_win gwin_temp_win, ccu_dram_win;
+
 		ap_dram_size = 0;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
@@ -373,6 +421,19 @@ int plat_dram_init(void)
 
 		if (ap_dram_tgt == RAR_TID)
 			plat_dram_rar_mode_set(ap_id);
+
+		/* Open access to AP DRAM and run scrubbing */
+		plat_dram_addr_decode_insert(ap_id, ap_dram_tgt,
+					     &gwin_temp_win, &ccu_dram_win);
+
+		/* Scrub the DRAM for ECC support */
+		dram_scrubbing(ap_id, AP_DRAM_BASE_ADDR(ap_id, ap_cnt), ap_dram_size);
+
+		/* Restore the original DRAM size on AP0 before returning to the BootROM.
+		 * Access to entire DRAM is required only during DDR initialization and scrubbing.
+		 * The correct DRAM size will be set back by init_ccu() at later stage.
+		 */
+		plat_dram_addr_decode_remove(ap_id, &gwin_temp_win, &ccu_dram_win);
 	}
 
 	return 0;

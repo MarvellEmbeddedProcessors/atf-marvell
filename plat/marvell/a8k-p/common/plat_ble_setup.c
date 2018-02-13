@@ -8,94 +8,11 @@
 #include <ap810_setup.h>
 #include <a8kp_plat_def.h>
 #include <debug.h>
-#include <addr_map.h>
-#include <ccu.h>
-#include <gwin.h>
+#include <mmio.h>
 #include <plat_marvell.h>
 #include <plat_def.h>
 #include <plat_dram.h>
-#include <mv_ddr_if.h>
 #include <ap810_init_clocks.h>
-
-static int ble_dram_config(void)
-{
-	const int ap_cnt = get_ap_count();
-	int  iface_id, iface_cnt, ap_id, ap_dram_tgt;
-	uint64_t ap_dram_size, iface_size[DDR_MAX_UNIT_PER_AP];
-	struct addr_map_win gwin_temp_win, ccu_dram_win;
-
-	/* Walk through interconnected APs for the attached memory
-	 * detection and configuration
-	 */
-	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
-		/* Test every interface of the AP memory controller
-		 * for a DIMM presence and its size
-		 */
-		for (iface_id = 0, iface_cnt = 0; iface_id < DDR_MAX_UNIT_PER_AP; iface_id++) {
-			iface_size[iface_id] = ap_dram_iface_info_get(ap_id, iface_id);
-			if (iface_size[iface_id])
-				iface_cnt++;
-		}
-
-		/* Bypass the rest if current AP has no atatched DRAM */
-		if (!iface_cnt)
-			continue;
-
-		/* Add a single GWIN entry to AP0 for enabling remote APs access
-		 * There is no need to open GWIN on other APs, since only AP0
-		 * is involved at this stage.
-		 */
-		if (ap_id != 0) {
-			gwin_temp_win.base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
-			gwin_temp_win.win_size = AP_DRAM_SIZE(ap_cnt);
-			gwin_temp_win.target_id = ap_id;
-			gwin_temp_win_insert(0, &gwin_temp_win, 1);
-		}
-
-		/* Add CCU window for DRAM access:
-		 * Single DIMM on this AP, CCU target = DRAM 0/1
-		 * Multiple DIMMs on this AP, CCU target = RAR
-		 * The RAR target allows access to both DRAM interfaces
-		 * in parallel, increasing the total memory bandwidth.
-		 */
-		if (iface_cnt == 1) {
-			if (iface_size[0]) {
-				ap_dram_tgt = DRAM_0_TID;
-				ap_dram_size = iface_size[0];
-			} else {
-				ap_dram_tgt = DRAM_1_TID;
-				ap_dram_size = iface_size[1];
-			}
-		} else {
-			ap_dram_tgt = RAR_TID;
-			ap_dram_size = iface_size[0] + iface_size[1];
-		}
-		ccu_dram_win.base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
-		ccu_dram_win.win_size = AP_DRAM_SIZE(ap_cnt);
-		ccu_dram_win.target_id = ap_dram_tgt;
-
-		/* Create a memory window with the approriate target in CCU */
-		ccu_dram_win_config(ap_id, &ccu_dram_win);
-
-		/* Scrub the DRAM for ECC support */
-		dram_scrubbing(ap_id, AP_DRAM_BASE_ADDR(ap_id, ap_cnt), ap_dram_size);
-
-		/* Restore the original DRAM size on AP0 before returning to the BootROM.
-		 * Access to entire DRAM is required only during DDR initialization and scrubbing.
-		 * The correct DRAM size will be set back by init_ccu() at later stage.
-		 */
-		if (ap_id == 0) {
-			ccu_dram_win.win_size = AP0_BOOTROM_DRAM_SIZE;
-			ccu_dram_win_config(0, &ccu_dram_win);
-		} else {
-			/* Remove the earlier configured GWIN entry from AP0 */
-			gwin_temp_win_remove(0, &gwin_temp_win, 1);
-		}
-	} /* for every inerconnected AP */
-
-	return 0;
-}
-
 
 /* Read Frequency Value from MPPS 15-17 and save
  * to scratch-pad Register as a temporary solution
@@ -145,8 +62,6 @@ int ble_plat_setup(int *skip)
 
 	/* Trigger DRAM driver initialization */
 	ret = plat_dram_init();
-	if (!ret)
-		ret = ble_dram_config();
 
 	return ret;
 }
