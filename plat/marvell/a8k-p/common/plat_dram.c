@@ -272,15 +272,14 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 	}
 }
 
-int plat_dram_init(void)
+static void plat_dram_interfaces_update(void)
 {
 	struct mv_ddr_iface *iface = NULL;
-	uint32_t ifaces_size, i, ap_id, ret, iface_cnt;
-	uint64_t ap_dram_size;
-	uint32_t ap_dram_tgt = DRAM_0_TID;
+	uint32_t ifaces_size, i, ap_id, iface_cnt;
+	const uint32_t ap_cnt = get_ap_count();
 
 	/* Go over the interfaces, and update the topology */
-	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
 		iface_cnt = 0;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
@@ -296,7 +295,7 @@ int plat_dram_init(void)
 			/* Initialize iface mode with single interface */
 			iface->iface_mode = MV_DDR_RAR_DIS;
 			/* Update base address of interface */
-			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, get_ap_count());
+			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
 			/* Count number of interfaces are ready */
 			iface_cnt++;
 		}
@@ -318,8 +317,21 @@ int plat_dram_init(void)
 			}
 		}
 	}
+}
 
-	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
+int plat_dram_init(void)
+{
+	struct mv_ddr_iface *iface = NULL;
+	uint32_t ifaces_size, i, ap_id, ret;
+	const uint32_t ap_cnt = get_ap_count();
+	uint64_t ap_dram_size;
+	uint32_t ap_dram_tgt = DRAM_0_TID;
+
+	/* Update DRAM topology for all interfaces */
+	plat_dram_interfaces_update();
+
+	/* Go over DRAM interfaces, run remapping and scrubbing */
+	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
 		ap_dram_size = 0;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
