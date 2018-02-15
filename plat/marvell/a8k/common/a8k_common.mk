@@ -39,6 +39,9 @@ MARVELL_COMMON_BASE	:= plat/marvell/common
 
 CALL_DOIMAGE		:= y
 
+# Enable MSS support for a8k family
+MSS_SUPPORT		:= 1
+
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
 
@@ -126,4 +129,4 @@ endif
 endif
 
 # MSS (SCP) build
-include $(PLAT_COMMON_BASE)/mss/mss_common.mk
+include $(PLAT_COMMON_BASE)/mss/mss_a8k.mk

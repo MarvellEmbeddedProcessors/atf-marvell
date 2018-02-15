@@ -38,8 +38,6 @@
 #include <arch_helpers.h> /* for cache maintanance operations */
 #include <platform_def.h>
 #include <delay_timer.h>
-#include <apn806_setup.h>
-#include <cp110_setup.h>
 
 #include <plat_pm_trace.h>
 #include <mss_scp_bootloader.h>
@@ -47,13 +45,10 @@
 #include <mss_mem.h>
 #include <mss_scp_bl2_format.h>
 
-
 #define MSS_DMA_SRCBR(base)		(base + 0xC0)
 #define MSS_DMA_DSTBR(base)		(base + 0xC4)
 #define MSS_DMA_CTRLR(base)		(base + 0xC8)
 #define MSS_M3_RSTCR(base)		(base + 0xFC)
-#define MSS_AEBR(base)			(base + 0x160)
-#define MSS_AIBR(base)			(base + 0x164)
 
 #define MSS_DMA_CTRLR_SIZE_OFFSET	(0)
 #define MSS_DMA_CTRLR_REQ_OFFSET	(15)
@@ -63,14 +58,10 @@
 #define MSS_DMA_CTRLR_ACK_READY		(1)
 #define MSS_M3_RSTCR_RST_OFFSET		(0)
 #define MSS_M3_RSTCR_RST_OFF		(1)
-#define MSS_AEBR_MASK			0xFFF
-#define MSS_AIBR_MASK			0xFFF
 
 #define MSS_DMA_TIMEOUT			1000
 #define MSS_EXTERNAL_SPACE		0x50000000
-#define MSS_EXTERNAL_ACCESS_BIT		28
 #define MSS_EXTERNAL_ADDR_MASK		0xfffffff
-#define MSS_INTERNAL_ACCESS_BIT		28
 
 #define DMA_SIZE			128
 
@@ -79,11 +70,6 @@
 #else
 #define MSS_HANDSHAKE_TIMEOUT		5000
 #endif
-
-/* TODO: Fix this */
-#define AP_MSS_REG_BASE			(MVEBU_REGS_BASE + 0x580000)
-#define CP_MSS_REG_BASE(CP)		(MVEBU_CP_REGS_BASE(CP) + 0x280000)
-
 
 static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
 {
@@ -94,12 +80,7 @@ static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
 						(timeout-- > 0))
 		mdelay(1);
 
-	/*
-	 * Check that the handshake was completed successfully
-	 * Note: since A0 doesn't support MSS load, this check is skipped
-	 */
-	if ((mss_pm_crtl->handshake != MSS_ACKNOWLEDGEMENT) &&
-	    (apn806_rev_id_get() != APN806_REV_ID_A0))
+	if (mss_pm_crtl->handshake != MSS_ACKNOWLEDGEMENT)
 		return -1;
 
 	mss_pm_crtl->handshake = HOST_ACKNOWLEDGEMENT;
@@ -107,8 +88,7 @@ static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
 	return 0;
 }
 
-
-static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
+static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t mss_regs)
 {
 	uint32_t i, loop_num, timeout;
 
@@ -118,16 +98,10 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
 		return 1;
 	}
 
-	NOTICE("Loading MSS image from address 0x%x Size 0x%x to MSS at 0x%x\n",
-	       src_addr, size, (uint32_t)mss_regs);
+	NOTICE("Loading MSS image from address 0x%x Size 0x%x to MSS at 0x%lx\n",
+	       src_addr, size, mss_regs);
 	/* load image to MSS RAM using DMA */
 	loop_num = (size / DMA_SIZE) + (((size & (DMA_SIZE - 1)) == 0) ? 0 : 1);
-
-	/* set AXI External and Internal Address Bus extension */
-	mmio_write_32(MSS_AEBR(mss_regs), ((src_addr >> MSS_EXTERNAL_ACCESS_BIT)
-		      & MSS_AEBR_MASK));
-	mmio_write_32(MSS_AIBR(mss_regs), ((mss_regs >> MSS_INTERNAL_ACCESS_BIT)
-		      & MSS_AIBR_MASK));
 
 	for (i = 0; i < loop_num; i++) {
 		/* write destination and source addresses */
@@ -163,6 +137,8 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
 		}
 	}
 
+	bl2_plat_configure_mss_windows(mss_regs);
+
 	/* Release M3 from reset */
 	mmio_write_32(MSS_M3_RSTCR(mss_regs), (MSS_M3_RSTCR_RST_OFF <<
 		      MSS_M3_RSTCR_RST_OFFSET));
@@ -177,7 +153,7 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t  mss_regs)
  * firmware for AP is dedicated for PM and therefore some additional PM
  * initialization is required
  */
-static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size)
+static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t ap_idx)
 {
 	struct mss_pm_ctrl_block *mss_pm_crtl;
 	int ret;
@@ -212,7 +188,7 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size)
 	/* TODO: add checksum to image */
 	VERBOSE("Send info about the SCP_BL2 image to be transferred to SCP\n");
 
-	ret = mss_image_load(single_img, image_size, AP_MSS_REG_BASE);
+	ret = mss_image_load(single_img, image_size, bl2_plat_get_ap_mss_regs(ap_idx));
 	if (ret != 0) {
 		ERROR("SCP Image load failed\n");
 		return -1;
@@ -229,37 +205,41 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size)
 /* Load CM3 image (single_img) to CM3 pointed by cm3_type */
 static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t image_size)
 {
-	_Bool has_cp1 = 0;
-	int ret;
-
-	if (cp110_device_id_get(MVEBU_CP_REGS_BASE(0)) == MVEBU_80X0_DEV_ID)
-		has_cp1 = 1;
+	int ret, ap_idx;
+	uint32_t ap_count = bl2_plat_get_ap_count();
 
 	switch (cm3_type) {
 	case MSS_AP:
-		NOTICE("Load image to AP MSS\n");
-		ret = mss_ap_load_image(single_img, image_size);
-		if (ret != 0)
-			return ret;
+		for (ap_idx = 0; ap_idx < ap_count; ap_idx++) {
+			NOTICE("Load image to AP%d MSS\n", ap_idx);
+			ret = mss_ap_load_image(single_img, image_size, ap_idx);
+			if (ret != 0)
+				return ret;
+		}
 		break;
 	case MSS_CP0:
-		NOTICE("Load image to CP0 MSS\n");
-		ret = mss_image_load(single_img, image_size, CP_MSS_REG_BASE(0));
-		if (ret != 0) {
-			ERROR("SCP Image load failed\n");
-			return -1;
+		for (ap_idx = 0; ap_idx  < ap_count; ap_idx++) {
+			NOTICE("Load image to CP0 MSS AP%d\n", ap_idx);
+			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, 0));
+			if (ret != 0) {
+				ERROR("SCP Image load failed\n");
+				return -1;
+			}
 		}
 		break;
 	case MSS_CP1:
-		if (!has_cp1) {
-			NOTICE("Skipping MSS CP1 related image\n");
-			break;
-		}
-		NOTICE("Load image to CP1 MSS\n");
-		ret = mss_image_load(single_img, image_size, CP_MSS_REG_BASE(1));
-		if (ret != 0) {
-			ERROR("SCP Image load failed\n");
-			return -1;
+		for (ap_idx = 0; ap_idx < ap_count; ap_idx++) {
+			if (bl2_plat_get_cp_count(ap_idx) == 1) {
+				NOTICE("Skipping MSS CP1 related image\n");
+				break;
+			}
+
+			NOTICE("Load image to CP1 MSS AP%d\n", ap_idx);
+			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, 1));
+			if (ret != 0) {
+				ERROR("SCP Image load failed\n");
+				return -1;
+			}
 		}
 		break;
 	case MG_CP0:
@@ -267,10 +247,6 @@ static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t i
 		NOTICE("Load image to CP0 MG not supported\n");
 		break;
 	case MG_CP1:
-		if (!has_cp1) {
-			NOTICE("Skipping MG CP1 related image\n");
-			break;
-		}
 		/* TODO: */
 		NOTICE("Load image to CP1 MG not supported\n");
 		break;

@@ -40,9 +40,21 @@
 #include <platform_def.h>
 #include <ccu.h>
 #include <mmio.h>
+#include <cp110_setup.h>
 
 /* IO windows configuration */
 #define IOW_GCR_OFFSET		(0x70)
+
+/* MSS windows configuration */
+#define MSS_AEBR(base)			(base + 0x160)
+#define MSS_AIBR(base)			(base + 0x164)
+#define MSS_AEBR_MASK			0xFFF
+#define MSS_AIBR_MASK			0xFFF
+
+#define MSS_EXTERNAL_SPACE		0x50000000
+#define MSS_EXTERNAL_ACCESS_BIT		28
+#define MSS_EXTERNAL_ADDR_MASK		0xfffffff
+#define MSS_INTERNAL_ACCESS_BIT		28
 
 struct addr_map_win ccu_mem_map[] = {
 #if !PALLADIUM
@@ -119,4 +131,40 @@ int bl2_plat_handle_scp_bl2(image_info_t *scp_bl2_image_info)
 		ERROR("BL2: SCP_BL2 transfer failure\n");
 
 	return ret;
+}
+
+uintptr_t bl2_plat_get_cp_mss_regs(int ap_idx, int cp_idx)
+{
+	return MVEBU_CP_REGS_BASE(cp_idx) + 0x280000;
+}
+
+uintptr_t bl2_plat_get_ap_mss_regs(int ap_idx)
+{
+	return MVEBU_REGS_BASE + 0x580000;
+}
+
+uint32_t bl2_plat_get_cp_count(int ap_idx)
+{
+	/* A8040: two CPs.
+	 * A7040: one CP.
+	 */
+	if (cp110_device_id_get(MVEBU_CP_REGS_BASE(0)) == MVEBU_80X0_DEV_ID)
+		return 2;
+	else
+		return 1;
+}
+
+uint32_t bl2_plat_get_ap_count(void)
+{
+	/* A8040 and A7040 have only one AP */
+	return 1;
+}
+
+void bl2_plat_configure_mss_windows(uintptr_t mss_regs)
+{
+	/* set AXI External and Internal Address Bus extension */
+	mmio_write_32(MSS_AEBR(mss_regs),
+		      ((0x0 >> MSS_EXTERNAL_ACCESS_BIT) & MSS_AEBR_MASK));
+	mmio_write_32(MSS_AIBR(mss_regs),
+		      ((mss_regs >> MSS_INTERNAL_ACCESS_BIT) & MSS_AIBR_MASK));
 }
