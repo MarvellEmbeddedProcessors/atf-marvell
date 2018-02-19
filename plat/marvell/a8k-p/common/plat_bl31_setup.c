@@ -67,6 +67,8 @@ enum axi_attr {
 
 uint32_t stream_id = 0xA0;
 
+static _Bool pm_fw_running;
+
 /* Initialize the CP110 in all APs */
 static void cp110_die_init(void)
 {
@@ -407,6 +409,11 @@ static void ap810_bl31_init(void)
 	ap810_generic_timer_init();
 
 	debug_exit();
+}
+
+_Bool is_pm_fw_running(void)
+{
+	return pm_fw_running;
 }
 
 /* This function overruns the same function in marvell_bl31_setup.c */
