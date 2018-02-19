@@ -158,6 +158,10 @@
 #define DOMAIN_OUTER_SHAREABLE			0x2
 #define DOMAIN_SYSTEM_SHAREABLE			0x3
 
+/* AP definitions */
+#define AP810_MAX_AP_NUM			PLAT_MARVELL_NORTHB_COUNT
+#define AP810_MAX_AP_MASK			0xf
+
 /*************************************************************************
  * Required platform porting definitions common to all
  * Mangement Compute SubSystems (MSS)
