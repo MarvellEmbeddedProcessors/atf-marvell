@@ -14,6 +14,9 @@ MARVELL_COMMON_BASE	:= plat/marvell/common
 
 CALL_DOIMAGE		:= y
 
+# Enable MSS support for a8kp family
+MSS_SUPPORT		:= 1
+
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
 
@@ -98,3 +101,6 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S			\
 # from Old Platform APIs to the new APIs).
 # It is not needed since Marvell platform already used the new platform APIs.
 ENABLE_PLAT_COMPAT	:= 	0
+
+# MSS (SCP) build
+include $(PLAT_COMMON_BASE)/mss/mss_a8kp.mk

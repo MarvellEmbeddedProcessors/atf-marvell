@@ -33,6 +33,7 @@ const mmap_region_t plat_marvell_mmap[] = {
 const mmap_region_t plat_marvell_mmap[] = {
 	MARVELL_MAP_SHARED_RAM,
 	MAP_AP_CFG,
+	MAP_AP_IO,
 	MARVELL_MAP_DRAM,
 	{0}
 };
