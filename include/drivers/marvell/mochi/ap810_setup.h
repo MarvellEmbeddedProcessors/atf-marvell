@@ -10,7 +10,6 @@
 
 void ap810_init(void);
 void ap810_ble_init(void);
-void ap810_addr_decode_init(void);
 int get_ap_count(void);
 int get_connected_cp_per_ap(int);
 int get_static_cp_per_ap(int);

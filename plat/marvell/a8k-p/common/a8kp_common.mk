@@ -60,36 +60,39 @@ BLE_SOURCES		+=	$(MARVELL_COMMON_BASE)/pci_ep_setup.c	 \
 				$(MARVELL_DRV_BASE)/pcie-comphy-cp110.c
 endif
 
-ifeq (${PALLADIUM}, 1)
-BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/plat_bl1_setup.c
-endif
+MARVELL_BL1_DRV		:= 	$(MARVELL_DRV_BASE)/ccu.c		\
+				$(MARVELL_DRV_BASE)/gwin.c		\
+				$(MARVELL_DRV_BASE)/iob.c		\
+				$(MARVELL_DRV_BASE)/io_win.c		\
+				$(MARVELL_DRV_BASE)/mci.c
 
-BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
-				lib/cpus/aarch64/cortex_a72.S
-
-MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/io_win.c	\
-				$(MARVELL_DRV_BASE)/iob.c	\
-				$(MARVELL_DRV_BASE)/mci.c	\
-				$(MARVELL_DRV_BASE)/amb_adec.c	\
-				$(MARVELL_DRV_BASE)/ccu.c	\
-				$(MARVELL_DRV_BASE)/icu.c       \
-				$(MARVELL_DRV_BASE)/gwin.c	\
-				$(MARVELL_DRV_BASE)/cache_llc.c
+MARVELL_BL31_DRV	:=	$(MARVELL_DRV_BASE)/amb_adec.c		\
+				$(MARVELL_DRV_BASE)/cache_llc.c 	\
+				$(MARVELL_DRV_BASE)/icu.c		\
+				$(MARVELL_DRV_BASE)/iob.c
 
 MARVELL_MOCHI_DRV	:=	$(MARVELL_DRV_BASE)/mochi/ap810_setup.c \
 				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
 
-BL31_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
+PORTING_SOURCES		:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
-BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S		       \
-				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S     \
-				$(PLAT_COMMON_BASE)/aarch64/plat_arch_config.c \
-				$(PLAT_COMMON_BASE)/plat_pm.c		       \
-				$(PLAT_COMMON_BASE)/plat_bl31_setup.c	       \
-				$(BL31_PORTING_SOURCES)			       \
-				$(MARVELL_DRV)				       \
-				$(MARVELL_MOCHI_DRV)			       \
-				$(MARVELL_GICV3_SOURCES)
+BL1_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S			\
+				$(PLAT_COMMON_BASE)/aarch64/plat_arch_config.c	\
+				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S	\
+				$(PLAT_COMMON_BASE)/plat_bl1_setup.c		\
+				$(MARVELL_BL1_DRV)				\
+				$(MARVELL_MOCHI_DRV)				\
+				$(PORTING_SOURCES)
+
+BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S			\
+				$(PLAT_COMMON_BASE)/aarch64/plat_arch_config.c	\
+				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S	\
+				$(PLAT_COMMON_BASE)/plat_bl31_setup.c		\
+				$(PLAT_COMMON_BASE)/plat_pm.c			\
+				$(MARVELL_BL31_DRV)				\
+				$(MARVELL_GICV3_SOURCES)			\
+				$(MARVELL_MOCHI_DRV)				\
+				$(PORTING_SOURCES)
 
 # Disable the PSCI platform compatibility layer (allows porting
 # from Old Platform APIs to the new APIs).

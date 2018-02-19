@@ -10,9 +10,6 @@
 #include <plat_def.h>
 #include <mmio.h>
 #include <ap810_setup.h>
-#include <io_win.h>
-#include <ccu.h>
-#include <gwin.h>
 #include <cache_llc.h>
 #include <debug.h>
 #include <types.h>
@@ -618,24 +615,6 @@ void ap810_generic_timer_init(void)
 #endif
 	} else {
 		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
-	}
-
-	debug_exit();
-}
-
-void ap810_addr_decode_init(void)
-{
-	int ap_id;
-
-	debug_enter();
-
-	for (ap_id = 0; ap_id < get_ap_count(); ap_id++) {
-		/* configure IO-WIN windows */
-		init_io_win(ap_id);
-		/* configure GWIN windows */
-		init_gwin(ap_id);
-		/* configure CCU windows */
-		init_ccu(ap_id);
 	}
 
 	debug_exit();
