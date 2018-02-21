@@ -42,7 +42,7 @@ int ble_plat_setup(int *skip)
 
 #if !PALLADIUM
 	/* SW WA for AP link bring-up over JTAG connection */
-	if ((get_ap_count() != 1) &&
+	if ((ap810_get_ap_count() != 1) &&
 	    (ap810_rev_id_get(0) == 0))
 		jtag_init_ihb_dual_ap();
 #endif
@@ -55,7 +55,7 @@ int ble_plat_setup(int *skip)
 	ap810_enumeration_algo();
 
 	/* init clocks for single AP */
-	ap810_clocks_init(get_ap_count());
+	ap810_clocks_init(ap810_get_ap_count());
 
 	/* TODO: need to check if need early cpu powerdown */
 

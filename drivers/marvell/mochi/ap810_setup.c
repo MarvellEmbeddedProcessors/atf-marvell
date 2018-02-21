@@ -58,7 +58,7 @@ void ap810_enumeration_algo(void)
 	int ap_id;
 
 	/* In case of single AP, no need to configure MRI-xbar */
-	if (get_ap_count() == 1)
+	if (ap810_get_ap_count() == 1)
 		return;
 
 	debug_enter();
@@ -99,10 +99,10 @@ void ap810_enumeration_algo(void)
 	 *      AP0.PORT0_ROUTING0: {3,0}
 	 *      AP1.PORT0_ROUTING0: {0,1}
 	 */
-	if (get_ap_count() == 2) {
+	if (ap810_get_ap_count() == 2) {
 		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(0, 0), 0x30);
 		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(1, 0), 0x1);
-	} else if (get_ap_count() == 4) {
+	} else if (ap810_get_ap_count() == 4) {
 		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(0, 0), 0x1340);
 		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(1, 0), 0x1302);
 		mmio_write_32(MRI_XBAR_PORTx_ROUTING0(2, 0), 0x4013);
@@ -113,10 +113,10 @@ void ap810_enumeration_algo(void)
 	mmio_write_32(CCU_B_LTC_CR(0), reg);
 
 	/* Test AP access */
-	if (get_ap_count() == 2) {
+	if (ap810_get_ap_count() == 2) {
 		/* Read status from AP1 */
 		INFO("Test AP1: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(1, 0)));
-	} else if (get_ap_count() == 4) {
+	} else if (ap810_get_ap_count() == 4) {
 		/* Read status from AP1 */
 		INFO("Test AP1: 0x%x\n", mmio_read_32(MRI_XBAR_PORTx_ROUTING0(1, 0)));
 		/* Read status from AP2 */
@@ -126,7 +126,7 @@ void ap810_enumeration_algo(void)
 	}
 
 	/* Update AP-ID of every AP die in the system */
-	for (ap_id = 0; ap_id < get_ap_count(); ap_id++)
+	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++)
 		mmio_write_32(MVEBU_CCU_GUID(ap_id), ap_id);
 	debug_exit();
 }
@@ -135,7 +135,7 @@ void ap810_enumeration_algo(void)
  * ports connected to AP0. For now assume
  * that AP0 is connected to all the APs in the system
  */
-int get_ap_count(void)
+int ap810_get_ap_count(void)
 {
 	uint32_t reg;
 	int count;
@@ -166,9 +166,9 @@ int get_ap_count(void)
  * This CP count is defined by CP_NUM set during the compilation
  * time and dynamically detected number of interconnected APs
  */
-int get_static_cp_per_ap(int ap_id)
+int ap810_get_cp_per_ap_static_cnt(int ap_id)
 {
-	const int ap_count = get_ap_count();
+	const int ap_count = ap810_get_ap_count();
 	int cps_per_ap_id = CP110_DIE_NUM / ap_count;
 	int reminder = CP110_DIE_NUM % ap_count;
 
@@ -185,7 +185,7 @@ int get_static_cp_per_ap(int ap_id)
 	return cps_per_ap_id;
 }
 
-int get_connected_cp_per_ap(int ap_id)
+int ap810_get_cp_per_ap_cnt(int ap_id)
 {
 	int mci_id, cp_per_ap = 0;
 	uint32_t reg;
@@ -221,8 +221,8 @@ int get_connected_cp_per_ap(int ap_id)
 	 * when early initialization stages processed lower number of CPs
 	 * then the number of CPs actually detected on system.
 	 */
-	if (cp_per_ap > get_static_cp_per_ap(ap_id)) {
-		cp_per_ap = get_static_cp_per_ap(ap_id);
+	if (cp_per_ap > ap810_get_cp_per_ap_static_cnt(ap_id)) {
+		cp_per_ap = ap810_get_cp_per_ap_static_cnt(ap_id);
 		INFO("Limiting AP-%d CPs number to %d (CP_NUM=%d)\n", ap_id, cp_per_ap, CP110_DIE_NUM);
 	}
 
@@ -245,7 +245,7 @@ void ap810_setup_banked_rgf(int ap_id)
 	 * Open access for all IO & proccess stops, because MC & SG
 	 * stop can't start transcations to another ring
 	 */
-	val = AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - get_ap_count());
+	val = AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - ap810_get_ap_count());
 	for (stop = 0; stop < AP810_S_END; stop++) {
 		switch (stop) {
 		case AP810_S0_SMC0:
