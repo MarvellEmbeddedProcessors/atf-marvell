@@ -49,7 +49,10 @@ int ble_plat_setup(int *skip)
 
 	ble_read_cpu_freq();
 
-	ap810_ble_init();
+	/* Initialize the enumeration algorithm in BLE stage to
+	 * enable access to another APs.
+	 */
+	ap810_enumeration_algo();
 
 	/* init clocks for single AP */
 	ap810_clocks_init(get_ap_count());

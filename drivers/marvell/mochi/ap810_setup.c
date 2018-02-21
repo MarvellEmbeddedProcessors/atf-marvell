@@ -52,7 +52,7 @@ int g_ap_count = -1;
 int g_cp_per_ap[] = {-1, -1, -1, -1};
 
 /* Configure access between AP, use static configuration */
-static void ap810_enumeration_algo(void)
+void ap810_enumeration_algo(void)
 {
 	uint32_t reg;
 	int ap_id;
@@ -268,12 +268,4 @@ int ap810_rev_id_get(int ap_index)
 	return (mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG(ap_index)) >>
 		GWD_IIDR2_REV_ID_OFFSET) &
 		GWD_IIDR2_REV_ID_MASK;
-}
-
-void ap810_ble_init(void)
-{
-	/* Initialize the enumeration alogethim in BLE stage to
-	** enable access to another APs
-	** */
-	ap810_enumeration_algo();
 }
