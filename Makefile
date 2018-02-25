@@ -590,6 +590,15 @@ else
 endif
 
 ################################################################################
+# Include BL specific makefiles
+################################################################################
+
+ifdef BLE_SOURCES
+NEED_BLE := yes
+include ble/ble.mk
+endif
+
+################################################################################
 # Build targets
 ################################################################################
 
@@ -607,6 +616,10 @@ ifeq (${ERROR_DEPRECATED},0)
 endif
 
 # Expand build macros for the different images
+ifeq (${NEED_BLE},yes)
+$(if ${BLE}, ,$(eval $(call MAKE_BL,e)))
+endif
+
 ifeq (${NEED_BL1},yes)
 $(eval $(call MAKE_BL,1))
 endif
