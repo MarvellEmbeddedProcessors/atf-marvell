@@ -63,6 +63,17 @@
 #define MSS_WIN1_CR_ADDR_MASK		0x3f000000
 #define MSS_WIN1_CR_REMAP_ADDR_OFFSET	20
 
+#define GP_LOG_REG_0			0x6F43E0
+
+static void bl2_store_num_of_cps(void)
+{
+	int i;
+
+	for (i = 0; i < ap810_get_ap_count(); i++)
+		mmio_write_32(MVEBU_REGS_BASE_AP(i) + GP_LOG_REG_0,
+			      ap810_get_cp_per_ap_cnt(i));
+}
+
 static void bl2_plat_mss_remap(void)
 {
 	int i;
@@ -98,6 +109,9 @@ int bl2_plat_handle_scp_bl2(image_info_t *scp_bl2_image_info)
 
 	/* Remap MSS */
 	bl2_plat_mss_remap();
+
+	/* Store num of CPs for MSS use */
+	bl2_store_num_of_cps();
 
 	ret = scp_bootloader_transfer((void *)scp_bl2_image_info->image_base,
 		scp_bl2_image_info->image_size);
