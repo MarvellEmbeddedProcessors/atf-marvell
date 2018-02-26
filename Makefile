@@ -21,6 +21,8 @@ MAKEOVERRIDES =
 MAKE_HELPERS_DIRECTORY := make_helpers/
 include ${MAKE_HELPERS_DIRECTORY}build_macros.mk
 include ${MAKE_HELPERS_DIRECTORY}build_env.mk
+include tools/doimage/doimage.mk
+include version.mk
 
 ################################################################################
 # Default values for build configurations, and their dependencies
@@ -99,7 +101,7 @@ endif
 ifeq (${BUILD_STRING},)
         BUILD_STRING	:=	$(shell git describe --always --dirty --tags 2> /dev/null)
 endif
-VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${BUILD_STRING}
+VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${SUBVERSION}:${BUILD_STRING}
 
 # The cert_create tool cannot generate certificates individually, so we use the
 # target 'certificates' to create them all
@@ -683,6 +685,7 @@ clean:
 	$(call SHELL_REMOVE_DIR,${BUILD_PLAT})
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 realclean distclean:
 	@echo "  REALCLEAN"
@@ -690,6 +693,7 @@ realclean distclean:
 	$(call SHELL_DELETE_ALL, ${CURDIR}/cscope.*)
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 checkcodebase:		locate-checkpatch
 	@echo "  CHECKING STYLE"
@@ -767,6 +771,11 @@ fwu_fip: ${BUILD_PLAT}/${FWU_FIP_NAME}
 .PHONY: ${FIPTOOL}
 ${FIPTOOL}:
 	${Q}${MAKE} CPPFLAGS="-DVERSION='\"${VERSION_STRING}\"'" --no-print-directory -C ${FIPTOOLPATH}
+
+.PHONY: ${DOIMAGETOOL}
+${DOIMAGETOOL}:
+	@$(DOIMAGE_LIBS_CHECK)
+	${Q}${MAKE} --no-print-directory -C ${DOIMAGEPATH} WTMI_IMG=$(WTMI_IMG)
 
 cscope:
 	@echo "  CSCOPE"
