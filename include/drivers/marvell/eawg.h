@@ -4,11 +4,10 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-
-#include <mmio.h>
-
 #ifndef _EAWG_H_
 #define _EAWG_H_
+
+#include <stdint.h>
 
 #define MAX_TRANSACTIONS	48
 #define PRIMARY_CPU_TRANS	1

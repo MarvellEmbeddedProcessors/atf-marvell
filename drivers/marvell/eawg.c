@@ -6,10 +6,11 @@
  */
 
 #include <eawg.h>
-#include <stdio.h>
-#include <plat_def.h>
 #include <delay_timer.h>
 #include <debug.h>
+#include <mmio.h>
+#include <stdio.h>
+#include <plat_def.h>
 
 #define EAWG_BASE_REGS(ap)		MVEBU_AR_RFU_BASE(ap) + 0x6000
 #define EAWG_WRITE_ADDR_REG(ap)		(EAWG_BASE_REGS(ap) + 0x0)

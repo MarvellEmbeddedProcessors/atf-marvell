@@ -5,14 +5,15 @@
  * https://spdx.org/licenses
  */
 
-#include <eawg.h>
 #include <ap810_aro.h>
 #include <ap810_setup.h>
 #include <ap810_init_clocks.h>
-#include <plat_def.h>
-#include <stdio.h>
+#include <eawg.h>
 #include <errno.h>
 #include <debug.h>
+#include <mmio.h>
+#include <plat_def.h>
+#include <stdio.h>
 
 /* PLL's registers with local base address since each AP has its own EAWG*/
 #define PLL_RING_ADDRESS	(MVEBU_DFX_SAR_LOCAL_AP + 0x2F0)

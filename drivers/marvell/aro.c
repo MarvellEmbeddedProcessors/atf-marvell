@@ -32,13 +32,13 @@
 ***************************************************************************
 */
 
-#include <plat_def.h>
-#include <debug.h>
-#include <mmio.h>
 #include <aro.h>
+#include <debug.h>
+#include <delay_timer.h>
+#include <mmio.h>
 #include <mvebu.h>
 #include <plat_config.h>
-#include <delay_timer.h>
+#include <plat_def.h>
 
 #define CPU_ARO_CTRL_BASE		MVEBU_REGS_BASE + (0x6F8D00)
 #define SAR_REG_ADDR			MVEBU_REGS_BASE + 0x6f4400
@@ -342,5 +342,3 @@ int init_aro(void)
 
 	return 0;
 }
-
-

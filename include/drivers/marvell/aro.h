@@ -35,8 +35,6 @@
 #ifndef _ARO_H_
 #define _ARO_H_
 
-#include <stdint.h>
-
 enum hws_freq {
 	CPU_FREQ_2000,
 	CPU_FREQ_1800,
@@ -74,4 +72,3 @@ enum cpu_clock_freq_mode {
 int init_aro(void);
 
 #endif /* _ARO_H_ */
-
