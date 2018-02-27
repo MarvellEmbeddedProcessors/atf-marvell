@@ -38,6 +38,6 @@ Mandatory structures:
 	  - Attribute of the window
 
 Examples:
-	struct amb_win amb_memory_map[] = {
+	struct addr_map_win amb_memory_map[] = {
 		{0xf900,	AMB_DEV_CS0_ID},
 	};

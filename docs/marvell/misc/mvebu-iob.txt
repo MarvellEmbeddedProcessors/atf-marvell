@@ -14,11 +14,9 @@ Mandatory functions:
 
 Mandatory structures:
 	iob_memory_map - Array that include the configuration of the windows
-	  every window/entry is a struct which has 5 parameters:
-	  - High base address of the window
-	  - Low base address of the window
-	  - High size of the window
-	  - Low size of the window
+	  every window/entry is a struct which has 3 parameters:
+	  - Base address of the window
+	  - Size of the window
 	  - Target-ID of the window
 
 Target ID options:
@@ -31,22 +29,10 @@ Target ID options:
 	- 0x6 = RUNIT (NOR/SPI/BootRoom)
 	- 0x7 = MCI1
 
-Note: if the base address is more than 32 bits, it divided into high and low.
-	The same goes for the Size field, if it more that 32 bits, it divided into
-	high and low.
-	Base example:
-		base address: 0x10f0000000 should divided into:
-		base address high: 0x10
-		base address low: 0xf0000000
-	Size example:
-		size: 0x1E00F00000 should divided into:
-		size high: 0x1E
-		size low: 0x00F00000
-
 Example:
-	struct iob_win iob_memory_map[] = {
-		{0x0,	0xf7000000,	0x0,	0x1000000,	PEX1_TID}, /* PEX1_X1 window */
-		{0x0,	0xf8000000,	0x0,	0x1000000,	PEX2_TID}, /* PEX2_X1 window */
-		{0x0,	0xf6000000,	0x0,	0x1000000,	PEX0_TID}, /* PEX0_X4 window */
-		{0x0,	0xf9000000,	0x0,	0x1000000,	NAND_TID}  /* NAND window */
+	struct addr_map_win iob_memory_map[] = {
+		{0x00000000f7000000,	0x0000000001000000,	PEX1_TID}, /* PEX1_X1 window */
+		{0x00000000f8000000,	0x0000000001000000,	PEX2_TID}, /* PEX2_X1 window */
+		{0x00000000f6000000,	0x0000000001000000,	PEX0_TID}, /* PEX0_X4 window */
+		{0x00000000f9000000,	0x0000000001000000,	NAND_TID}  /* NAND window */
 	};

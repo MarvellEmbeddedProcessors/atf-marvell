@@ -10,26 +10,12 @@ Mandatory functions:
 
 Mandatory structures:
 	ccu_memory_map - Array that includes the configuration of the windows
-	  every window/entry is a struct which has 5 parameters:
-	  - High base address of the window
-	  - Low base address of the window
-	  - High size of the window
-	  - Low size of the window
+	  every window/entry is a struct which has 3 parameters:
+	  - Base address of the window
+	  - Size of the window
 	  - Target-ID of the window
 
-Note: if the base address is more than 32 bits, it should be divided into high and low.
-	The same goes for the Size field. If it is larger than 32 bits, it is divided into
-	high and low.
-	Base example:
-		base address: 0x10f0000000 should be divided into:
-		base address high: 0x10
-		base address low: 0xf0000000
-	Size example:
-		size: 0x1E00F00000 should be divided into:
-		size high: 0x1E
-		size low: 0x00F00000
-
 Example:
-	struct ccu_win ccu_memory_map[] = {
-		{0x0,   0xf2000000,     0x0,    0xe000000,      IO_0_TID}, /* IO window */
+	struct addr_map_win ccu_memory_map[] = {
+		{0x00000000f2000000,     0x00000000e000000,      IO_0_TID}, /* IO window */
 	};

@@ -20,28 +20,14 @@ Mandatory functions:
 
 Mandatory structures:
 	io_win_memory_map - Array that include the configuration of the windows
-	  every window/entry is a struct which has 5 parameters:
-	  - High base address of the window
-	  - Low base address of the window
-	  - High size of the window
-	  - Low size of the window
+	  every window/entry is a struct which has 3 parameters:
+	  - Base address of the window
+	  - Size of the window
 	  - Target-ID of the window
 
-Note: if the base address is more than 32 bits, it divided into high and low.
-	The same goes for the Size field, if it more that 32 bits, is divided into
-	high and low.
-	Base example:
-		base address: 0x10f0000000 should divided into:
-		base address high: 0x10
-		base address low: 0xf0000000
-	Size example:
-		size: 0x1E00F00000 should divided into:
-		size high: 0x1E
-		size low: 0x00F00000
-
 Example:
-	struct io_win io_win_memory_map[] = {
-		{0x0,	0xfe000000,	0x0,	0x1f00000,	PCIE_PORT_TID}, /* PCIe window 31Mb for PCIe port*/
-		{0x0,	0xffe00000,	0x0,	0x100000,	PCIE_REGS_TID}, /* PCI-REG window 64Kb for PCIe-reg*/
-		{0x0,	0xf6000000,	0x0,	0x100000,	MCIPHY_TID},	/* MCI window  1Mb for PHY-reg*/
+	struct addr_map_win io_win_memory_map[] = {
+		{0x00000000fe000000,	0x000000001f00000,	PCIE_PORT_TID}, /* PCIe window 31Mb for PCIe port*/
+		{0x00000000ffe00000,	0x000000000100000,	PCIE_REGS_TID}, /* PCI-REG window 64Kb for PCIe-reg*/
+		{0x00000000f6000000,	0x000000000100000,	MCIPHY_TID},	/* MCI window  1Mb for PHY-reg*/
 	};
