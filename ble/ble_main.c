@@ -32,10 +32,8 @@
 ***************************************************************************
 */
 
-#include <arch_helpers.h>
 #include <debug.h>
 #include <console.h>
-#include <mmio.h>
 #include <platform_def.h>
 #include <plat_marvell.h>
 #include <plat_private.h>
