@@ -137,6 +137,9 @@ func console_16550_core_putc
 #if ENABLE_ASSERTIONS
 	cmp	x1, #0
 	ASM_ASSERT(ne)
+#else
+	/* Ignore uninitialized console operations */
+	cbz	x1, putc_error
 #endif /* ENABLE_ASSERTIONS */
 
 	/* Prepend '\r' to '\n' */
@@ -156,6 +159,9 @@ func console_16550_core_putc
 	cmp	w2, #(UARTLSR_TEMT | UARTLSR_THRE)
 	b.ne	2b
 	str	w0, [x1, #UARTTX]
+	ret
+putc_error:
+	mov	w0, #-1
 	ret
 endfunc console_16550_core_putc
 
@@ -192,6 +198,9 @@ func console_16550_core_getc
 #if ENABLE_ASSERTIONS
 	cmp	x0, #0
 	ASM_ASSERT(ne)
+#else
+	/* Ignore uninitialized console operations */
+	cbz	x0, no_char
 #endif /* ENABLE_ASSERTIONS */
 
 	/* Check if the receive FIFO is empty */
