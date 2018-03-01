@@ -205,6 +205,23 @@ enum ccu_target_ids {
 	CCU_MAX_TID,
 	INVALID_TID     = 0xFF
 };
+
+/* define AP810 stops */
+enum ap810_stations {
+	AP810_S0_SMC0 = 0,	/* Stop memory contoler 0 */
+	AP810_S0_SIO0,		/* Stop IO 0 */
+	AP810_S0_SIO1,		/* Stop IO 1 */
+	AP810_S0_SMC1,		/* Stop memory contoler 1 */
+	AP810_S0_SP0,		/* Stop proccessor 0 */
+	AP810_S0_SP1,		/* Stop proccessor 1 */
+	AP810_S0_SP2,		/* Stop proccessor 2 */
+	AP810_S0_SP3,		/* Stop proccessor 3 */
+	AP810_S0_SMC2,		/* Stop memory contoler 2 */
+	AP810_S0_SG,		/* Stop general */
+	AP810_S0_SIO2,		/* Stop IO 2 */
+	AP810_S_END,
+};
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* __MVEBU_A8K_DEF_H__ */

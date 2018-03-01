@@ -14,6 +14,10 @@
 #include <debug.h>
 #include <marvell_pm.h>
 
+#define CCU_ROUT_OPT_DIS(ap, stop)		(MVEBU_A2_BANKED_STOP_BASE(ap, stop) + 0x8)
+#define CCU_SFWD_UL_AC_EN_OFFSET		9
+#define CCU_SFWD_PT_AC_EN_OFFSET		1
+
 #define SMMU_S_ACR(ap)				(MVEBU_SMMU_BASE(ap) + 0x10)
 #define SMMU_S_ACR_PG_64K			(1 << 16)
 
@@ -182,11 +186,26 @@ static void ap810_axi_attr_init(int ap)
 static void ap810_init_aurora2(int ap_id)
 {
 	unsigned int reg;
+	int stop;
 
 	debug_enter();
 
 	/* Open access to another AP configuration */
 	ap810_setup_banked_rgf(ap_id);
+
+	/*
+	 * For now - it's relevant for A0 only, they may change the
+	 * default configuration for B0
+	 */
+	if (!ap810_rev_id_get(ap_id)) {
+		/* Enable store-and-forward buffer & up-link */
+		for (stop = 0; stop < AP810_S_END; stop++) {
+			reg = mmio_read_32(CCU_ROUT_OPT_DIS(ap_id, stop));
+			reg &= ~((1 << CCU_SFWD_UL_AC_EN_OFFSET) | (1 << CCU_SFWD_PT_AC_EN_OFFSET));
+			reg |= ((1 << CCU_SFWD_UL_AC_EN_OFFSET) | (1 << CCU_SFWD_PT_AC_EN_OFFSET));
+			mmio_write_32(CCU_ROUT_OPT_DIS(ap_id, stop), reg);
+		}
+	}
 
 	/* Enable CPU control over SPMU registers */
 	reg = mmio_read_32(MVEBU_CCU_GSPMU_CR(ap_id));
