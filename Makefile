@@ -46,6 +46,22 @@ ARO_ENABLE			:= 0
 LLC_DISABLE			:= 0
 # Make non-trusted image by default
 MARVELL_SECURE_BOOT	:= 	0
+# Enable end point only for 7040 PCAC
+ifeq ($(PLAT),$(filter $(PLAT),a70x0_pcac))
+PCI_EP_SUPPORT			:= 1
+else
+PCI_EP_SUPPORT			:= 0
+endif
+ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
+PCI_EP_SUPPORT			:= 1
+endif
+
+# Disable BL31 cache for Power-Managment
+ifeq ($(PLAT),$(filter $(PLAT),a70x0))
+BL31_CACHE_DISABLE		:= 1
+else
+BL31_CACHE_DISABLE		:= 0
+endif
 
 ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
 ifeq (${PALLADIUM},1)
@@ -517,7 +533,12 @@ endif
 #*********** A8K *************
 DOIMAGEPATH		?=	tools/doimage
 DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
+
+ifeq ($(findstring a80x0,${PLAT}),)
+DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_7K.cfg
+else
 DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_8K.cfg
+endif # PLAT == a8K/a7K
 
 ifeq (${MARVELL_SECURE_BOOT},1)
 DOIMAGE_SEC_FLAGS := -c $(DOIMAGE_SEC)
@@ -594,6 +615,7 @@ $(eval $(call assert_numeric,ARM_ARCH_MAJOR))
 $(eval $(call assert_numeric,ARM_ARCH_MINOR))
 
 $(eval $(call assert_boolean,MARVELL_SECURE_BOOT))
+$(eval $(call assert_boolean,PCI_EP_SUPPORT))
 
 ################################################################################
 # Add definitions to the cpp preprocessor based on the current build options.
@@ -658,6 +680,7 @@ endif
 $(eval $(call add_define,PALLADIUM))
 $(eval $(call add_define,ARO_ENABLE))
 $(eval $(call add_define,LLC_DISABLE))
+$(eval $(call add_define,PCI_EP_SUPPORT))
 $(eval $(call add_define,CP_NUM))
 $(eval $(call add_define,BL31_CACHE_DISABLE))
 
