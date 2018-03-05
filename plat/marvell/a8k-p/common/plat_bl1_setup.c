@@ -415,9 +415,12 @@ void bl1_plat_arch_setup(void)
 
 	plat_delay_timer_init();
 
+	/* No need to run MCI WA for palladium */
+#if !PALLADIUM
 	/* Re-init MCI connection due bug in Armada-8k-plus */
 	if (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0)
 		a8kp_mci_wa_initialize();
+#endif
 
 	/* Initialize the MCI threshold to improve performance */
 	a8kp_mci_configure_threshold();
