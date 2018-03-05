@@ -416,8 +416,8 @@ void bl1_plat_arch_setup(void)
 	plat_delay_timer_init();
 
 	/* Re-init MCI connection due bug in Armada-8k-plus */
-	/* TODO; Check revision */
-	a8kp_mci_wa_initialize();
+	if (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0)
+		a8kp_mci_wa_initialize();
 
 	/* Initialize the MCI threshold to improve performance */
 	a8kp_mci_configure_threshold();
