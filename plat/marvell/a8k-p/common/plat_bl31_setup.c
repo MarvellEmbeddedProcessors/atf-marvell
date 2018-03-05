@@ -400,14 +400,6 @@ static void ap810_bl31_init(void)
 
 	debug_enter();
 
-#if PALLADIUM
-	/* Palladium does not run BLE so ap810_enumeration_algo()
-	 * isn't executed - need to make sure that we init the
-	 * enumeration algorithm.
-	 */
-	ap810_enumeration_algo();
-#endif
-
 	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
 		INFO("Initialize AP-%d\n", ap_id);
 		/* Setup Aurora2. */

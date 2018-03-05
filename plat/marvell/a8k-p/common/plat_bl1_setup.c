@@ -415,6 +415,14 @@ void bl1_plat_arch_setup(void)
 
 	plat_delay_timer_init();
 
+#if PALLADIUM
+	/* Palladium does not run BLE so ap810_enumeration_algo()
+	 * isn't executed - need to make sure that we init the
+	 * enumeration algorithm.
+	 */
+	ap810_enumeration_algo();
+#endif
+
 	/* No need to run MCI WA for palladium */
 #if !PALLADIUM
 	/* Re-init MCI connection due bug in Armada-8k-plus */
