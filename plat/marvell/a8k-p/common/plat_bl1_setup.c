@@ -389,6 +389,7 @@ static void ap810_addr_decode_init(void)
 	debug_enter();
 
 	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+		INFO("Initialize address decode for AP-%d\n", ap_id);
 		/* configure IO-WIN windows */
 		init_io_win(ap_id);
 		/* configure GWIN windows */

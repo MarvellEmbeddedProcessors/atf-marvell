@@ -61,24 +61,22 @@ static void dump_ccu(int ap_index)
 	uint64_t start, end;
 
 	/* Dump all AP windows */
-	printf("bank  id target   start		     end\n");
-	printf("----------------------------------------------------\n");
+	printf("\tbank  target     start              end\n");
+	printf("\t----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		win_cr = mmio_read_32(CCU_WIN_CR_OFFSET(ap_index, win_id));
-		printf("ccu   %02x", win_id);
 		if (win_cr & WIN_ENABLE_BIT) {
 			target_id = (win_cr >> CCU_TARGET_ID_OFFSET) & CCU_TARGET_ID_MASK;
 			alr = mmio_read_32(CCU_WIN_ALR_OFFSET(ap_index, win_id));
 			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_index, win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
-			printf(" %02x  0x%016lx 0x%016lx\n", target_id, start, end);
-		} else
-			printf("     Disabled\n");
+			printf("\tccu    %02x     0x%016lx 0x%016lx\n", target_id, start, end);
+		}
 	}
 	win_cr = mmio_read_32(CCU_WIN_GCR_OFFSET(ap_index));
 	target_id = (win_cr >> CCU_GCR_TARGET_OFFSET) & CCU_GCR_TARGET_MASK;
-	printf("ccu   GCR %d - all other transactions\n", target_id);
+	printf("\tccu   GCR %d - all other transactions\n", target_id);
 
 	return;
 }

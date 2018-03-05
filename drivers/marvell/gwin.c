@@ -169,24 +169,21 @@ static void dump_gwin(int ap_index)
 	uint32_t win_num;
 
 	/* Dump all GWIN windows */
-	printf("win\ttarget\tstart\t\t\tend\n");
-	printf("----------------------------------------------------\n");
+	printf("\tbank  target     start              end\n");
+	printf("\t----------------------------------------------------\n");
 	for (win_num = 0; win_num < MVEBU_GWIN_MAX_WINS; win_num++) {
 		uint32_t cr;
 		uint64_t alr, ahr;
 
 		cr  = mmio_read_32(GWIN_CR_OFFSET(ap_index, win_num));
-		printf("%02d\t ", win_num);
 		/* Window enabled */
 		if (cr & WIN_ENABLE_BIT) {
-			printf("%02d\t ", (cr >> 8) & 0xF);
 			alr = mmio_read_32(GWIN_ALR_OFFSET(ap_index, win_num));
 			alr = (alr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
 			ahr = mmio_read_32(GWIN_AHR_OFFSET(ap_index, win_num));
 			ahr = (ahr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
-			printf("0x%016lx 0x%016lx\n", alr, ahr);
-		} else
-			printf("\t Disabled\n");
+			printf("\tgwin   %d     0x%016lx 0x%016lx\n", (cr >> 8) & 0xF, alr, ahr);
+		}
 	}
 	return;
 }
