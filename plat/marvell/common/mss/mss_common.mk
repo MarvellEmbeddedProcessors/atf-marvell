@@ -42,11 +42,3 @@ BL2_SOURCES		+=	$(MSS_SOURCE)/mss_scp_bootloader.c		\
 BL31_SOURCES		+=	$(MSS_SOURCE)/mss_ipc_drv.c
 
 PLAT_INCLUDES           +=      -I$(MSS_SOURCE)
-
-ifneq (${SCP_BL2},)
-# Subsystems require a SCP_BL2 image
-$(eval $(call FIP_ADD_IMG,SCP_BL2,--scp-fw))
-
-# This define is used to inidcate the SCP image is present
-$(eval $(call add_define,SCP_IMAGE))
-endif
