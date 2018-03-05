@@ -122,7 +122,7 @@ void clocks_fetch_options(uint32_t *freq_mode, uint32_t *clk_index)
 	*freq_mode = (*freq_mode) >> EFUSE_FREQ_OFFSET;
 
 	/* in A0 sampled-at-reset register is not functional */
-	if (!ap810_rev_id_get(0))
+	if (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0)
 		*clk_index = (mmio_read_32(SCRATCH_PAD_ADDR(0, 1)) & 0x7);
 	else
 		ERROR("sample at reset register is missing - failed to configure clocks\n");

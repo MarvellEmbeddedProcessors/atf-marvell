@@ -23,7 +23,8 @@ static void ble_read_cpu_freq(void)
 {
 	unsigned int mpp_address, val;
 
-	if (ap810_rev_id_get(0))
+	/* Relevant for A0 only */
+	if (ap810_rev_id_get(MVEBU_AP0) != MVEBU_AP810_REV_ID_A0)
 		return;
 
 	/* TODO: add errata for this WA, we can't read from sample at reset
@@ -43,7 +44,7 @@ int ble_plat_setup(int *skip)
 #if !PALLADIUM
 	/* SW WA for AP link bring-up over JTAG connection */
 	if ((ap810_get_ap_count() != 1) &&
-	    (ap810_rev_id_get(0) == 0))
+	    (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0))
 		jtag_init_ihb_dual_ap();
 #endif
 

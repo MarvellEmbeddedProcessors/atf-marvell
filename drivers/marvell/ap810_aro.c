@@ -69,7 +69,7 @@ void ap810_aro_init(int target_freq, int ap_num)
 		 * TODO: update with EERATA number.
 		 */
 		cluster0_shift = 1;
-		if (cluster_num == 0 && !ap810_rev_id_get(ap_num))
+		if ((cluster_num == 0) && (ap810_rev_id_get(ap_num) == MVEBU_AP810_REV_ID_A0))
 			cluster0_shift = 4;
 
 		if (freq == CPU_FREQ_2700) {

@@ -197,7 +197,7 @@ static void ap810_init_aurora2(int ap_id)
 	 * For now - it's relevant for A0 only, they may change the
 	 * default configuration for B0
 	 */
-	if (!ap810_rev_id_get(ap_id)) {
+	if (ap810_rev_id_get(ap_id) == MVEBU_AP810_REV_ID_A0) {
 		/* Enable store-and-forward buffer & up-link */
 		for (stop = 0; stop < AP810_S_END; stop++) {
 			reg = mmio_read_32(CCU_ROUT_OPT_DIS(ap_id, stop));
