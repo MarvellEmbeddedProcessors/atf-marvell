@@ -56,6 +56,9 @@
 #define IO_WIN_AHR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x8 + (0x10 * win))
 #define IO_WIN_CR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0xC + (0x10 * win))
 
+/* For storega of CR, ALR, AHR abd GCR */
+static uint32_t io_win_regs_save[MVEBU_IO_WIN_MAX_WINS * 3 + 1];
+
 static void io_win_check(struct addr_map_win *win)
 {
 	/* for IO The base is always 1M aligned */
@@ -190,6 +193,44 @@ static void dump_io_win(int ap_index)
 	return;
 }
 #endif
+
+static void iow_save_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+{
+	int win_id, idx;
+
+	/* Save IOW */
+	for (idx = 0, win_id = win_first; win_id <= win_last; win_id++) {
+		buffer[idx++] = mmio_read_32(IO_WIN_CR_OFFSET(ap_id, win_id));
+		buffer[idx++] = mmio_read_32(IO_WIN_ALR_OFFSET(ap_id, win_id));
+		buffer[idx++] = mmio_read_32(IO_WIN_AHR_OFFSET(ap_id, win_id));
+	}
+	buffer[idx] = mmio_read_32(MVEBU_IO_WIN_BASE(ap_id) +
+				   MVEBU_IO_WIN_GCR_OFFSET);
+}
+
+static void iow_restore_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+{
+	int win_id, idx;
+
+	/* Restore IOW */
+	for (idx = 0, win_id = win_first; win_id <= win_last; win_id++) {
+		mmio_write_32(IO_WIN_CR_OFFSET(ap_id, win_id), buffer[idx++]);
+		mmio_write_32(IO_WIN_ALR_OFFSET(ap_id, win_id), buffer[idx++]);
+		mmio_write_32(IO_WIN_AHR_OFFSET(ap_id, win_id), buffer[idx++]);
+	}
+	mmio_write_32(MVEBU_IO_WIN_BASE(ap_id) + MVEBU_IO_WIN_GCR_OFFSET,
+		      buffer[idx++]);
+}
+
+void iow_save_win_all(int ap_id)
+{
+	iow_save_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1, io_win_regs_save);
+}
+
+void iow_restore_win_all(int ap_id)
+{
+	iow_restore_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1, io_win_regs_save);
+}
 
 int init_io_win(int ap_index)
 {
