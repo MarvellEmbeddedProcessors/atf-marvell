@@ -360,6 +360,33 @@ static void plat_dram_addr_decode_insert(uint32_t ap_id, uint32_t dram_tgt,
 	ccu_dram_win_config(ap_id, ccu_dram_win);
 }
 
+static void plat_dram_temp_addr_decode_cfg(uint32_t ap_id, struct mv_ddr_iface *iface)
+{
+	struct addr_map_win ccu_dram_win;
+
+	/*
+	 * Add CCU window for DRAM access:
+	 * Single DIMM on this AP, CCU target = DRAM 0/1
+	 * Setting the CCU for each interface
+	 */
+	if ((ap_id == 0) && (iface->iface_byte_size > (3 * _1GB_)))
+		ccu_dram_win.win_size = iface->iface_byte_size + _1GB_;
+	else
+		ccu_dram_win.win_size = iface->iface_byte_size;
+	ccu_dram_win.base_addr = iface->iface_base_addr;
+	if (iface->id == 1)
+		ccu_dram_win.target_id = DRAM_1_TID;
+	else
+		ccu_dram_win.target_id = DRAM_0_TID;
+
+	/* Create a memory window with the appropriate target in CCU */
+	ccu_dram_win_config(ap_id, &ccu_dram_win);
+
+	/* Remap configuration space */
+	if ((ap_id == 0) && (iface->iface_byte_size > (3 * _1GB_)))
+		plat_dram_mca_remap(0, ccu_dram_win.target_id, iface->iface_byte_size, 3 * _1GB_, _1GB_);
+}
+
 static void plat_dram_addr_decode_remove(uint32_t ap_id,
 					struct addr_map_win *gwin_temp_win,
 					struct addr_map_win *ccu_dram_win)
@@ -401,6 +428,14 @@ int plat_dram_init(void)
 
 			/* Set phy accesses */
 			plat_dram_phy_access_config(ap_id, iface->id);
+
+			/*
+			 * 1. open relevant CCU widow for each interface
+			 *    according to dram size and ap base address
+			 *    for validation\scrubbing purpose
+			 * 2. remap dram widow to end of dram size for ap 0 interface 0
+			 */
+			plat_dram_temp_addr_decode_cfg(ap_id, iface);
 
 			/* Call DRAM init per interface */
 			ret = dram_init();
