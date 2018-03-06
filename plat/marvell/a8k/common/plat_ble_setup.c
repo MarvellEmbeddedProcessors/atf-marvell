@@ -39,6 +39,7 @@
 #include <sys_info.h>
 #include <mv_ddr_if.h>
 #include <ccu.h>
+#include <io_win.h>
 #include <aro.h>
 #include <apn806_setup.h>
 #include <cp110_setup.h>
@@ -46,20 +47,7 @@
 /* Register for skip image use */
 #define SCRATCH_PAD_REG2		0xF06F00A8
 #define SCRATCH_PAD_SKIP_VAL		0x01
-#define NUM_OF_GPIO_PER_REG 32
-
-/* CCU windows configuration defines */
-#define CCU_CFG_IO_WIN_NUM	(3)
-#define CCU_CFG_WIN_REGS_NUM	(4) /* CR + SCR + ALR + AHR */
-#define CCU_WIN_ADDR_SHIFT	(20)
-#define CCU_WIN_ADDR_OFFSET	(4)
-#define CCU_WIN_ADDR_MASK	(0xFFFFFFF)
-
-/* IO windows configuration */
-#define IOW_CFG_IO_WIN_NUM_ST	(2)
-#define IOW_CFG_IO_WIN_NUM_END	(IOW_CFG_IO_WIN_NUM_ST + CP_COUNT - 1)
-#define IOW_GCR_OFFSET		(0x70)
-#define IOW_WIN_ALR_OFFSET(w)	(0x10 + 0x10*(w))
+#define NUM_OF_GPIO_PER_REG		32
 
 #define MMAP_SAVE_AND_CONFIG	0
 #define MMAP_RESTORE_SAVED	1
@@ -158,7 +146,7 @@ void pass_dram_sys_info(struct dram_config *cfg)
  * The routine allows to save the CCU and IO windows configuration during DRAM
  * setup and restore them afterwards before exiting the BLE stage.
  * Such window configuration is requred since not all default settings coming
- * from the HW and the BootROM akkow access to periferals connected to
+ * from the HW and the BootROM allow access to periferals connected to
  * all available CPn components.
  * For instance, when the boot device is located on CP0, the IO window to CP1
  * is not opened automatically by the HW and if the DRAM SPD is located on CP1
@@ -178,91 +166,22 @@ void pass_dram_sys_info(struct dram_config *cfg)
  */
 static void ble_plat_mmap_config(int restore)
 {
-	static uint32_t ccu_win_regs[CCU_CFG_WIN_REGS_NUM];
-	static uint32_t io_win_regs[CP_COUNT];
-	static uint32_t ccu_gcr, iow_gcr;
-	uintptr_t iow_base = MVEBU_IO_WIN_BASE(MVEBU_AP0);
-	uint32_t reg_val, win_num;
-
 	if (restore == MMAP_RESTORE_SAVED) {
 		/* Restore all orig. settings that were modified by BLE stage */
-		/* Restore CCU */
-		mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-			      ccu_win_regs[0]);
-		mmio_write_32(CCU_WIN_SCR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-			      ccu_win_regs[1]);
-		mmio_write_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-			      ccu_win_regs[2]);
-		mmio_write_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-			      ccu_win_regs[3]);
-		mmio_write_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0), ccu_gcr);
+		ccu_restore_win_all(MVEBU_AP0);
 		/* Restore IO Windows */
-		for (win_num = IOW_CFG_IO_WIN_NUM_ST;
-		     win_num < IOW_CFG_IO_WIN_NUM_END; win_num++)
-			mmio_write_32(iow_base + IOW_WIN_ALR_OFFSET(win_num),
-				      io_win_regs[win_num -
-				      IOW_CFG_IO_WIN_NUM_ST]);
-		mmio_write_32(iow_base + IOW_GCR_OFFSET, iow_gcr);
+		iow_restore_win_all(MVEBU_AP0);
 		return;
 	} else {
 		/* Store original values */
-		/* Save CCU */
-		ccu_win_regs[0] = mmio_read_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[1] = mmio_read_32(CCU_WIN_SCR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[2] = mmio_read_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
-		ccu_win_regs[3] = mmio_read_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM));
-		ccu_gcr = mmio_read_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0));
+		ccu_save_win_all(MVEBU_AP0);
 		/* Save IO Windows */
-		for (win_num = IOW_CFG_IO_WIN_NUM_ST;
-		     win_num < IOW_CFG_IO_WIN_NUM_END; win_num++)
-			io_win_regs[win_num - IOW_CFG_IO_WIN_NUM_ST] =
-				mmio_read_32(iow_base +
-					     IOW_WIN_ALR_OFFSET(win_num));
-		iow_gcr = mmio_read_32(iow_base + IOW_GCR_OFFSET);
+		iow_save_win_all(MVEBU_AP0);
 	}
 
-	/* The configuration saved, now all the changes can be done */
-	/* Set the default CCU target ID to DRAM 0 */
-	reg_val = ccu_gcr & ~(CCU_TARGET_ID_MASK << CCU_TARGET_ID_OFFSET);
-	reg_val |= (DRAM_0_TID & CCU_TARGET_ID_MASK) << CCU_TARGET_ID_OFFSET;
-	mmio_write_32(CCU_WIN_GCR_OFFSET(MVEBU_AP0), reg_val);
+	init_ccu(MVEBU_AP0);
 
-	/* Set CCU IO window for covering all available CP addresses */
-	/* Set the CCU IO window Low Address to the start of CP0 region */
-	mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM), 0);
-	reg_val = (MVEBU_CP_REGS_BASE(0) >> CCU_WIN_ADDR_SHIFT)
-		  << CCU_WIN_ADDR_OFFSET;
-	mmio_write_32(CCU_WIN_ALR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM), reg_val);
-
-	/*
-	 * Set the CCU IO window High Address to the end of
-	 * CPn region (n = CP_COUNT)
-	 */
-	reg_val = (MVEBU_CP_REGS_BASE(CP_COUNT - 1) >> CCU_WIN_ADDR_SHIFT)
-		   << CCU_WIN_ADDR_OFFSET;
-	reg_val |= 0xF << CCU_WIN_ADDR_OFFSET;
-	mmio_write_32(CCU_WIN_AHR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-		      reg_val);
-
-	/* Set the CCU IO window Control target to IO and enable this window */
-	reg_val = (IO_0_TID << CCU_TARGET_ID_OFFSET) | 0x1;
-	mmio_write_32(CCU_WIN_CR_OFFSET(MVEBU_AP0, CCU_CFG_IO_WIN_NUM),
-		      reg_val);
-
-	/* Set IO windows GCR (IO decode) to PIDI as a default (CP0) */
-	mmio_write_32(iow_base + IOW_GCR_OFFSET, PIDI_TID);
-
-	/*
-	 * Optionally enable IO windows for CP1, CP2, CP3 (depends on CP_COUNT).
-	 * All the rest of windows default settings (ALR, AHR, CR) are already
-	 * set by the HW
-	 */
-	for (win_num = IOW_CFG_IO_WIN_NUM_ST;
-	     win_num < IOW_CFG_IO_WIN_NUM_END; win_num++) {
-		reg_val = mmio_read_32(iow_base + IOW_WIN_ALR_OFFSET(win_num));
-		reg_val |= 0x1;
-		mmio_write_32(iow_base + IOW_WIN_ALR_OFFSET(win_num), reg_val);
-	}
+	init_io_win(MVEBU_AP0);
 }
 
 /******************************************************************************

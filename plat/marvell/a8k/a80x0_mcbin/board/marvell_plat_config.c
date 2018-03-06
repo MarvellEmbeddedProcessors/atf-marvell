@@ -42,7 +42,6 @@
 #include <plat_def.h>
 #ifndef IMAGE_BLE
 
-
 /*******************************************************************************
  * GPIO Configuration
  ******************************************************************************/
@@ -91,14 +90,15 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 
 	return 0;
 }
+#endif
 
 /*******************************************************************************
  * IO WIN Configuration
  ******************************************************************************/
-
 struct addr_map_win io_win_memory_map[] = {
 	/* CP1 (MCI0) internal regs */
 	{0x00000000f4000000,		0x2000000,  MCI_0_TID},
+#ifndef IMAGE_BLE
 	/* PCIe0 and SPI1_CS0 (RUNIT) on CP1*/
 	{0x00000000f9000000,		0x2000000,  MCI_0_TID},
 	/* PCIe1 on CP1*/
@@ -109,6 +109,7 @@ struct addr_map_win io_win_memory_map[] = {
 	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,   MCI_0_TID},
 	/* MCI 1 indirect window */
 	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000,   MCI_1_TID},
+#endif
 };
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
@@ -127,6 +128,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint3
 	return 0;
 }
 
+#ifndef IMAGE_BLE
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
@@ -171,14 +173,19 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 		return 1;
 	}
 }
+#endif
 
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
 struct addr_map_win ccu_memory_map[] = {
+#ifdef IMAGE_BLE
+	{0x00000000f2000000,	0x4000000,  IO_0_TID}, /* IO window */
+#else
 	{0x00000000f2000000,	0xe000000,  IO_0_TID}, /* IO window */
 	{0x00000000c0000000,	0x30000000,  IO_0_TID}, /* IO window */
 	{0x0000000800000000,	0x100000000,  IO_0_TID}, /* IO window */
+#endif
 };
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
@@ -195,7 +202,7 @@ int marvell_get_ccu_memory_map(int ap_index, struct addr_map_win **win, uint32_t
 }
 
 /* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
-#else
+
 /*******************************************************************************
  * SKIP IMAGE Configuration
  ******************************************************************************/
@@ -205,4 +212,3 @@ void *plat_get_skip_image_data(void)
 	/* No recovery button on A8k-MCBIN board */
 	return NULL;
 }
-#endif

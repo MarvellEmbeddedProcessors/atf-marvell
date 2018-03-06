@@ -74,7 +74,9 @@ BLE_SOURCES		:=	$(MARVELL_COMMON_BASE)/sys_info.c		 	\
 				$(MARVELL_DRV_BASE)/aro.c	         	\
 				$(MARVELL_DRV_BASE)/thermal.c			\
 				$(PLAT_COMMON_BASE)/marvell_thermal.c		\
-				$(BLE_PORTING_SOURCES)
+				$(BLE_PORTING_SOURCES)				\
+				$(MARVELL_DRV_BASE)/ccu.c			\
+				$(MARVELL_DRV_BASE)/io_win.c
 
 ifeq (${PCI_EP_SUPPORT}, 1)
 BLE_SOURCES		+=	$(MARVELL_COMMON_BASE)/pci_ep_setup.c	 \

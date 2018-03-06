@@ -37,8 +37,8 @@
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#ifndef IMAGE_BLE
 #include <plat_def.h>
+#ifndef IMAGE_BLE
 
 /*******************************************************************************
  * AMB Configuration
@@ -58,16 +58,18 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 
 	return 0;
 }
+#endif
 
 /*******************************************************************************
  * IO_WIN Configuration
  ******************************************************************************/
-
 struct addr_map_win io_win_memory_map[] = {
+#ifndef IMAGE_BLE
 	/* MCI 0 indirect window */
-	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000, MCI_0_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,	MCI_0_TID},
 	/* MCI 1 indirect window */
-	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000, MCI_1_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000,	MCI_1_TID},
+#endif
 };
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
@@ -86,6 +88,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint3
 	return 0;
 }
 
+#ifndef IMAGE_BLE
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
@@ -107,12 +110,17 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 
 	return 0;
 }
+#endif
 
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
 struct addr_map_win ccu_memory_map[] = {	/* IO window */
+#ifdef IMAGE_BLE
+	{0x00000000f2000000,	0x4000000,	IO_0_TID}, /* IO window */
+#else
 	{0x00000000f2000000,	0xe000000,	IO_0_TID},
+#endif
 };
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
@@ -128,8 +136,7 @@ int marvell_get_ccu_memory_map(int ap_index, struct addr_map_win **win, uint32_t
 	return 0;
 }
 
-/* In reference to #ifndef IMAGE_BLE, this part is used for BLE only. */
-#else
+#ifdef IMAGE_BLE
 /*******************************************************************************
  * SKIP IMAGE Configuration
  ******************************************************************************/

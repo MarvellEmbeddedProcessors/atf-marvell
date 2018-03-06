@@ -37,8 +37,8 @@
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#ifndef IMAGE_BLE
 #include <plat_def.h>
+#ifndef IMAGE_BLE
 
 /*******************************************************************************
  * AMB Configuration
@@ -58,6 +58,7 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 
 	return 0;
 }
+#endif
 
 /*******************************************************************************
  * IO WIN Configuration
@@ -65,6 +66,7 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 struct addr_map_win io_win_memory_map[] = {
 	/* CP1 (MCI0) internal regs */
 	{0x00000000f4000000,		0x2000000,  MCI_0_TID},
+#ifndef IMAGE_BLE
 	/* PCIe0 and SPI1_CS0 (RUNIT) on CP1*/
 	{0x00000000f9000000,		0x2000000,  MCI_0_TID},
 	/* PCIe1 on CP1*/
@@ -72,9 +74,10 @@ struct addr_map_win io_win_memory_map[] = {
 	/* PCIe2 on CP1*/
 	{0x00000000fc000000,		0x1000000,  MCI_0_TID},
 	/* MCI 0 indirect window */
-	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,  MCI_0_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(0),	0x100000,   MCI_0_TID},
 	/* MCI 1 indirect window */
-	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000,  MCI_1_TID},
+	{MVEBU_MCI_REG_BASE_REMAP(1),	0x100000,   MCI_1_TID},
+#endif
 };
 
 uint32_t marvell_get_io_win_gcr_target(int ap_index)
@@ -93,6 +96,7 @@ int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint3
 	return 0;
 }
 
+#ifndef IMAGE_BLE
 /*******************************************************************************
  * IOB Configuration
  ******************************************************************************/
@@ -135,12 +139,17 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 		return 1;
 	}
 }
+#endif
 
 /*******************************************************************************
  * CCU Configuration
  ******************************************************************************/
 struct addr_map_win ccu_memory_map[] = {
+#ifdef IMAGE_BLE
+	{0x00000000f2000000,	0x4000000,  IO_0_TID}, /* IO window */
+#else
 	{0x00000000f2000000,	0xe000000,  IO_0_TID}, /* IO window */
+#endif
 };
 
 uint32_t marvell_get_ccu_gcr_target(int ap)
@@ -156,6 +165,7 @@ int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size
 	return 0;
 }
 
+#ifndef IMAGE_BLE
 /*******************************************************************************
  * SoC PM configuration
  ******************************************************************************/
