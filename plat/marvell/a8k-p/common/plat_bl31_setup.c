@@ -49,6 +49,17 @@
 #define XOR_2_STREAM_ID_REG	(0x450010)
 #define XOR_3_STREAM_ID_REG	(0x470010)
 
+/* Max stream IDs per AP */
+#define MAX_SID_PER_AP		(0X200)
+/* Unlike CP110 (supports up to 8 bit stream IDs),
+ * AP810 supports up to 12 bit stream IDs.
+ * This stream ID base allows us to separate the CPs
+ * stream IDs values from the AP stream IDs values.
+ */
+#define AP0_STREAM_ID_BASE		(0x100)
+#define APx_STREAM_ID_BASE(ap_id)	(AP0_STREAM_ID_BASE + \
+					(ap_id * MAX_SID_PER_AP))
+
 uintptr_t ap_stream_id_reg[] = {
 	XOR_0_STREAM_ID_REG,
 	XOR_1_STREAM_ID_REG,
@@ -64,8 +75,6 @@ enum axi_attr {
 	AXI_EIP197_ATTR,
 	AXI_MAX_ATTR,
 };
-
-uint32_t stream_id = 0xA0;
 
 static _Bool pm_fw_running;
 
@@ -229,6 +238,8 @@ static void ap810_stream_id_init(int ap_id)
 {
 	uintptr_t base = MVEBU_REGS_BASE_AP(ap_id);
 	int i = 0;
+	uint32_t stream_id = APx_STREAM_ID_BASE(ap_id);
+
 
 	debug_enter();
 
