@@ -399,7 +399,7 @@ int plat_dram_init(void)
 	uint32_t ifaces_size, i, ap_id, ret;
 	const uint32_t ap_cnt = ap810_get_ap_count();
 	uint64_t ap_dram_size;
-	uint32_t ap_dram_tgt = DRAM_0_TID;
+	uint32_t ap_dram_tgt;
 
 	/* Update DRAM topology for all interfaces */
 	plat_dram_interfaces_update();
@@ -409,6 +409,7 @@ int plat_dram_init(void)
 		struct addr_map_win gwin_temp_win, ccu_dram_win;
 
 		ap_dram_size = 0;
+		ap_dram_tgt = DRAM_0_TID;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		/* Go over the interfaces of AP and initialize them */
