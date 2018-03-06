@@ -65,6 +65,8 @@ void ccu_temp_win_insert(int ap_index, struct addr_map_win *win, int size);
 void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size);
 void ccu_dram_win_config(int ap_index, struct addr_map_win *win);
 void ccu_dram_target_set(int ap_index, uint32_t target);
+void ccu_save_win_all(int ap_id);
+void ccu_restore_win_all(int ap_id);
 #endif
 
 #endif /* _CCU_H_ */

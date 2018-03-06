@@ -53,6 +53,10 @@
 #define IS_DRAM_TARGET(tgt)		((((tgt) == DRAM_0_TID) || \
 					((tgt) == DRAM_1_TID) || \
 					((tgt) == RAR_TID)) ? 1 : 0)
+
+/* For storega of CR, SCR, ALR, AHR abd GCR */
+static uint32_t ccu_regs_save[MVEBU_CCU_MAX_WINS * 4 + 1];
+
 #ifdef DEBUG_ADDR_MAP
 static void dump_ccu(int ap_index)
 {
@@ -251,12 +255,58 @@ void ccu_dram_win_config(int ap_index, struct addr_map_win *win)
 	return;
 }
 
+/* Save content of CCU window + GCR */
+static void ccu_save_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+{
+	int win_id, idx;
+	/* Save CCU */
+	for (idx = 0, win_id = win_first; win_id <= win_last; win_id++) {
+		buffer[idx++] = mmio_read_32(CCU_WIN_CR_OFFSET(ap_id, win_id));
+		buffer[idx++] = mmio_read_32(CCU_WIN_SCR_OFFSET(ap_id, win_id));
+		buffer[idx++] = mmio_read_32(CCU_WIN_ALR_OFFSET(ap_id, win_id));
+		buffer[idx++] = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_id, win_id));
+	}
+	buffer[idx] = mmio_read_32(CCU_WIN_GCR_OFFSET(ap_id));
+}
+
+/* Restore content of CCU window + GCR */
+static void ccu_restore_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+{
+	int win_id, idx;
+	/* Restore CCU */
+	for (idx = 0, win_id = win_first; win_id <= win_last; win_id++) {
+		mmio_write_32(CCU_WIN_CR_OFFSET(ap_id, win_id),  buffer[idx++]);
+		mmio_write_32(CCU_WIN_SCR_OFFSET(ap_id, win_id), buffer[idx++]);
+		mmio_write_32(CCU_WIN_ALR_OFFSET(ap_id, win_id), buffer[idx++]);
+		mmio_write_32(CCU_WIN_AHR_OFFSET(ap_id, win_id), buffer[idx++]);
+	}
+	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_id), buffer[idx]);
+}
+
+void ccu_save_win_all(int ap_id)
+{
+	ccu_save_win_range(ap_id, 0, MVEBU_CCU_MAX_WINS - 1, ccu_regs_save);
+}
+
+void ccu_restore_win_all(int ap_id)
+{
+	ccu_restore_win_range(ap_id, 0, MVEBU_CCU_MAX_WINS - 1, ccu_regs_save);
+}
+
 int init_ccu(int ap_index)
 {
 	struct addr_map_win *win, *dram_win;
 	uint32_t win_id, win_reg;
 	uint32_t win_count, array_id;
 	uint32_t dram_target;
+#if IMAGE_BLE
+	/* In BootROM context CCU Window-1
+	 * has SRAM_TID target and should not be disabled
+	 */
+	const uint32_t win_start = 2;
+#else
+	const uint32_t win_start = 1;
+#endif
 
 	INFO("Initializing CCU Address decoding\n");
 
@@ -294,7 +344,7 @@ int init_ccu(int ap_index)
 	 * Window-0 is always bypassed since it already contains
 	 * data allowing the internal configuration space access
 	 */
-	for (win_id = 1; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
+	for (win_id = win_start; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		ccu_disable_win(ap_index, win_id);
 		/* enable write secure (and clear read secure) */
 		mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id), CCU_WIN_ENA_WRITE_SECURE);
@@ -303,7 +353,7 @@ int init_ccu(int ap_index)
 	/* win_id is the index of the current ccu window
 	 * array_id is the index of the current memory map window entry
 	 */
-	for (win_id = 1, array_id = 0;
+	for (win_id = win_start, array_id = 0;
 	    ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count)); win_id++) {
 		ccu_win_check(win);
 		ccu_enable_win(ap_index, win, win_id);
