@@ -116,7 +116,7 @@ static void apn_sec_masters_access_en(uint32_t enable)
 		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg & ~SEC_IN_ACCESS_ENA_ALL_MASTERS);
 }
 
-void setup_smmu(void)
+static void setup_smmu(void)
 {
 	uint32_t reg;
 
@@ -153,7 +153,7 @@ static void apn806_errata_wa_init(void)
 	mmio_write_32(CCU_RGF(5), 0x7ffa0009);
 }
 
-void init_aurora2(void)
+static void init_aurora2(void)
 {
 	uint32_t reg;
 
@@ -201,7 +201,7 @@ static void mci_remap_indirect_access_base(void)
 				  MVEBU_MCI_REG_BASE_REMAP(mci) >> MCI_REMAP_OFF_SHIFT);
 }
 
-void apn806_axi_attr_init(void)
+static void apn806_axi_attr_init(void)
 {
 	uint32_t index, data;
 
@@ -237,7 +237,7 @@ void apn806_axi_attr_init(void)
 	return;
 }
 
-void dss_setup(void)
+static void dss_setup(void)
 {
 	/* Enable 48-bit VA */
 	mmio_setbits_32(DSS_CR0, DVM_48BIT_VA_ENABLE);
