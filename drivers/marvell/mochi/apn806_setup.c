@@ -126,8 +126,8 @@ void setup_smmu(void)
 	mmio_write_32(SMMU_sACR, reg);
 }
 
-
-void ap806_generic_timer_init(void)
+#if PALLADIUM
+static void ap806_generic_timer_init(void)
 {
 	uint32_t gtc_cntcr = mmio_read_32(MVEBU_MSS_GTCR_REG);
 
@@ -137,6 +137,7 @@ void ap806_generic_timer_init(void)
 		mmio_write_32(MVEBU_MSS_GTCR_REG, gtc_cntcr);
 	}
 }
+#endif
 
 static void apn806_errata_wa_init(void)
 {
