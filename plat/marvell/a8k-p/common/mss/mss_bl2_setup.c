@@ -146,7 +146,31 @@ uint32_t bl2_plat_get_ap_count(void)
 
 void bl2_plat_configure_mss_windows(uintptr_t mss_regs)
 {
-	/* Configure the AEBR to enable access 256MB for AP config space */
+	/* CP address are bigger than 32 bits:
+	 * CPx on AP0 0x8100000000 + 0x700000000 * x
+	 * CPx on AP1 0x9e00000000 + 0x700000000 * x
+	 *
+	 * AP address is 32 bit.
+	 *
+	 * Shifting mss_regs >> 32 tells us if it's CP or AP.
+	 */
+	if (mss_regs >> 32) {
+		/* Configure AIBR (AXI Internal Address Bus extension) to map
+		 * CP base address. This allows each CP to access it's
+		 * own memory space.
+		 */
+		mmio_write_32(MSS_AIBR(mss_regs), mss_regs >> 28);
+	} else {
+		/* Configure AIBR (AXI Internal Address Bus extension) to allow AP
+		 * to access it's own memory space
+		 */
+		mmio_write_32(MSS_AIBR(mss_regs),
+			      ((0xf0000000 >> MSS_INTERNAL_ACCESS_BIT) & MSS_AIBR_MASK));
+	}
+
+	/* Configure AEBR (AXI Internal Address Bus extension) to map access:
+	 * CP: Access from CP to AP
+	 * AP: Access from AP to DRAM
+	 */
 	mmio_write_32(MSS_AEBR(mss_regs), ((0xe0000000 >> MSS_EXTERNAL_ACCESS_BIT) & MSS_AEBR_MASK));
-	mmio_write_32(MSS_AIBR(mss_regs), ((0xf0000000 >> MSS_INTERNAL_ACCESS_BIT) & MSS_AIBR_MASK));
 }

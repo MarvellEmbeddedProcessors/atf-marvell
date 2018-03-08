@@ -53,6 +53,8 @@ enum cm3_t {
 	MSS_AP,
 	MSS_CP0,
 	MSS_CP1,
+	MSS_CP2,
+	MSS_CP3,
 	MG_CP0,
 	MG_CP1,
 };

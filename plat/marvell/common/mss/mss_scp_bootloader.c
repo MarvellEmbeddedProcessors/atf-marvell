@@ -205,7 +205,7 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t
 /* Load CM3 image (single_img) to CM3 pointed by cm3_type */
 static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t image_size)
 {
-	int ret, ap_idx;
+	int ret, ap_idx, cp_index;
 	uint32_t ap_count = bl2_plat_get_ap_count();
 
 	switch (cm3_type) {
@@ -218,24 +218,26 @@ static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t i
 		}
 		break;
 	case MSS_CP0:
-		for (ap_idx = 0; ap_idx  < ap_count; ap_idx++) {
-			NOTICE("Load image to CP0 MSS AP%d\n", ap_idx);
-			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, 0));
-			if (ret != 0) {
-				ERROR("SCP Image load failed\n");
-				return -1;
-			}
-		}
-		break;
 	case MSS_CP1:
+	case MSS_CP2:
+	case MSS_CP3:
+		/* MSS_AP = 0
+		 * MSS_CP1 = 1
+		 * .
+		 * .
+		 * MSS_CP3 = 4
+		 * Actual CP index is MSS_CPX - 1
+		 */
+		cp_index = cm3_type - 1;
 		for (ap_idx = 0; ap_idx < ap_count; ap_idx++) {
-			if (bl2_plat_get_cp_count(ap_idx) == 1) {
-				NOTICE("Skipping MSS CP1 related image\n");
+			/* Check if we should load this image according to number of CPs */
+			if (bl2_plat_get_cp_count(ap_idx) <= cp_index) {
+				NOTICE("Skipping MSS CP%d related image\n", cp_index);
 				break;
 			}
 
-			NOTICE("Load image to CP1 MSS AP%d\n", ap_idx);
-			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, 1));
+			NOTICE("Load image to CP%d MSS AP%d\n", cp_index, ap_idx);
+			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, cp_index));
 			if (ret != 0) {
 				ERROR("SCP Image load failed\n");
 				return -1;
