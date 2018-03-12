@@ -11,6 +11,7 @@
 #include <mmio.h>
 #include <plat_def.h>
 #include "mvebu.h"
+#include "comphy-cp110.h"
 
 /* #define DEBUG_COMPHY */
 #ifdef DEBUG_COMPHY
@@ -65,6 +66,54 @@
 #define COMPHY_USB3_MODE	0xa
 #define COMPHY_AP_MODE		0xb
 
+#define COMPHY_PIPE_FROM_COMPHY_ADDR(x)	((x & ~0xffffff) + 0x120000)
+
+static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
+{
+	debug("Write to addr = 0x%lx, data = 0x%x (mask = 0x%x) - old val = 0x%x",
+	      addr, data, mask, mmio_read_32(addr));
+	mmio_clrsetbits_32(addr, mask, data);
+
+	debug("new val 0x%x\n", mmio_read_32(addr));
+}
+
+/* Clear PHY selector - avoid collision with previous configuration */
+static void mvebu_cp110_comphy_clr_phy_selector(uint64_t comphy_base, uint8_t comphy_index)
+{
+	uint32_t reg, mask, field;
+	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+
+	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
+	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET);
+	field = reg & mask;
+
+	/* Clear comphy selector - if it was already configured.
+	 * (might be that this comphy was configured as PCIe/USB,
+	 * in such case, no need to clear comphy selector because PCIe/USB
+	 * are controlled by hpipe selector).
+	 */
+	if (field) {
+		reg &= ~mask;
+		mmio_write_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET, reg);
+	}
+}
+
+/* Clear PIPE selector - avoid collision with privious configuration */
+void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t comphy_index)
+{
+	uint32_t reg, mask, field;
+	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+
+	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
+	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET);
+	field = reg & mask;
+
+	if (field) {
+		reg &= ~mask;
+		mmio_write_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET, reg);
+	}
+}
+
 int mvebu_cp110_comphy_is_pll_locked(uint64_t comphy_base, uint8_t comphy_index)
 {
 	int ret = 0;
@@ -89,7 +138,33 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uin
 
 int mvebu_cp110_comphy_power_off(uint64_t comphy_base, uint64_t comphy_index)
 {
+	uintptr_t sd_ip_addr, comphy_ip_addr;
+	uint32_t mask, data;
+
 	debug_enter();
+
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	comphy_ip_addr = COMPHY_ADDR(comphy_base, comphy_index);
+
+	/* Hard reset the comphy, for Ethernet modes and Sata */
+	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
+	data = 0x0 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	/* Hard reset the comphy, for PCIe and usb3 */
+	mask = COMMON_PHY_CFG1_PWR_ON_RESET_MASK;
+	data = 0x0 << COMMON_PHY_CFG1_PWR_ON_RESET_OFFSET;
+	mask |= COMMON_PHY_CFG1_CORE_RSTN_MASK;
+	data |= 0x0 << COMMON_PHY_CFG1_CORE_RSTN_OFFSET;
+	reg_set(comphy_ip_addr + COMMON_PHY_CFG1_REG, data, mask);
+
+	/* Clear comphy PHY and PIPE selector, can't rely on previous config. */
+	mvebu_cp110_comphy_clr_phy_selector(comphy_base, comphy_index);
+	mvebu_cp110_comphy_clr_pipe_selector(comphy_base, comphy_index);
 
 	debug_exit();
 
