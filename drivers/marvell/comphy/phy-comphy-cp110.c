@@ -66,6 +66,18 @@
 #define COMPHY_USB3_MODE	0xa
 #define COMPHY_AP_MODE		0xb
 
+/* COMPHY speed macro */
+#define COMPHY_SPEED_1_25G		0 /* SGMII 1G */
+#define COMPHY_SPEED_2_5G		1
+#define COMPHY_SPEED_3_125G		2 /* SGMII 2.5G */
+#define COMPHY_SPEED_5G			3
+#define COMPHY_SPEED_5_15625G		4 /* XFI 5G */
+#define COMPHY_SPEED_6G			5
+#define COMPHY_SPEED_10_3125G		6 /* XFI 10G */
+#define COMPHY_SPEED_MAX		0x3F
+/* The  default speed for IO with fixed known speed */
+#define COMPHY_SPEED_DEFAULT		COMPHY_SPEED_MAX
+
 #define COMPHY_PIPE_FROM_COMPHY_ADDR(x)	((x & ~0xffffff) + 0x120000)
 
 enum reg_width_type {
@@ -493,6 +505,160 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 	return ret;
 }
 
+static int mvebu_cp110_comphy_sgmii_power_on(uint64_t comphy_base,
+				     uint8_t comphy_index, uint32_t comphy_mode)
+{
+	uintptr_t hpipe_addr, sd_ip_addr, comphy_addr, addr;
+	uint32_t mask, data, sgmii_speed = COMPHY_GET_SPEED(comphy_mode);
+	int ret = 0;
+
+	debug_enter();
+
+	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
+
+	/* configure phy selector for SGMII */
+	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
+
+	/* Confiugre the lane */
+	debug("stage: RFU configurations - hard reset comphy\n");
+	/* RFU configurations - hard reset comphy */
+	mask = COMMON_PHY_CFG1_PWR_UP_MASK;
+	data = 0x1 << COMMON_PHY_CFG1_PWR_UP_OFFSET;
+	mask |= COMMON_PHY_CFG1_PIPE_SELECT_MASK;
+	data |= 0x0 << COMMON_PHY_CFG1_PIPE_SELECT_OFFSET;
+	reg_set(comphy_addr + COMMON_PHY_CFG1_REG, data, mask);
+
+	/* Select Baud Rate of Comphy And PD_PLL/Tx/Rx */
+	mask = SD_EXTERNAL_CONFIG0_SD_PU_PLL_MASK;
+	data = 0x0 << SD_EXTERNAL_CONFIG0_SD_PU_PLL_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG0_SD_PHY_GEN_RX_MASK;
+	mask |= SD_EXTERNAL_CONFIG0_SD_PHY_GEN_TX_MASK;
+
+	if (sgmii_speed == COMPHY_SPEED_1_25G) {
+		/* SGMII 1G, SerDes speed 1.25G */
+		data |= 0x6 << SD_EXTERNAL_CONFIG0_SD_PHY_GEN_RX_OFFSET;
+		data |= 0x6 << SD_EXTERNAL_CONFIG0_SD_PHY_GEN_TX_OFFSET;
+	} else if (sgmii_speed == COMPHY_SPEED_3_125G) {
+		/* HS SGMII (2.5G), SerDes speed 3.125G */
+		data |= 0x8 << SD_EXTERNAL_CONFIG0_SD_PHY_GEN_RX_OFFSET;
+		data |= 0x8 << SD_EXTERNAL_CONFIG0_SD_PHY_GEN_TX_OFFSET;
+	} else {
+		/* Other rates are not supported */
+		ERROR("unsupported SGMII speed on comphy%d\n", comphy_index);
+		return -EINVAL;
+	}
+
+	mask |= SD_EXTERNAL_CONFIG0_SD_PU_RX_MASK;
+	data |= 0 << SD_EXTERNAL_CONFIG0_SD_PU_RX_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG0_SD_PU_TX_MASK;
+	data |= 0 << SD_EXTERNAL_CONFIG0_SD_PU_TX_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG0_HALF_BUS_MODE_MASK;
+	data |= 1 << SD_EXTERNAL_CONFIG0_HALF_BUS_MODE_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG0_REG, data, mask);
+
+	/* Set hard reset */
+	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
+	data = 0x0 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	/* Release hard reset */
+	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
+	data = 0x1 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
+	data |= 0x1 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	/* Wait 1ms - until band gap and ref clock ready */
+	mdelay(1);
+
+	/* Make sure that 40 data bits is disabled
+	 * This bit is not cleared by reset
+	 */
+	mask = COMMON_PHY_CFG6_IF_40_SEL_MASK;
+	data = 0 << COMMON_PHY_CFG6_IF_40_SEL_OFFSET;
+	reg_set(comphy_addr + COMMON_PHY_CFG6_REG, data, mask);
+
+	/* Start comphy Configuration */
+	debug("stage: Comphy configuration\n");
+	/* set reference clock */
+	mask = HPIPE_MISC_REFCLK_SEL_MASK;
+	data = 0x0 << HPIPE_MISC_REFCLK_SEL_OFFSET;
+	reg_set(hpipe_addr + HPIPE_MISC_REG, data, mask);
+	/* Power and PLL Control */
+	mask = HPIPE_PWR_PLL_REF_FREQ_MASK;
+	data = 0x1 << HPIPE_PWR_PLL_REF_FREQ_OFFSET;
+	mask |= HPIPE_PWR_PLL_PHY_MODE_MASK;
+	data |= 0x4 << HPIPE_PWR_PLL_PHY_MODE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PWR_PLL_REG, data, mask);
+	/* Loopback register */
+	mask = HPIPE_LOOPBACK_SEL_MASK;
+	data = 0x1 << HPIPE_LOOPBACK_SEL_OFFSET;
+	reg_set(hpipe_addr + HPIPE_LOOPBACK_REG, data, mask);
+	/* rx control 1 */
+	mask = HPIPE_RX_CONTROL_1_RXCLK2X_SEL_MASK;
+	data = 0x1 << HPIPE_RX_CONTROL_1_RXCLK2X_SEL_OFFSET;
+	mask |= HPIPE_RX_CONTROL_1_CLK8T_EN_MASK;
+	data |= 0x0 << HPIPE_RX_CONTROL_1_CLK8T_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_RX_CONTROL_1_REG, data, mask);
+	/* DTL Control */
+	mask = HPIPE_PWR_CTR_DTL_FLOOP_EN_MASK;
+	data = 0x0 << HPIPE_PWR_CTR_DTL_FLOOP_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PWR_CTR_DTL_REG, data, mask);
+
+	/* Set analog parameters from ETP(HW) - for now use the default datas */
+	debug("stage: Analog parameters from ETP(HW)\n");
+
+	reg_set(hpipe_addr + HPIPE_G1_SET_0_REG,
+		0x1 << HPIPE_G1_SET_0_G1_TX_EMPH1_OFFSET, HPIPE_G1_SET_0_G1_TX_EMPH1_MASK);
+
+	debug("stage: RFU configurations- Power Up PLL,Tx,Rx\n");
+	/* SERDES External Configuration */
+	mask = SD_EXTERNAL_CONFIG0_SD_PU_PLL_MASK;
+	data = 0x1 << SD_EXTERNAL_CONFIG0_SD_PU_PLL_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG0_SD_PU_RX_MASK;
+	data |= 0x1 << SD_EXTERNAL_CONFIG0_SD_PU_RX_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG0_SD_PU_TX_MASK;
+	data |= 0x1 << SD_EXTERNAL_CONFIG0_SD_PU_TX_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG0_REG, data, mask);
+
+	ret = mvebu_cp110_comphy_is_pll_locked(comphy_base, comphy_index);
+	if (ret)
+		return ret;
+
+	/* RX init */
+	mask = SD_EXTERNAL_CONFIG1_RX_INIT_MASK;
+	data = 0x1 << SD_EXTERNAL_CONFIG1_RX_INIT_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	/* check that RX init done */
+	addr = sd_ip_addr + SD_EXTERNAL_STATUS0_REG;
+	data = SD_EXTERNAL_STATUS0_RX_INIT_MASK;
+	mask = data;
+	data = polling_with_timeout(addr, data, mask, 100, REG_32BIT);
+	if (data != 0) {
+		ERROR("RX init failed\n");
+		ret = -ETIMEDOUT;
+	}
+
+	debug("stage: RF Reset\n");
+	/* RF Reset */
+	mask = SD_EXTERNAL_CONFIG1_RX_INIT_MASK;
+	data = 0x0 << SD_EXTERNAL_CONFIG1_RX_INIT_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
+	data |= 0x1 << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	debug_exit();
+
+	return ret;
+}
+
 int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uint64_t comphy_mode)
 {
 	int mode = COMPHY_GET_MODE(comphy_mode);
@@ -503,6 +669,10 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uin
 	switch (mode) {
 	case(COMPHY_SATA_MODE):
 		err = mvebu_cp110_comphy_sata_power_on(comphy_base, comphy_index, comphy_mode);
+		break;
+	case(COMPHY_SGMII_MODE):
+	case(COMPHY_HS_SGMII_MODE):
+		err = mvebu_cp110_comphy_sgmii_power_on(comphy_base, comphy_index, comphy_mode);
 		break;
 	default:
 		ERROR("comphy%ld: unsupported comphy mode\n", comphy_index);
