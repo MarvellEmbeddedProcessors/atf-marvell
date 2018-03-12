@@ -302,14 +302,13 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 static void plat_dram_interfaces_update(void)
 {
 	struct mv_ddr_iface *iface = NULL;
-	uint32_t ifaces_size, i, ap_id, iface_cnt;
+	uint32_t ifaces_size, i, ap_id;
 	const uint32_t ap_cnt = ap810_get_ap_count();
 
 	debug_enter();
 
 	/* Go over the interfaces, and update the topology */
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
-		iface_cnt = 0;
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		/* Go over the interfaces of AP and initialize them */
@@ -326,26 +325,7 @@ static void plat_dram_interfaces_update(void)
 			/* Update base address of interface */
 			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
 			/* Count number of interfaces are ready */
-			iface_cnt++;
-		}
-		VERBOSE("Found %d DRAM interfaces on AP-%d\n", iface_cnt, ap_id);
-		/* If the number of interfaces equal to MAX (enable RAR) */
-		if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
-			/* Get interfaces of AP-ID */
-			plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
-			/* Go over the interfaces of AP and initialize them */
-			for (i = 0; i < ifaces_size; i++, iface++) {
-				VERBOSE("AP-%d set DRAM%d into RAR mode\n", ap_id, i);
-				iface->iface_mode = MV_DDR_RAR_ENA;
-				/* If the base address not 0x0, need to divide
-				** the base address, the dram region will be
-				** splited into dual DRAMs
-				** */
-				iface->iface_base_addr >>= 1;
-				/* TODO: add EERATA */
-				if (iface->id == 1)
-					iface->iface_base_addr |= 1UL << 43;
-			}
+			VERBOSE("Found DRAM on interface %d AP-%d\n", iface->id, ap_id);
 		}
 	}
 }
@@ -396,7 +376,7 @@ static void plat_dram_addr_decode_remove(uint32_t ap_id,
 int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
-	uint32_t ifaces_size, i, ap_id, ret;
+	uint32_t ifaces_size, i, ap_id, ret, iface_cnt;
 	const uint32_t ap_cnt = ap810_get_ap_count();
 	uint64_t ap_dram_size;
 	uint32_t ap_dram_tgt;
@@ -407,7 +387,7 @@ int plat_dram_init(void)
 	/* Go over DRAM interfaces, run remapping and scrubbing */
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
 		struct addr_map_win gwin_temp_win, ccu_dram_win;
-
+		iface_cnt = 0;
 		ap_dram_size = 0;
 		ap_dram_tgt = DRAM_0_TID;
 		/* Get interfaces of AP-ID */
@@ -424,20 +404,38 @@ int plat_dram_init(void)
 
 			/* Call DRAM init per interface */
 			ret = dram_init();
-			if (ret)
+			if (ret) {
+				ERROR("DRAM interface %d on AP-%d failed\n", i, ap_id);
 				return ret;
+			}
 
+			iface_cnt++;
 			/* Update status of interface */
 			iface->state = MV_DDR_IFACE_RDY;
 
 			ap_dram_size += iface->iface_byte_size;
-			if (iface->iface_mode == MV_DDR_RAR_ENA)
+			/* If the number of interfaces equal to MAX (enable RAR) */
+			if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
+				VERBOSE("AP-%d set DRAM%d into RAR mode\n", ap_id, i);
 				ap_dram_tgt = RAR_TID;
-			else if (iface->id == 1)
-				ap_dram_tgt = DRAM_1_TID;
-			else
-				ap_dram_tgt = DRAM_0_TID;
+				/* If the base address not 0x0, need to divide
+				** the base address, the dram region will be
+				** splited into dual DRAMs
+				** */
+				iface->iface_base_addr >>= 1;
+				/* TODO: add EERATA */
+				if (iface->id == 1)
+					iface->iface_base_addr |= 1UL << 43;
+			} else {
+				if (iface->id == 1)
+					ap_dram_tgt = DRAM_1_TID;
+				else
+					ap_dram_tgt = DRAM_0_TID;
+			}
+			/* Update dram memory mapping */
+			dram_mmap_config();
 		}
+
 		INFO("AP-%d DRAM size is 0x%lx (%lldGB)\n",
 		     ap_id, ap_dram_size, ap_dram_size/_1GB_);
 		/* Remap the physical memory shadowed by the internal registers configration
