@@ -99,7 +99,8 @@ MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/io_win.c	\
 				$(MARVELL_DRV_BASE)/amb_adec.c	\
 				$(MARVELL_DRV_BASE)/ccu.c	\
 				$(MARVELL_DRV_BASE)/icu.c	\
-				$(MARVELL_DRV_BASE)/cache_llc.c
+				$(MARVELL_DRV_BASE)/cache_llc.c	\
+				$(MARVELL_DRV_BASE)/comphy/phy-comphy-cp110.c
 
 BL31_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
@@ -109,6 +110,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S		       \
 				$(PLAT_COMMON_BASE)/plat_pm.c		       \
 				$(PLAT_COMMON_BASE)/plat_bl31_setup.c	       \
 				$(MARVELL_COMMON_BASE)/marvell_gicv2.c	       \
+				$(MARVELL_COMMON_BASE)/mrvl_sip_svc.c	       \
 				$(BL31_PORTING_SOURCES)			       \
 				$(MARVELL_DRV)				       \
 				$(MARVELL_MOCHI_DRV)			       \
