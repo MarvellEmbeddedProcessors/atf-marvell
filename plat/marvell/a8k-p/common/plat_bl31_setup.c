@@ -37,10 +37,6 @@
 
 #define CCU_HTC_ASET_WA				(0x1 << 5)
 
-/* SYSRST_OUTn Config definitions */
-#define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
-#define WD_MASK_SYS_RST_OUT			(1 << 2)
-
 /* Generic Timer System Controller */
 #define MVEBU_MSS_GTCR_REG(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x581000)
 #define MVEBU_MSS_GTCR_ENABLE_BIT		0x1
@@ -245,20 +241,6 @@ static void ap810_stream_id_init(int ap_id)
 	debug_exit();
 }
 
-static void ap810_soc_misc_configurations(int ap)
-{
-	uint32_t reg;
-
-	debug_enter();
-	/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
-	 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
-	 */
-	reg = mmio_read_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap));
-	reg &= ~(WD_MASK_SYS_RST_OUT);
-	mmio_write_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap), reg);
-	debug_exit();
-}
-
 /* Setup events that controls the propagation
  * of CPU event between dies.
  */
@@ -414,8 +396,6 @@ static void ap810_bl31_init(void)
 		ap810_setup_events(ap_id);
 		/* Setup stream-id */
 		ap810_stream_id_init(ap_id);
-		/* misc configuration of the SoC */
-		ap810_soc_misc_configurations(ap_id);
 	}
 
 	ap810_generic_timer_init();

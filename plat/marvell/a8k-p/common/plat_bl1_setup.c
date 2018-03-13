@@ -38,6 +38,10 @@
 
 #define MCI_RETRY_COUNT				10
 
+/* SYSRST_OUTn Config definitions */
+#define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
+#define WD_MASK_SYS_RST_OUT			(1 << 2)
+
 static uint32_t mci_get_link_speed(int ap_idx, int mci_idx)
 {
 	return mmio_read_32(MVEBU_IHB_PWM_CTRL_REG3(ap_idx, mci_idx)) & IHB_PWM_CTRL_REG3_AUTO_SPEED_MASK;
@@ -410,6 +414,24 @@ void marvell_bl1_setup_mpps(void)
 	mmio_write_32(MVEBU_AP_MPP_REGS(0, 2), 0x30000);
 }
 
+static void ap810_soc_misc_configurations(void)
+{
+	uint32_t reg, ap;
+
+	debug_enter();
+
+	for (ap = 0; ap < ap810_get_ap_count(); ap++) {
+		/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
+		 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
+		 */
+		reg = mmio_read_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap));
+		reg &= ~(WD_MASK_SYS_RST_OUT);
+		mmio_write_32(MVEBU_SYSRST_OUT_CONFIG_REG(ap), reg);
+	}
+
+	debug_exit();
+}
+
 void bl1_plat_arch_setup(void)
 {
 	marvell_bl1_plat_arch_setup();
@@ -433,6 +455,9 @@ void bl1_plat_arch_setup(void)
 
 	/* Initialize the MCI threshold to improve performance */
 	a8kp_mci_configure_threshold();
+
+	/* misc configuration of the SoC */
+	ap810_soc_misc_configurations();
 
 	/* Update configuration space of CP110 from 0xf200_0000, to the
 	 * new address according to address map of Armada-8k-plus family.
