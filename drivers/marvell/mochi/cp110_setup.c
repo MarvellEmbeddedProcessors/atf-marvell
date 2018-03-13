@@ -110,6 +110,10 @@ static const struct icu_config icu_config = {
 #define MVEBU_SOC_CFG_REG_NUM				(0)
 #define MVEBU_SOC_CFG_GLOG_SECURE_EN_MASK		(0xE)
 
+/* Bridge Windows Disable Register */
+#define MVEBU_BRIDGE_WIN_DIS_REG			(MVEBU_SOC_CFGS_OFFSET + 0x10)
+#define MVEBU_BRIDGE_WIN_DIS_OFF			(0x0)
+
 /* SATA3 MBUS to AXI regs */
 #define MVEBU_SATA_M2A_AXI_PORT_CTRL_REG		(0x54ff04)
 
@@ -424,6 +428,15 @@ static void cp110_rtc_init(uintptr_t base)
 	}
 }
 
+static void cp110_amb_adec_init(uintptr_t base)
+{
+	/* enable AXI-MBUS by clearing "Bridge Windows Disable" */
+	mmio_clrbits_32(base + MVEBU_BRIDGE_WIN_DIS_REG, (1 << MVEBU_BRIDGE_WIN_DIS_OFF));
+
+	/* configure AXI-MBUS windows for CP */
+	init_amb_adec(base);
+}
+
 void cp110_init(uintptr_t cp110_base)
 {
 	INFO("%s: Initialize CPx - base = %lx\n", __func__, cp110_base);
@@ -432,7 +445,7 @@ void cp110_init(uintptr_t cp110_base)
 	init_iob(cp110_base);
 
 	/* configure AXI-MBUS windows for CP0*/
-	init_amb_adec(cp110_base);
+	cp110_amb_adec_init(cp110_base);
 
 	/* configure axi for CP0*/
 	cp110_axi_attr_init(cp110_base);
