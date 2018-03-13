@@ -74,6 +74,8 @@
 #define MVEBU_AP_GPIO_DATA_OUT_EN(ap)		(MVEBU_AP_GPIO_REGS(ap) + 0x4)
 #define MVEBU_AP_GPIO_DATA_IN(ap)		(MVEBU_AP_GPIO_REGS(ap) + 0x10)
 
+#define MVEBU_AP_WD_BASE(ap)			(MVEBU_REGS_BASE_AP(ap) + 0x610000)
+
 #define MVEBU_MCI_PHY(ap, n)			(MVEBU_REGS_BASE_AP(ap) + 0x6C0000 + \
 						(((n) / 2 + 1) * 0x1000) + 0x1000 * (n))
 

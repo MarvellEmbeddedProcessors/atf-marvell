@@ -42,6 +42,12 @@
 #define MVEBU_SYSRST_OUT_CONFIG_REG(ap)		(MVEBU_AP_MISC_SOC_BASE(ap) + 0x4)
 #define WD_MASK_SYS_RST_OUT			(1 << 2)
 
+#define MVEBU_AP_WD_EN_REG(ap)			(MVEBU_AP_WD_BASE(ap))
+#define MVEBU_AP_WD_TIMEOUT_REG(ap)		(MVEBU_AP_WD_BASE(ap) + 0x8)
+
+#define WD_ENABLE				1
+#define WD_DISABLE				0
+
 static uint32_t mci_get_link_speed(int ap_idx, int mci_idx)
 {
 	return mmio_read_32(MVEBU_IHB_PWM_CTRL_REG3(ap_idx, mci_idx)) & IHB_PWM_CTRL_REG3_AUTO_SPEED_MASK;
@@ -333,6 +339,22 @@ static int a8kp_mci_configure_threshold(void)
 	return 0;
 }
 
+static void ap810_configure_watchdog(int enable)
+{
+	debug_enter();
+
+	/* As workaround for MCI failures, need to enable the watchdog before
+	** first access to CPx, this WA needed for AP810-A0 only
+	** */
+	if (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0) {
+		if (enable)
+			mmio_write_32(MVEBU_AP_WD_TIMEOUT_REG(MVEBU_AP0), 0x1000000);
+		mmio_write_32(MVEBU_AP_WD_EN_REG(MVEBU_AP0), enable);
+	}
+
+	debug_exit();
+}
+
 /* CP110 has configuration space address set by the default to 0xf200_0000
  * In Armada-8k-plus family there is an option to connect more than
  * a single CP110 to AP810.
@@ -367,6 +389,9 @@ static void update_cp110_default_win(void)
 			mci_id = marvell_get_mci_map(ap_id, cp_id);
 			INFO("AP-%d MCI-%d CP-%d\n", ap_id, mci_id, cp_id);
 
+			/* Enable watchdog before access to CP registers */
+			ap810_configure_watchdog(WD_ENABLE);
+
 			/* Open temp window in IO_WIN unit with relevant target ID */
 			iowin_temp_win.target_id = mci_id;
 			iow_temp_win_insert(ap_id, &iowin_temp_win, 1);
@@ -378,6 +403,10 @@ static void update_cp110_default_win(void)
 
 			/* Remove the temporary IO-WIN window */
 			iow_temp_win_remove(ap_id, &iowin_temp_win, 1);
+			/* Disable watchdog timer, that mean all the access to
+			** the CP works good
+			** */
+			ap810_configure_watchdog(WD_DISABLE);
 		}
 
 		ap810_win_route_close(ap_id, cp110_temp_base, MVEBU_CP_DEFAULT_BASE_SIZE, IO_0_TID);
