@@ -37,6 +37,7 @@ struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 		.id = 0,
 		.spd_data_addr = I2C_SPD_DATA_ADDR(0, 0),
 		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
+		.validation = MV_DDR_VAL_DIS,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
@@ -69,6 +70,7 @@ struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 		.id = 1,
 		.spd_data_addr = I2C_SPD_DATA_ADDR(0, 1),
 		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
+		.validation = MV_DDR_VAL_DIS,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
@@ -103,6 +105,7 @@ struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP] = {
 		.id = 0,
 		.spd_data_addr = I2C_SPD_DATA_ADDR(1, 0),
 		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
+		.validation = MV_DDR_VAL_DIS,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
@@ -135,6 +138,7 @@ struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP] = {
 		.id = 1,
 		.spd_data_addr = I2C_SPD_DATA_ADDR(1, 1),
 		.spd_page_sel_addr = I2C_SPD_P0_SEL_ADDR,
+		.validation = MV_DDR_VAL_DIS,
 		.tm = {
 			/* MISL board with 1CS 8Gb x4 devices of Micron 2400T */
 			DEBUG_LEVEL_ERROR,
