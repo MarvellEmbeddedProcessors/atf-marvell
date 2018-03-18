@@ -37,7 +37,6 @@
 #include <mmio.h>
 
 void apn806_init(void);
-uint32_t apn806_sar_get_bootsrc(void);
 
 static inline int apn806_rev_id_get(void)
 {
