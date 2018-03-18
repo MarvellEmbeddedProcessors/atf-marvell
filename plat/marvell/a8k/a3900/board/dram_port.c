@@ -37,8 +37,6 @@
 #include <debug.h>
 #include <mv_ddr_if.h>
 
-struct dram_config dram_cfg;
-
 /*
  * This function may modify the default DRAM parameters
  * based on information recieved from SPD or bootloader
@@ -47,11 +45,6 @@ struct dram_config dram_cfg;
 void plat_dram_update_topology(void)
 {
 	NOTICE("Gathering DRAM information\n");
-}
-
-void *plat_get_dram_data(void)
-{
-	return &dram_cfg;
 }
 
 /*
@@ -88,10 +81,4 @@ struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
 {
 	/* Return the board topology as defined in the board code */
 	return &board_topology_map;
-}
-
-struct dram_config *mv_ddr_dram_config_get(void)
-{
-	/* Return dram configuration as defined in the board code */
-	return &dram_cfg;
 }

@@ -40,8 +40,6 @@
 #include <mmio.h>
 #include <a8k_i2c.h>
 
-struct dram_config dram_cfg;
-
 /*
  * This struct provides the DRAM training code with
  * the appropriate board DRAM configuration
@@ -78,12 +76,6 @@ struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
 	return &board_topology_map;
 }
 
-struct dram_config *mv_ddr_dram_config_get(void)
-{
-	/* Return dram configuration as defined in the board code */
-	return &dram_cfg;
-}
-
 /*
  * This function may modify the default DRAM parameters
  * based on information recieved from SPD or bootloader
@@ -91,9 +83,4 @@ struct dram_config *mv_ddr_dram_config_get(void)
  */
 void plat_dram_update_topology(void)
 {
-}
-
-void *plat_get_dram_data(void)
-{
-	return &dram_cfg;
 }

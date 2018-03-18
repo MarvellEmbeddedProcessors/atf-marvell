@@ -53,8 +53,6 @@
 
 #define MVEBU_MPP_CTRL_MASK			0xf
 
-struct dram_config dram_cfg;
-
 /*
  * This struct provides the DRAM training code with
  * the appropriate board DRAM configuration
@@ -90,12 +88,6 @@ struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
 {
 	/* Return the board topology as defined in the board code */
 	return &board_topology_map;
-}
-
-struct dram_config *mv_ddr_dram_config_get(void)
-{
-	/* Return dram configuration as defined in the board code */
-	return &dram_cfg;
 }
 
 static void mpp_config(void)
@@ -140,9 +132,4 @@ void plat_dram_update_topology(void)
 		i2c_read(I2C_SPD_ADDR, 0x0, 1, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
 	}
-}
-
-void *plat_get_dram_data(void)
-{
-	return &dram_cfg;
 }

@@ -40,8 +40,6 @@
 #include <mmio.h>
 #include <a8k_i2c.h>
 
-struct dram_config dram_cfg;
-
 /*
  * This struct provides the DRAM training code with
  * the appropriate board DRAM configuration
@@ -78,12 +76,6 @@ struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
 	return &board_topology_map;
 }
 
-struct dram_config *mv_ddr_dram_config_get(void)
-{
-	/* Return dram configuration as defined in the board code */
-	return &dram_cfg;
-}
-
 static void mpp_config(void)
 {
 	uint32_t val;
@@ -116,9 +108,4 @@ void plat_dram_update_topology(void)
 		i2c_read(CP0_I2C_SPD_ADDR, 0x0, 2, tm->spd_data.all_bytes,
 			 sizeof(tm->spd_data.all_bytes));
 	}
-}
-
-void *plat_get_dram_data(void)
-{
-	return &dram_cfg;
 }
