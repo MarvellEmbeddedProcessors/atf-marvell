@@ -66,8 +66,7 @@ PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a8k_common.c \
 BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 			$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
-BLE_SOURCES		:=	$(MARVELL_COMMON_BASE)/sys_info.c		 	\
-				$(PLAT_COMMON_BASE)/plat_ble_setup.c 	\
+BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c		\
 				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c	 	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		 	\

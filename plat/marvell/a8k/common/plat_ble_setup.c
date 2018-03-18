@@ -36,7 +36,6 @@
 #include <plat_config.h>
 #include <plat_def.h>
 #include <debug.h>
-#include <sys_info.h>
 #include <mv_ddr_if.h>
 #include <ccu.h>
 #include <io_win.h>
@@ -132,16 +131,6 @@
 
 #define EFUSE_AP_LD0_CLUSTER_DOWN_OFFS	4
 
-/* Notify bootloader on DRAM setup */
-void pass_dram_sys_info(struct dram_config *cfg)
-{
-	set_info(DRAM_BUS_WIDTH, cfg->iface[0].bus_width);
-	set_info(DRAM_CS0_SIZE, cfg->iface[0].size_mbytes);
-	set_info(DRAM_CS0, 1);
-	set_info(DRAM_CS1, 0);
-	set_info(DRAM_CS2, 0);
-	set_info(DRAM_CS3, 0);
-}
 /******************************************************************************
  * The routine allows to save the CCU and IO windows configuration during DRAM
  * setup and restore them afterwards before exiting the BLE stage.
@@ -526,9 +515,6 @@ int ble_plat_setup(int *skip)
 
 	/* Restore the original CCU configuration before exit from BLE */
 	ble_plat_mmap_config(MMAP_RESTORE_SAVED);
-
-	/* Pass DRAM information to bootloader */
-	pass_dram_sys_info((struct dram_config *)plat_get_dram_data());
 
 	return ret;
 }
