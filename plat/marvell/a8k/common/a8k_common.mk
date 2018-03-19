@@ -66,8 +66,11 @@ PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a8k_common.c \
 BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 			$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
+MARVELL_MOCHI_DRV	:=	$(MARVELL_DRV_BASE)/mochi/apn806_setup.c \
+				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
+
 BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c		\
-				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c	 	\
+				$(MARVELL_MOCHI_DRV)			       \
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		 	\
 				$(MARVELL_DRV_BASE)/aro.c	         	\
@@ -97,9 +100,6 @@ MARVELL_DRV		:= 	$(MARVELL_DRV_BASE)/io_win.c	\
 				$(MARVELL_DRV_BASE)/ccu.c	\
 				$(MARVELL_DRV_BASE)/icu.c	\
 				$(MARVELL_DRV_BASE)/cache_llc.c
-
-MARVELL_MOCHI_DRV	:=	$(MARVELL_DRV_BASE)/mochi/apn806_setup.c \
-				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
 
 BL31_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 

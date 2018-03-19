@@ -34,8 +34,6 @@
 
 #include <plat_marvell.h>
 #include <mmio.h>
-#include <apn806_setup.h>
-#include <cp110_setup.h>
 
 void marvell_bl1_setup_mpps(void)
 {

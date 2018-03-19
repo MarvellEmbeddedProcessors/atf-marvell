@@ -40,7 +40,7 @@
 #include <ccu.h>
 #include <io_win.h>
 #include <aro.h>
-#include <apn806_setup.h>
+#include <ap_setup.h>
 #include <cp110_setup.h>
 
 /* Register for skip image use */
@@ -181,7 +181,7 @@ static void ble_plat_avs_config(void)
 	uint32_t reg_val, device_id;
 
 	/* Do nothing on A0 revision SoCs */
-	if (apn806_rev_id_get() == APN806_REV_ID_A0)
+	if (ap_rev_id_get() == APN806_REV_ID_A0)
 		return;
 
 	/* Check which SoC is running and act accordingly */
@@ -506,6 +506,9 @@ int ble_plat_setup(int *skip)
 #if ARO_ENABLE
 	init_aro();
 #endif
+
+	/* Do required AP setups for BLE stage */
+	ap_ble_init();
 
 	/* Update DRAM topology (scan DIMM SPDs) */
 	plat_dram_update_topology();

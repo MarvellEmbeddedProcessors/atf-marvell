@@ -33,7 +33,8 @@
 */
 
 #include <plat_def.h>
-#include <apn806_setup.h>
+#include <mmio.h>
+#include <ap_setup.h>
 #include <io_win.h>
 #include <ccu.h>
 #include <mci.h>
@@ -168,7 +169,7 @@ static void init_aurora2(void)
 	/* A0 Only: cache line clean & invalidate instead of)
 	** cache line invalidate only - to avoid system hang
 	** due to memory coherency issue */
-	if (apn806_rev_id_get() == APN806_REV_ID_A0) {
+	if (ap_rev_id_get() == APN806_REV_ID_A0) {
 		reg = mmio_read_32(CCU_LTC_CR);
 		reg |= (0x1 << CCU_CLEAN_INV_WRITE_OFFSET);
 		mmio_write_32(CCU_LTC_CR, reg);
@@ -247,7 +248,7 @@ void misc_soc_configurations(void)
 	mmio_write_32(MVEBU_SYSRST_OUT_CONFIG_REG, reg);
 }
 
-void apn806_init(void)
+void ap_init(void)
 {
 	/* Setup Aurora2. */
 	init_aurora2();
@@ -282,3 +283,19 @@ void apn806_init(void)
 	ap806_generic_timer_init();
 #endif
 }
+
+void ap_ble_init(void)
+{
+}
+
+int ap_rev_id_get(void)
+{
+	/* Returns:
+	 * - 0 (APN806_REV_ID_A0) for A0
+	 * - 1 (APN806_REV_ID_A1) for A1
+	 */
+	return (mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG) >>
+		GWD_IIDR2_REV_ID_OFFSET) &
+		GWD_IIDR2_REV_ID_MASK;
+}
+

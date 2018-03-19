@@ -31,22 +31,10 @@
 *
 ***************************************************************************
 */
-#ifndef __APN806_SETUP_H__
-#define __APN806_SETUP_H__
+#ifndef __AP_SETUP_H__
+#define __AP_SETUP_H__
 
-#include <mmio.h>
-
-void apn806_init(void);
-
-static inline int apn806_rev_id_get(void)
-{
-	/* Returns:
-	 * - 0 (APN806_REV_ID_A0) for A0
-	 * - 1 (APN806_REV_ID_A1) for A1
-	 */
-	return (mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG) >>
-		GWD_IIDR2_REV_ID_OFFSET) &
-		GWD_IIDR2_REV_ID_MASK;
-}
-
-#endif /* __APN806_SETUP_H__ */
+void ap_init(void);
+void ap_ble_init(void);
+int ap_rev_id_get(void);
+#endif /* __AP_SETUP_H__ */

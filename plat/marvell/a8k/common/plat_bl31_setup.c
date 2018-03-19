@@ -35,7 +35,7 @@
 #include <plat_marvell.h>
 #include <plat_config.h>
 #include <plat_private.h>
-#include <apn806_setup.h>
+#include <ap_setup.h>
 #include <cp110_setup.h>
 #include <marvell_pm.h>
 #include <mmio.h>
@@ -100,8 +100,8 @@ void bl31_plat_arch_setup(void)
 	/* initiliaze the timer for mdelay/udelay functionality */
 	plat_delay_timer_init();
 
-	/* configure apn806 */
-	apn806_init();
+	/* configure AP */
+	ap_init();
 
 	/* In marvell_bl31_plat_arch_setup, el3 mmu is configured.
 	 * el3 mmu configuration MUST be called after apn806_init, if not,
