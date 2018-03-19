@@ -165,15 +165,6 @@ static void init_aurora2(void)
 	reg = mmio_read_32(CCU_HTC_CR);
 	reg |= (0x1 << CCU_SET_POC_OFFSET);
 	mmio_write_32(CCU_HTC_CR, reg);
-
-	/* A0 Only: cache line clean & invalidate instead of)
-	** cache line invalidate only - to avoid system hang
-	** due to memory coherency issue */
-	if (ap_rev_id_get() == APN806_REV_ID_A0) {
-		reg = mmio_read_32(CCU_LTC_CR);
-		reg |= (0x1 << CCU_CLEAN_INV_WRITE_OFFSET);
-		mmio_write_32(CCU_LTC_CR, reg);
-	}
 #endif /* !LLC_DISABLE */
 
 	apn806_errata_wa_init();
@@ -286,16 +277,5 @@ void ap_init(void)
 
 void ap_ble_init(void)
 {
-}
-
-int ap_rev_id_get(void)
-{
-	/* Returns:
-	 * - 0 (APN806_REV_ID_A0) for A0
-	 * - 1 (APN806_REV_ID_A1) for A1
-	 */
-	return (mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG) >>
-		GWD_IIDR2_REV_ID_OFFSET) &
-		GWD_IIDR2_REV_ID_MASK;
 }
 

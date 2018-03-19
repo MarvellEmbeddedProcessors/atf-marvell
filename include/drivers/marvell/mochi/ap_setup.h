@@ -36,5 +36,4 @@
 
 void ap_init(void);
 void ap_ble_init(void);
-int ap_rev_id_get(void);
 #endif /* __AP_SETUP_H__ */

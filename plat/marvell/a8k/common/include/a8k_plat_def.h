@@ -40,9 +40,6 @@
 #define MVEBU_PRIMARY_CPU		0x0
 #define MVEBU_AP0			0x0
 
-#define APN806_REV_ID_A0		0
-#define APN806_REV_ID_A1		1
-
 /* APN806 revision ID */
 #define MVEBU_CSS_GWD_CTRL_IIDR2_REG	(MVEBU_REGS_BASE + 0x610FCC)
 #define GWD_IIDR2_REV_ID_OFFSET		12

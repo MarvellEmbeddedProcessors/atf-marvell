@@ -180,10 +180,6 @@ static void ble_plat_avs_config(void)
 {
 	uint32_t reg_val, device_id;
 
-	/* Do nothing on A0 revision SoCs */
-	if (ap_rev_id_get() == APN806_REV_ID_A0)
-		return;
-
 	/* Check which SoC is running and act accordingly */
 	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	switch (device_id) {
