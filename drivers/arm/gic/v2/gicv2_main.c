@@ -595,3 +595,11 @@ unsigned int gicv2_set_pmr(unsigned int mask)
 
 	return old_mask;
 }
+
+/*******************************************************************************
+ * This functions configures the single interrupt to be edge triggered
+ ******************************************************************************/
+void gicv2_interrupt_set_edge_triggered(unsigned int id)
+{
+	gicd_set_icfgr(driver_data->gicd_base, id, GIC_INTR_CFG_EDGE);
+}
