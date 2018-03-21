@@ -302,7 +302,7 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 static void plat_dram_interfaces_update(void)
 {
 	struct mv_ddr_iface *iface = NULL;
-	uint32_t ifaces_size, i, ap_id;
+	uint32_t ifaces_size, i, ap_id, iface_cnt;
 	const uint32_t ap_cnt = ap810_get_ap_count();
 
 	debug_enter();
@@ -311,6 +311,8 @@ static void plat_dram_interfaces_update(void)
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
 		/* Get interfaces of AP-ID */
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
+		/* clear iface counter */
+		iface_cnt = 0;
 		/* Go over the interfaces of AP and initialize them */
 		for (i = 0; i < ifaces_size; i++, iface++) {
 			/* Update DRAM topology (scan DIMM SPDs) */
@@ -326,7 +328,11 @@ static void plat_dram_interfaces_update(void)
 			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
 			/* Count number of interfaces are ready */
 			VERBOSE("Found DRAM on interface %d AP-%d\n", iface->id, ap_id);
+			iface_cnt++;
 		}
+		if (iface_cnt < ifaces_size)
+			NOTICE("\n\tFound %d out of %d DRAM interface in AP %d. Performance may be degraded!!\n",
+				iface_cnt, ifaces_size, ap_id);
 	}
 }
 
