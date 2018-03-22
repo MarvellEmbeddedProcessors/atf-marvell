@@ -50,9 +50,6 @@
 #define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x200)
 #define CCU_SET_POC_OFFSET			5
 
-#define CCU_LTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x300)
-#define CCU_CLEAN_INV_WRITE_OFFSET		8
-
 #define CCU_RGF(win)				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x90 + 4 * (win))
 
 #define DSS_CR0					(MVEBU_RFU_BASE + 0x100)
@@ -68,9 +65,6 @@
 						 SEC_MOCHI_IN_ACC_IHB1_EN | \
 						 SEC_MOCHI_IN_ACC_IHB2_EN | \
 						 SEC_MOCHI_IN_ACC_PIDI_EN)
-
-/* Misc SoC configurations Base*/
-#define MVEBU_MISC_SOC_BASE			(MVEBU_REGS_BASE + 0x6F4300)
 
 /* SYSRST_OUTn Config definitions */
 #define MVEBU_SYSRST_OUT_CONFIG_REG		(MVEBU_MISC_SOC_BASE + 0x4)

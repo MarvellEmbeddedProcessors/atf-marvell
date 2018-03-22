@@ -60,6 +60,8 @@
 #define MVEBU_IO_WIN_GCR_OFFSET		(0x70)
 #define MVEBU_IO_WIN_MAX_WINS		(7)
 
+/* Misc SoC configurations Base */
+#define MVEBU_MISC_SOC_BASE		(MVEBU_REGS_BASE + 0x6F4300)
 
 #define MVEBU_CCU_BASE(ap_index)	(MVEBU_REGS_BASE + 0x4000)
 #define MVEBU_CCU_MAX_WINS		(8)
