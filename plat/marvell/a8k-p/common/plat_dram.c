@@ -496,9 +496,6 @@ int plat_dram_init(void)
 		plat_dram_addr_decode_insert(ap_id, ap_dram_tgt,
 					     &gwin_temp_win, &ccu_dram_win);
 
-		/* Scrub the DRAM for ECC support */
-		dram_scrubbing(ap_id, AP_DRAM_BASE_ADDR(ap_id, ap_cnt), ap_dram_size);
-
 		/* Restore the original DRAM size on AP0 before returning to the BootROM.
 		 * Access to entire DRAM is required only during DDR initialization and scrubbing.
 		 * The correct DRAM size will be set back by init_ccu() at later stage.
