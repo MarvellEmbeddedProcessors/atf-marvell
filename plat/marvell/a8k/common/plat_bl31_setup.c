@@ -45,6 +45,11 @@
 #include <mss_ipc_drv.h>
 #include <mss_mem.h>
 
+/* In Armada-8k family AP806/AP807, CP0 connected to PIDI
+** and CP1 connected to IHB via MCI #0
+** */
+#define MVEBU_MCI0		0
+
 static _Bool pm_fw_running;
 
 /* Set a weak stub for platforms that don't need to configure GPIO */
@@ -54,10 +59,15 @@ int marvell_gpio_config(void)
 	return 0;
 }
 
-void marvell_bl31_mpp_init(void)
+static void marvell_bl31_mpp_init(int cp)
 {
 	uint32_t reg;
 
+	/* need to do for CP#0 only */
+	if (cp)
+		return;
+
+	/* TODO: move this code to U-boot */
 	/*
 	 * Enable CP0 I2C MPPs (MPP: 37-38)
 	 * U-Boot rely on proper MPP settings for I2C EEPROM usage
@@ -95,6 +105,7 @@ _Bool is_pm_fw_running(void)
 /* This function overruns the same function in marvell_bl31_setup.c */
 void bl31_plat_arch_setup(void)
 {
+	int cp;
 	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
 
 	/* initiliaze the timer for mdelay/udelay functionality */
@@ -112,15 +123,17 @@ void bl31_plat_arch_setup(void)
 	    mailbox[MBOX_IDX_SUSPEND_MAGIC] != MVEBU_MAILBOX_SUSPEND_STATE)
 		marvell_bl31_plat_arch_setup();
 
-	/* configure cp110 for CP0*/
-	cp110_init(MVEBU_CP_REGS_BASE(0));
+	for (cp = 0; cp < CP_COUNT; cp++) {
+		/* Initialize MCI to access CP1 */
+		if (cp == 1)
+			mci_initialize(MVEBU_MCI0);
 
-	/* initialize MCI & CP1 */
-	if (CP_COUNT == 2 && mci_initialize(0))
-		cp110_init(MVEBU_CP_REGS_BASE(1));
+		/* Configure cp110 */
+		cp110_init(MVEBU_CP_REGS_BASE(cp));
 
-	/* Should be called only after setting IOB windows */
-	marvell_bl31_mpp_init();
+		/* Should be called only after setting IOB windows */
+		marvell_bl31_mpp_init(cp);
+	}
 
 	/* initialize IPC between MSS and ATF */
 	if (mailbox[MBOX_IDX_MAGIC] != MVEBU_MAILBOX_MAGIC_NUM ||
