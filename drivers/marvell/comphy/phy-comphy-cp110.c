@@ -47,11 +47,11 @@
 
 #define COMPHY_MASK(offset, len)	(((1 << (len)) - 1) << (offset))
 
-/* Macro the extract the mode from lane description */
+/* Macro which extracts mode from lane description */
 #define COMPHY_GET_MODE(x)		(((x) & COMPHY_MODE_MASK) >> COMPHY_MODE_OFFSET)
-/* Macro the extract the unit index from lane description */
+/* Macro which extracts unit index from lane description */
 #define COMPHY_GET_ID(x)		(((x) & COMPHY_UNIT_ID_MASK) >> COMPHY_UNIT_ID_OFFSET)
-/* Macro the extract the speed from lane description */
+/* Macro which extracts speed from lane description */
 #define COMPHY_GET_SPEED(x)		(((x) & COMPHY_SPEED_MASK) >> COMPHY_SPEED_OFFSET)
 
 #define COMPHY_SATA_MODE	0x1
@@ -207,7 +207,7 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 	mmio_write_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET, reg);
 }
 
-/* Clear PIPE selector - avoid collision with privious configuration */
+/* Clear PIPE selector - avoid collision with previous configuration */
 void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t comphy_index)
 {
 	uint32_t reg, mask, field;
