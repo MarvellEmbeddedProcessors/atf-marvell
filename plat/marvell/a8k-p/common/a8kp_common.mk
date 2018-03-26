@@ -14,6 +14,8 @@ MARVELL_COMMON_BASE	:= plat/marvell/common
 
 CALL_DOIMAGE		:= y
 
+ERRATA_A72_859971       := 1
+
 # Enable MSS support for a8kp family
 MSS_SUPPORT		:= 1
 
