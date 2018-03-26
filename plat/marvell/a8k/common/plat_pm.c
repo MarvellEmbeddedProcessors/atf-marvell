@@ -123,6 +123,14 @@ static int plat_marvell_cpu_powerdown(int cpu_id)
 {
 	uint32_t	reg_val;
 	int		exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	unsigned int chip_rev_id;
+
+	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
+	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
+
+	/* TODO: support for ap807 needs to be added */
+	if (chip_rev_id == CHIP_ID_AP807)
+		return 0;
 
 	INFO("Powering down CPU%d\n", cpu_id);
 
@@ -226,6 +234,17 @@ static int plat_marvell_cpu_powerup(u_register_t mpidr)
 	uint32_t	reg_val;
 	int	cpu_id = MPIDR_CPU_GET(mpidr), cluster = MPIDR_CLUSTER_GET(mpidr);
 	int	exit_loop = REG_WR_VALIDATE_TIMEOUT;
+	unsigned int chip_rev_id;
+
+	/* TODO: support for ap807 needs to be added */
+	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
+	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
+
+	/* Power up CPU (CPUs 1-3 are powered off at start of BLE) for AP806
+	 * only.
+	 */
+	if (chip_rev_id == CHIP_ID_AP807)
+		return 0;
 
 	/* calculate absolute CPU ID */
 	cpu_id = cluster * PLAT_MARVELL_CLUSTER_CORE_COUNT + cpu_id;
