@@ -39,6 +39,8 @@ MARVELL_COMMON_BASE	:= plat/marvell/common
 
 CALL_DOIMAGE		:= y
 
+ERRATA_A72_859971       := 1
+
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
 
