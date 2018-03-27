@@ -64,6 +64,13 @@ CP_NUM				:= 2
 endif
 endif
 
+# Disable BL31 cache for Power-Managment
+ifeq ($(PLAT),$(filter $(PLAT),a70x0))
+BL31_CACHE_DISABLE		:= 1
+else
+BL31_CACHE_DISABLE		:= 0
+endif
+
 # Marvell images
 BOOT_IMAGE			:= boot-image.bin
 BOOT_ENC_IMAGE			:= boot-image-enc.bin
@@ -647,6 +654,7 @@ $(eval $(call add_define,ARO_ENABLE))
 $(eval $(call add_define,LLC_DISABLE))
 $(eval $(call add_define,PCI_EP_SUPPORT))
 $(eval $(call add_define,CP_NUM))
+$(eval $(call add_define,BL31_CACHE_DISABLE))
 
 ################################################################################
 # Include BL specific makefiles

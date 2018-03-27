@@ -264,7 +264,13 @@ void marvell_bl31_plat_arch_setup(void)
 				  BL_COHERENT_RAM_END
 #endif
 			      );
+
+#if BL31_CACHE_DISABLE
+	enable_mmu_el3(DISABLE_DCACHE);
+	INFO("Cache is disabled in BL3\n");
+#else
 	enable_mmu_el3(0);
+#endif
 }
 
 void bl31_plat_arch_setup(void)

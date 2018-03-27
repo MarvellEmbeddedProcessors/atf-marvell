@@ -106,6 +106,7 @@ func psci_do_pwrup_cache_maintenance
 	mov	x0, sp
 	bl	inv_dcache_range
 
+#if !BL31_CACHE_DISABLE
 	/* ---------------------------------------------
 	 * Enable the data cache.
 	 * ---------------------------------------------
@@ -114,6 +115,7 @@ func psci_do_pwrup_cache_maintenance
 	orr	x0, x0, #SCTLR_C_BIT
 	msr	sctlr_el3, x0
 	isb
+#endif
 
 	ldp	x29, x30, [sp], #16
 	ret
