@@ -131,12 +131,12 @@ void clocks_fetch_options(uint32_t *freq_mode, uint32_t *clk_index)
 /* prepares the transactions to be send to each AP's EAWG FIFO */
 static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 				       struct eawg_transaction *trans_array,
-				       struct eawg_transaction *primary_cpu_trans)
+				       int clock_id_first, int clock_id_last)
 {
 	int pll, i;
 
 	/*build transactions array to be written to EAWGs' FIFO */
-	for (pll = 0, i = 0 ; pll < PLL_LAST ; pll++) {
+	for (pll = clock_id_first, i = 0 ; pll <= clock_id_last ; pll++) {
 
 		if (pll_base_address[pll] == -1) {
 			printf("PLL number %d value is not intialized", pll);
@@ -173,18 +173,6 @@ static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 		i++;
 	}
 
-	/* one extra transaction to write to a scratch-pad register in each AP */
-	trans_array[i].address = SCRATCH_PAD_LOCAL_REG;
-	trans_array[i].data = 0x1;
-	trans_array[i].delay = 0x0;
-
-	i = 0;
-
-	/* Loading a wake up command to primary CPU */
-	primary_cpu_trans[i].address = CPU_WAKEUP_COMMAND(0);
-	primary_cpu_trans[i].data = 0x1;
-	primary_cpu_trans[i].delay = 0x3;
-
 	return 0;
 }
 
@@ -200,16 +188,16 @@ int ap810_clocks_init(int ap_count)
 	/* for each PLL there's 4 transactions and another transaction for
 	 * writing to each AP's scratch-pad register to notify EAWG is done.
 	 *
-	 * extra 3 transactions are needed
+	 * extra transaction is needed
 	 * for CPU0 in AP0:
-	 * 1.reseting the fast2slow ips (2 transactions).
-	 * 2.loading a wake up command to CPU0 (1 transaction).
+	 * 1.loading a wake up command to CPU0 (1 transaction).
 	 *
 	 * plls_clocks_vals contains info about each PLL clock value
 	 * and one extra value on cpu freq for ARO use.
 	 */
-	struct eawg_transaction trans_array[(PLL_LAST * TRANS_PER_PLL) + 1];
-	struct eawg_transaction primary_cpu_trans[PRIMARY_CPU_TRANS];
+	struct eawg_transaction trans_array[(PLL_LAST * TRANS_PER_PLL)];
+	struct eawg_transaction eawg_done_indication;
+	struct eawg_transaction eawg_wakeup_indication;
 	uint32_t plls_clocks_vals[PLL_LAST];
 	uint32_t freq_mode, clk_config;
 	int cpu_clock_val, ddr_clock_option;
@@ -239,19 +227,35 @@ int ap810_clocks_init(int ap_count)
 
 	plat_dram_freq_update(ddr_clock_option);
 
-	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, primary_cpu_trans))
+	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, DSS))
 		return -1;
 
+	/* one extra transaction to write to a scratch-pad register in each AP */
+	eawg_done_indication.address = SCRATCH_PAD_LOCAL_REG;
+	eawg_done_indication.data = 0x1;
+	eawg_done_indication.delay = 0x0;
+
+	/* Loading a wake up command to primary CPU */
+	eawg_wakeup_indication.address = CPU_WAKEUP_COMMAND(0);
+	eawg_wakeup_indication.data = 0x1;
+	eawg_wakeup_indication.delay = 0x3;
 
 	/* write transactions to each APs' EAWG FIFO */
 	for (ap = 0 ; ap < ap_count ; ap++) {
-		if (eawg_load_transactions(trans_array, (PLL_LAST * TRANS_PER_PLL) + 1, ap)) {
-			printf("CPU0 couldn't load all transactions to AP%d EAWG FIFO\n", ap);
+		if (eawg_load_transactions(trans_array, (PLL_LAST * TRANS_PER_PLL), ap)) {
+			printf("couldn't load all transactions to AP%d EAWG FIFO\n", ap);
 			return -1;
 		}
-		if (eawg_load_transactions(primary_cpu_trans, PRIMARY_CPU_TRANS, ap)) {
-			printf("CPU0 couldn't load all transactions to AP%d EAWG FIFO\n", ap);
+		if (eawg_load_transactions(&eawg_done_indication, 1, ap)) {
+			printf("couldn't load done-indication transaction to AP%d EAWG FIFO\n", ap);
 			return -1;
+		}
+		/* Load wake up transaction for CPU0 */
+		if (ap == 0) {
+			if (eawg_load_transactions(&eawg_wakeup_indication, 1, ap)) {
+				printf("couldn't load wake-up transaction to AP%d EAWG FIFO\n", ap);
+				return -1;
+			}
 		}
 	}
 
