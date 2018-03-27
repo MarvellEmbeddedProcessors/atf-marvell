@@ -43,10 +43,8 @@
 #define PLL_FREQ_800		0x2883F002 /* 800 */
 
 /* PLL device control registers */
-#define PLL_CONTROL_0_REG	0xEC6F8D34
-#define PLL_CONTROL_1_REG	0xEC6F8D40
-#define PLL_CONTROL_2_REG	0xEC6F8D3C
-#define PLL_CONTROL_3_REG	0xEC6F8D44
+#define PLL_CONTROL_REG(ap, n)	(MVEBU_DFX_SR_BASE(ap) + ((n > 0) ? (0xD34 + ((n + 1) * 0x4)) : 0xD34))
+#define PLL_CTRL_REG_NUM	4
 
 /* EAWG functionality */
 #define SCRATCH_PAD_LOCAL_REG	(MVEBU_REGS_BASE_LOCAL_AP + 0x6F43E0)
@@ -60,6 +58,9 @@
 
 #define SAR_SUPPORTED_TABLES	2
 #define SAR_SUPPORTED_OPTIONS	8
+
+#define ARO_MODE		0x0
+#define PLL_MODE		0x1
 
 enum pll_type {
 	RING,
@@ -124,6 +125,47 @@ unsigned int pll_base_address[PLL_LAST] = {
 	PLL_CLUSTER_1_0_ADDRES, /* PLL for cluster0 and cluster1 */
 	PLL_CLUSTER_2_3_ADDRES, /* PLL for cluster2 and cluster3 */
 };
+
+#if !ARO_ENABLE
+/* This function switch clock mode,
+ * clock driven by ARO.
+ * clock driven by PLL.
+ */
+static void clocks_switch_aro_pll(unsigned int clock_mode, int ap_count)
+{
+	unsigned int reg;
+	int ap, pll_ctrl_reg, pll_ctrl_reg_offset, aro_ctrl_reg_offset;
+
+	for (ap = 0 ; ap < ap_count; ap++) {
+		for (pll_ctrl_reg = 0 ; pll_ctrl_reg < PLL_CTRL_REG_NUM ; pll_ctrl_reg++) {
+
+			/* bits in pll control register for enable/disable of
+			 * pll and aro.
+			 */
+			pll_ctrl_reg_offset = 7;
+			aro_ctrl_reg_offset = 2;
+
+			/* in cluster0 the bits are different from cluster 1-3. */
+			if (!pll_ctrl_reg) {
+				pll_ctrl_reg_offset = 31;
+				aro_ctrl_reg_offset = 26;
+			}
+
+			/* Enable/Disable PLL in control_reg */
+			reg = mmio_read_32(PLL_CONTROL_REG(ap, pll_ctrl_reg));
+			reg &= ~(0x1 << pll_ctrl_reg_offset);
+			reg |= (clock_mode << pll_ctrl_reg_offset);
+			mmio_write_32(PLL_CONTROL_REG(ap, pll_ctrl_reg), reg);
+
+			/* Enable/Disable ARO*/
+			reg = mmio_read_32(PLL_CONTROL_REG(ap, pll_ctrl_reg));
+			reg &= ~(0x1 << aro_ctrl_reg_offset);
+			reg |= (clock_mode << aro_ctrl_reg_offset);
+			mmio_write_32(PLL_CONTROL_REG(ap, pll_ctrl_reg), reg);
+		}
+	}
+}
+#endif
 
 /* read efuse value which device if it's low/high frequency
  * fetch frequency values from appropriate table
@@ -214,13 +256,14 @@ int ap810_clocks_init(int ap_count)
 	struct eawg_transaction eawg_wakeup_indication;
 	uint32_t plls_clocks_vals[PLL_LAST];
 	uint32_t freq_mode, clk_config;
-	int cpu_clock_val, ddr_clock_option;
+	int ddr_clock_option;
+	int clock_id_end;
 	int ap;
 
 	/* check if the total number of transactions doesn't exceeds EAWG's
 	 * FIFO capacity.
 	 */
-	if (((PLL_LAST * TRANS_PER_PLL) + PRIMARY_CPU_TRANS) > (MAX_TRANSACTIONS - 1)) {
+	if ((PLL_LAST * TRANS_PER_PLL) > (MAX_TRANSACTIONS - 1)) {
 		printf("transactions number exceeded fifo size\n");
 		return -1;
 	}
@@ -236,12 +279,21 @@ int ap810_clocks_init(int ap_count)
 	plls_clocks_vals[IO] = pll_freq_tables[freq_mode][clk_config][IO];
 	plls_clocks_vals[PIDI] = pll_freq_tables[freq_mode][clk_config][PIDI];
 	plls_clocks_vals[DSS] = pll_freq_tables[freq_mode][clk_config][DSS];
-	cpu_clock_val = pll_freq_tables[freq_mode][clk_config][CPU_FREQ - 1];
-	ddr_clock_option = pll_freq_tables[freq_mode][clk_config][DDR_FREQ - 1];
+	plls_clocks_vals[PLL_CLUSTER_0_FREQ] = pll_freq_tables[freq_mode][clk_config][PLL_CLUSTER_0_FREQ];
+	plls_clocks_vals[PLL_CLUSTER_2_FREQ] = pll_freq_tables[freq_mode][clk_config][PLL_CLUSTER_2_FREQ];
 
+	/* update ddr clock option in dram topology */
+	ddr_clock_option = pll_freq_tables[freq_mode][clk_config][DDR_FREQ - 1];
 	plat_dram_freq_update(ddr_clock_option);
 
-	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, DSS))
+#if ARO_ENABLE
+	clock_id_end = DSS;
+#else
+	clock_id_end = PLL_CLUSTER_2_FREQ;
+	clocks_switch_aro_pll(PLL_MODE, ap_count);
+#endif
+
+	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, clock_id_end))
 		return -1;
 
 	/* one extra transaction to write to a scratch-pad register in each AP */
@@ -256,10 +308,11 @@ int ap810_clocks_init(int ap_count)
 
 	/* write transactions to each APs' EAWG FIFO */
 	for (ap = 0 ; ap < ap_count ; ap++) {
-		if (eawg_load_transactions(trans_array, ((DSS + 1) * TRANS_PER_PLL), ap)) {
+		if (eawg_load_transactions(trans_array, ((clock_id_end + 1) * TRANS_PER_PLL), ap)) {
 			printf("couldn't load all transactions to AP%d EAWG FIFO\n", ap);
 			return -1;
 		}
+		/* Load done indication for each AP's EAWG */
 		if (eawg_load_transactions(&eawg_done_indication, 1, ap)) {
 			printf("couldn't load done-indication transaction to AP%d EAWG FIFO\n", ap);
 			return -1;
@@ -287,9 +340,10 @@ int ap810_clocks_init(int ap_count)
 			disable_eawg(ap);
 	}
 
+#if ARO_ENABLE
 	/* configure CPU's frequencies in suppored AP's */
 	for (ap = 0 ; ap < ap_count ; ap++)
-		ap810_aro_init(cpu_clock_val, ap);
-
+		ap810_aro_init(pll_freq_tables[freq_mode][clk_config][CPU_FREQ - 1], ap);
+#endif
 	return 0;
 }
