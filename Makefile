@@ -643,6 +643,7 @@ else
         $(eval $(call add_define,AARCH64))
 endif
 $(eval $(call add_define,PALLADIUM))
+$(eval $(call add_define,ARO_ENABLE))
 $(eval $(call add_define,LLC_DISABLE))
 $(eval $(call add_define,PCI_EP_SUPPORT))
 $(eval $(call add_define,CP_NUM))

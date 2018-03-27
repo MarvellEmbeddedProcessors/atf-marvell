@@ -114,6 +114,8 @@ Build Instructions
 		APs, each AP assumed to have 3 attached CPs. With the same amount of APs and CP_NUM=3, the AP0
 		will have 2 CPs connected and AP1 - a just single CP.
 
+	- ARO_ENABLE: configure CPU frequency using ARO clock driver (instead of PLL clock driver).
+
 	For example, in order to build the image in debug mode with log level up to 'notice' level run::
 
 		> make DEBUG=1 USE_COHERENT_MEM=0 LOG_LEVEL=20 PLAT=<MARVELL_PLATFORM> all fip
