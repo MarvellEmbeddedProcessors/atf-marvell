@@ -453,12 +453,23 @@ int plat_dram_init(void)
 			iface_cnt++;
 			/* Update status of interface */
 			iface->state = MV_DDR_IFACE_RDY;
-
 			ap_dram_size += iface->iface_byte_size;
-			/* If the number of interfaces equal to MAX (enable RAR) */
-			if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
+		}
+
+		if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
+			ap_dram_tgt = RAR_TID;
+		} else {
+			if (iface->id == 1)
+				ap_dram_tgt = DRAM_1_TID;
+			else
+				ap_dram_tgt = DRAM_0_TID;
+		}
+
+		if (ap_dram_tgt == RAR_TID) {
+			plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
+			for (i = 0; i < ifaces_size; i++, iface++) {
+				plat_dram_iface_set(iface);
 				VERBOSE("AP-%d set DRAM%d into RAR mode\n", ap_id, i);
-				ap_dram_tgt = RAR_TID;
 				/* If the base address not 0x0, need to divide
 				** the base address, the dram region will be
 				** splited into dual DRAMs
@@ -467,14 +478,9 @@ int plat_dram_init(void)
 				/* TODO: add EERATA */
 				if (iface->id == 1)
 					iface->iface_base_addr |= 1UL << 43;
-			} else {
-				if (iface->id == 1)
-					ap_dram_tgt = DRAM_1_TID;
-				else
-					ap_dram_tgt = DRAM_0_TID;
+				/* Update dram memory mapping */
+				dram_mmap_config();
 			}
-			/* Update dram memory mapping */
-			dram_mmap_config();
 		}
 
 		INFO("AP-%d DRAM size is 0x%lx (%lldGB)\n",
