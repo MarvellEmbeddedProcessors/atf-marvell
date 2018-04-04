@@ -21,6 +21,7 @@
 #define MV_SIP_COMPHY_POWER_OFF	0x82000002
 #define MV_SIP_COMPHY_PLL_LOCK	0x82000003
 #define MV_SIP_COMPHY_XFI_TRAIN	0x82000004
+#define MV_SIP_COMPHY_DIG_RESET	0x82000005
 
 #define MAX_LANE_NR		6
 #define MVEBU_COMPHY_OFFSET	0x441000
@@ -72,6 +73,10 @@ uint64_t mrvl_sip_smc_handler(uint32_t smc_fid,
 	case MV_SIP_COMPHY_XFI_TRAIN:
 		/* x1:  comphy_base, x2: comphy_index */
 		ret = mvebu_cp110_comphy_xfi_rx_training(x1, x2);
+		SMC_RET1(handle, ret);
+	case MV_SIP_COMPHY_DIG_RESET:
+		/* x1:  comphy_base, x2: comphy_index */
+		ret = mvebu_cp110_comphy_digital_reset(x1, x2, x3);
 		SMC_RET1(handle, ret);
 	default:
 		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);

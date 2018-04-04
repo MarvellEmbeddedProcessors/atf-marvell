@@ -87,6 +87,10 @@
 /* The  default speed for IO with fixed known speed */
 #define COMPHY_SPEED_DEFAULT		COMPHY_SPEED_MAX
 
+/* Commands for comphy driver */
+#define COMPHY_COMMAND_DIGITAL_PWR_OFF		0x00000001
+#define COMPHY_COMMAND_DIGITAL_PWR_ON		0x00000002
+
 #define COMPHY_PIPE_FROM_COMPHY_ADDR(x)	((x & ~0xffffff) + 0x120000)
 
 /* System controler registers */
@@ -2082,6 +2086,40 @@ static int mvebu_cp110_comphy_ap_power_on(uint64_t comphy_base,
 	data |= 0x0 << COMMON_PHY_CFG1_PIPE_SELECT_OFFSET;
 	reg_set(comphy_addr + COMMON_PHY_CFG1_REG, data, mask);
 	debug_exit();
+
+	return 0;
+}
+
+/*
+ * This function allows to reset the digital synchronizers between
+ * the MAC and the PHY, it is required when the MAC changes its state.
+ */
+int mvebu_cp110_comphy_digital_reset(uint64_t comphy_base,
+				     uint8_t comphy_index,
+				     uint32_t comphy_mode, uint32_t command)
+{
+	int mode = COMPHY_GET_MODE(comphy_mode);
+	uintptr_t sd_ip_addr;
+	uint32_t mask, data;
+
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+
+	switch (mode) {
+	case (COMPHY_SGMII_MODE):
+	case (COMPHY_HS_SGMII_MODE):
+	case (COMPHY_XFI_MODE):
+	case (COMPHY_SFI_MODE):
+	case (COMPHY_RXAUI_MODE):
+		mask = SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
+		data = ((command == COMPHY_COMMAND_DIGITAL_PWR_OFF) ?
+			0x0 : 0x1) << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
+		reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+		break;
+	default:
+		ERROR("comphy%d: COMPHY_COMMAND_DIGITAL_PWR_ON/OFF is not supported\n",
+			comphy_index);
+			return -EINVAL;
+	}
 
 	return 0;
 }
