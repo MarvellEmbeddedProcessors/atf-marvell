@@ -2058,6 +2058,34 @@ int mvebu_cp110_comphy_xfi_rx_training(uint64_t comphy_base,
 	return ret;
 }
 
+/* During AP the proper mode is auto-negotiated and the mac, pcs and serdes
+ * configuration are done by the firmware loaded to the MG's CM3 for appropriate
+ * negotiated mode. Therefore there is no need to configure the mac, pcs and
+ * serdes from u-boot. The only thing that need to be setup is powering up
+ * the comphy, which is done through Common PHY<n> Configuration 1 Register
+ * (CP0: 0xF2441000, CP1: 0xF4441000). This step can't be done by MG's CM3,
+ * since it doesn't have an access to this register-set (but it has access to
+ * the network registers like: MG, AP, MAC, PCS, Serdes etc.)
+ */
+static int mvebu_cp110_comphy_ap_power_on(uint64_t comphy_base,
+					  uint8_t comphy_index)
+{
+	uint32_t mask, data;
+	uintptr_t comphy_addr = comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
+
+	debug_enter();
+	debug("stage: RFU configurations - hard reset comphy\n");
+	/* RFU configurations - hard reset comphy */
+	mask = COMMON_PHY_CFG1_PWR_UP_MASK;
+	data = 0x1 << COMMON_PHY_CFG1_PWR_UP_OFFSET;
+	mask |= COMMON_PHY_CFG1_PIPE_SELECT_MASK;
+	data |= 0x0 << COMMON_PHY_CFG1_PIPE_SELECT_OFFSET;
+	reg_set(comphy_addr + COMMON_PHY_CFG1_REG, data, mask);
+	debug_exit();
+
+	return 0;
+}
+
 int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uint64_t comphy_mode)
 {
 	int mode = COMPHY_GET_MODE(comphy_mode);
@@ -2086,6 +2114,9 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uin
 	case (COMPHY_USB3H_MODE):
 	case (COMPHY_USB3D_MODE):
 		err = mvebu_cp110_comphy_usb3_power_on(comphy_base, comphy_index, comphy_mode);
+		break;
+	case (COMPHY_AP_MODE):
+		err = mvebu_cp110_comphy_ap_power_on(comphy_base, comphy_index);
 		break;
 	default:
 		ERROR("comphy%ld: unsupported comphy mode\n", comphy_index);
