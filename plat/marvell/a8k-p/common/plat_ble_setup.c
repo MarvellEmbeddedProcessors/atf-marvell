@@ -40,13 +40,17 @@ static void ble_read_cpu_freq(void)
 int ble_plat_setup(int *skip)
 {
 	int ret = 0;
+	int ap_count = ap810_get_ap_count();
 
 #if !PALLADIUM
 	/* SW WA for AP link bring-up over JTAG connection */
-	if ((ap810_get_ap_count() != 1) &&
+	if ((ap_count != 1) &&
 	    (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0))
 		jtag_init_ihb_dual_ap();
 #endif
+
+	/* Power down unused CPUs */
+	plat_marvell_early_cpu_powerdown(ap_count);
 
 	ble_read_cpu_freq();
 
