@@ -102,18 +102,30 @@ enum CPU_ID {
 #define FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET	4
 #define FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK		(0x1 << FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET)
 
+#ifdef MVEBU_SOC_AP807
+	#define PWRC_CPUN_CR_PWR_DN_RQ_OFFSET		1
+	#define PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET	0
+#else
+	#define PWRC_CPUN_CR_PWR_DN_RQ_OFFSET		0
+	#define PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET	31
+#endif
+
 #define PWRC_CPUN_CR_REG(cpu_id)		(MVEBU_REGS_BASE + 0x680000 + (cpu_id * 0x10))
-#define PWRC_CPUN_CR_PWR_DN_RQ_OFFSET		0
 #define PWRC_CPUN_CR_PWR_DN_RQ_MASK		(0x1 << PWRC_CPUN_CR_PWR_DN_RQ_OFFSET)
 #define PWRC_CPUN_CR_ISO_ENABLE_OFFSET		16
 #define PWRC_CPUN_CR_ISO_ENABLE_MASK		(0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)
-#define PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET	31
 #define PWRC_CPUN_CR_LDO_BYPASS_RDY_MASK	(0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)
 
 #define CCU_B_PRCRN_REG(cpu_id)			(MVEBU_REGS_BASE + 0x1A50 + \
 						((cpu_id / 2) * (0x400)) + ((cpu_id % 2) * 4))
 #define CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET	0
 #define CCU_B_PRCRN_CPUPORESET_STATIC_MASK	(0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)
+
+/* power switch fingers */
+#define AP807_PWRC_LDO_CR0_REG			(MVEBU_REGS_BASE + 0x680000 + 0x100)
+#define AP807_PWRC_LDO_CR0_OFFSET		16
+#define AP807_PWRC_LDO_CR0_MASK			(0xff << AP807_PWRC_LDO_CR0_OFFSET)
+#define AP807_PWRC_LDO_CR0_VAL			0xfd
 
 /*
  * Power down CPU:
@@ -123,14 +135,6 @@ static int plat_marvell_cpu_powerdown(int cpu_id)
 {
 	uint32_t	reg_val;
 	int		exit_loop = REG_WR_VALIDATE_TIMEOUT;
-	unsigned int chip_rev_id;
-
-	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
-	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
-
-	/* TODO: support for ap807 needs to be added */
-	if (chip_rev_id == CHIP_ID_AP807)
-		return 0;
 
 	INFO("Powering down CPU%d\n", cpu_id);
 
@@ -234,22 +238,20 @@ static int plat_marvell_cpu_powerup(u_register_t mpidr)
 	uint32_t	reg_val;
 	int	cpu_id = MPIDR_CPU_GET(mpidr), cluster = MPIDR_CLUSTER_GET(mpidr);
 	int	exit_loop = REG_WR_VALIDATE_TIMEOUT;
-	unsigned int chip_rev_id;
-
-	/* TODO: support for ap807 needs to be added */
-	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
-	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
-
-	/* Power up CPU (CPUs 1-3 are powered off at start of BLE) for AP806
-	 * only.
-	 */
-	if (chip_rev_id == CHIP_ID_AP807)
-		return 0;
 
 	/* calculate absolute CPU ID */
 	cpu_id = cluster * PLAT_MARVELL_CLUSTER_CORE_COUNT + cpu_id;
 
 	INFO("Powering on CPU%d\n", cpu_id);
+
+#ifdef MVEBU_SOC_AP807
+	/* Activate 2 power switch fingers */
+	reg_val = mmio_read_32(AP807_PWRC_LDO_CR0_REG);
+	reg_val &= ~(AP807_PWRC_LDO_CR0_MASK);
+	reg_val |= (AP807_PWRC_LDO_CR0_VAL << AP807_PWRC_LDO_CR0_OFFSET);
+	mmio_write_32(AP807_PWRC_LDO_CR0_REG, reg_val);
+	udelay(100);
+#endif
 
 	/* 1. Switch CPU power ON */
 	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
