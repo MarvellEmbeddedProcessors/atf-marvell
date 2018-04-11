@@ -92,6 +92,18 @@
 #define EFUSE_SRV_CTRL_LD_SELECT_OFFS	6
 #define EFUSE_SRV_CTRL_LD_SEL_USER_MASK	(1 << EFUSE_SRV_CTRL_LD_SELECT_OFFS)
 
+/* ARO control registers in AP807 */
+#define AP807_CPU_ARO_0_CTRL_0		(MVEBU_RFU_BASE + 0x82A8)
+#define AP807_CPU_ARO_1_CTRL_0		(MVEBU_RFU_BASE + 0x8D00)
+
+/* 0 - ARO clock is enabled, 1 - ARO clock is disabled */
+#define AP807_CPU_ARO_CLK_EN_OFFSET	0
+#define AP807_CPU_ARO_CLK_EN_MASK	(0x1 << AP807_CPU_ARO_CLK_EN_OFFSET)
+
+/* 0 - ARO is the clock source, 1 - PLL is the clock source */
+#define AP807_CPU_ARO_SEL_PLL_OFFSET	5
+#define AP807_CPU_ARO_SEL_PLL_MASK	(0x1 << AP807_CPU_ARO_SEL_PLL_OFFSET)
+
 /*
  - AVS work points in the LD0 eFuse:
 	SVC1 work point:     LD0[88:81]
@@ -470,9 +482,36 @@ static int  ble_skip_current_image(void)
 }
 #endif
 
+/* Switch to ARO from PLL in ap807 */
+static void aro_to_pll(void)
+{
+	unsigned int reg;
+
+	/* switch from ARO to PLL */
+	reg = mmio_read_32(AP807_CPU_ARO_0_CTRL_0);
+	reg |= AP807_CPU_ARO_SEL_PLL_MASK;
+	mmio_write_32(AP807_CPU_ARO_0_CTRL_0, reg);
+
+	reg = mmio_read_32(AP807_CPU_ARO_1_CTRL_0);
+	reg |= AP807_CPU_ARO_SEL_PLL_MASK;
+	mmio_write_32(AP807_CPU_ARO_1_CTRL_0, reg);
+
+	mdelay(1000);
+
+	/* disable ARO clk driver */
+	reg = mmio_read_32(AP807_CPU_ARO_0_CTRL_0);
+	reg |= (AP807_CPU_ARO_CLK_EN_MASK);
+	mmio_write_32(AP807_CPU_ARO_0_CTRL_0, reg);
+
+	reg = mmio_read_32(AP807_CPU_ARO_1_CTRL_0);
+	reg |= (AP807_CPU_ARO_CLK_EN_MASK);
+	mmio_write_32(AP807_CPU_ARO_1_CTRL_0, reg);
+}
+
 int ble_plat_setup(int *skip)
 {
 	int ret;
+	unsigned int chip_rev_id;
 
 	/* Power down unused CPUs */
 	plat_marvell_early_cpu_powerdown();
@@ -498,6 +537,13 @@ int ble_plat_setup(int *skip)
 
 	/* Setup AVS */
 	ble_plat_svc_config();
+
+	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
+	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
+
+	/* work with PLL clock driver in AP807 */
+	if (chip_rev_id == CHIP_ID_AP807)
+		aro_to_pll();
 
 #if ARO_ENABLE
 	init_aro();
