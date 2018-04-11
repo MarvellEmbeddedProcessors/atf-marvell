@@ -171,6 +171,22 @@ static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
 	debug("new val 0x%x\n", mmio_read_32(addr));
 }
 
+/* Clear PIPE selector - avoid collision with previous configuration */
+static void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t comphy_index)
+{
+	uint32_t reg, mask, field;
+	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+
+	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
+	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET);
+	field = reg & mask;
+
+	if (field) {
+		reg &= ~mask;
+		mmio_write_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET, reg);
+	}
+}
+
 /* Clear PHY selector - avoid collision with previous configuration */
 static void mvebu_cp110_comphy_clr_phy_selector(uint64_t comphy_base, uint8_t comphy_index)
 {
@@ -199,6 +215,11 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 	uint32_t reg, mask;
 	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
 	int mode;
+
+	/* If phy selector is used the pipe selector should be marked as
+	 * unconnected.
+	 */
+	mvebu_cp110_comphy_clr_pipe_selector(comphy_base, comphy_index);
 
 	/* Comphy mode (compound of the IO mode and id). Here, only the IO mode
 	 * is required to distinguish between SATA and network modes.
@@ -265,22 +286,6 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 	mmio_write_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET, reg);
 }
 
-/* Clear PIPE selector - avoid collision with previous configuration */
-void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t comphy_index)
-{
-	uint32_t reg, mask, field;
-	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
-
-	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
-	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET);
-	field = reg & mask;
-
-	if (field) {
-		reg &= ~mask;
-		mmio_write_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET, reg);
-	}
-}
-
 /* PIPE selector configures for PCIe, USB 3.0 Host, and USB 3.0 Device mode */
 static void mvebu_cp110_comphy_set_pipe_selector(uint64_t comphy_base,
 				     uint8_t comphy_index, uint32_t comphy_mode)
@@ -290,6 +295,11 @@ static void mvebu_cp110_comphy_set_pipe_selector(uint64_t comphy_base,
 	int mode = COMPHY_GET_MODE(comphy_mode);
 	uint32_t mask = COMMON_SELECTOR_COMPHY_MASK << shift;
 	uint32_t pipe_sel = 0x0;
+
+	/* If pipe selector is used the phy selector should be marked as
+	 * unconnected.
+	 */
+	mvebu_cp110_comphy_clr_phy_selector(comphy_base, comphy_index);
 
 	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET);
 	reg &= ~mask;
