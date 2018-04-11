@@ -25,6 +25,7 @@
 
 #define MAX_LANE_NR		6
 #define MVEBU_COMPHY_OFFSET	0x441000
+#define MVEBU_SD_OFFSET		0x120000
 
 /* This macro is used to identify COMPHY related calls from SMC function ID */
 #define is_comphy_fid(fid)	\
@@ -45,6 +46,12 @@ uint64_t mrvl_sip_smc_handler(uint32_t smc_fid,
 	debug("%s: got SMC (0x%x) x1 0x%lx, x2 0x%lx, x3 0x%lx\n",
 						 __func__, smc_fid, x1, x2, x3);
 	if (is_comphy_fid(smc_fid)) {
+
+		/* some systems passes SD phys address instead of COMPHY phys
+		 * address - convert it
+		 */
+		if (x1 & MVEBU_SD_OFFSET)
+			x1 = (x1 & ~0xffffff) + MVEBU_COMPHY_OFFSET;
 
 		if (!(x1 & MVEBU_COMPHY_OFFSET)) {
 			ERROR("%s: Wrong smc (0x%x) address: %lx\n",  __func__, smc_fid, x1);
