@@ -336,31 +336,60 @@ static void plat_dram_interfaces_update(void)
 	}
 }
 
-static void plat_dram_temp_addr_decode_cfg(uint32_t ap_id, struct mv_ddr_iface *iface)
+static void plat_dram_temp_addr_decode_cfg(uint32_t ap_id,
+					   uint32_t ap_cnt,
+					   struct mv_ddr_iface *iface,
+					   struct addr_map_win *gwin_temp_win,
+					   struct addr_map_win *ccu_dram_win,
+					   struct addr_map_win *ccu_temp_win)
 {
-	struct addr_map_win ccu_dram_win;
-
-	/*
-	 * Add CCU window for DRAM access:
-	 * Single DIMM on this AP, CCU target = DRAM 0/1
-	 * Setting the CCU for each interface
+	/* Add a single GWIN entry from AP1 to AP0 enabling remote AP access
+	 * Also add a CCU widow which will pass all transactions to SRAM
+	 * through the GWIN window.
+	 * These widows are needed for DRAM scrubbing and DRAM validation purpose
+	 * both using XOR which saves descriptors on SRAM located in AP0
 	 */
-	if ((ap_id == 0) && (iface->iface_byte_size > (3 * _1GB_)))
-		ccu_dram_win.win_size = iface->iface_byte_size + _1GB_;
-	else
-		ccu_dram_win.win_size = iface->iface_byte_size;
-	ccu_dram_win.base_addr = iface->iface_base_addr;
+	if (ap_id != 0) {
+		ccu_temp_win->base_addr = AP_DRAM_BASE_ADDR(0, ap_cnt);
+		ccu_temp_win->win_size = AP_DRAM_SIZE(ap_cnt);
+		ccu_temp_win->target_id = GLOBAL_TID;
+
+		/* Create a memory window with the appropriate target in CCU */
+		ccu_temp_win_insert(ap_id, ccu_temp_win, 1);
+
+		gwin_temp_win->base_addr = AP_DRAM_BASE_ADDR(0, ap_cnt);
+		gwin_temp_win->win_size = AP_DRAM_SIZE(ap_cnt);
+		gwin_temp_win->target_id = MVEBU_AP0;
+		gwin_temp_win_insert(ap_id, gwin_temp_win, 1);
+	}
+	/* Add CCU window for DRAM access:
+	 * Single DIMM on this AP, CCU target = DRAM 0/1
+	 */
+	ccu_dram_win->base_addr = iface->iface_base_addr;
+	ccu_dram_win->win_size = AP_DRAM_SIZE(ap_cnt);
 	if (iface->id == 1)
-		ccu_dram_win.target_id = DRAM_1_TID;
+		ccu_dram_win->target_id = DRAM_1_TID;
 	else
-		ccu_dram_win.target_id = DRAM_0_TID;
+		ccu_dram_win->target_id = DRAM_0_TID;
 
 	/* Create a memory window with the appropriate target in CCU */
-	ccu_dram_win_config(ap_id, &ccu_dram_win);
+	ccu_dram_win_config(ap_id, ccu_dram_win);
+}
 
-	/* Remap configuration space */
-	if ((ap_id == 0) && (iface->iface_byte_size > (3 * _1GB_)))
-		plat_dram_mca_remap(0, ccu_dram_win.target_id, iface->iface_byte_size, 3 * _1GB_, _1GB_);
+static void plat_dram_temp_addr_decode_remove(uint32_t ap_id,
+					      struct addr_map_win *gwin_temp_win,
+					      struct addr_map_win *ccu_temp_win)
+{
+	/* Remove temporary GWIN and CCU windows configured for all AP's
+	 * beside AP0
+	 * before DRAM training for DRAM scrubbing and DRAM validation purpose
+	 * CCU window for AP0 will be restored to BootROM default DRAM window
+	 * later on */
+	if (ap_id != 0) {
+		ccu_temp_win_remove(ap_id, ccu_temp_win, 1);
+		/* Remove the earlier configured GWIN entry from AP1 */
+		gwin_temp_win_remove(ap_id, gwin_temp_win, 1);
+	}
 }
 
 int plat_dram_init(void)
@@ -376,7 +405,7 @@ int plat_dram_init(void)
 
 	/* Go over DRAM interfaces, run remapping and scrubbing */
 	for (ap_id = 0; ap_id < ap_cnt; ap_id++) {
-		struct addr_map_win ccu_dram_win;
+		struct addr_map_win ccu_dram_win, gwin_temp_win, ccu_temp_win;
 		iface_cnt = 0;
 		ap_dram_size = 0;
 		ap_dram_tgt = DRAM_0_TID;
@@ -396,9 +425,15 @@ int plat_dram_init(void)
 			 * 1. open relevant CCU widow for each interface
 			 *    according to dram size and ap base address
 			 *    for validation\scrubbing purpose
-			 * 2. remap dram widow to end of dram size for ap 0 interface 0
+			 * 2. remap dram widow to end of dram size for ap 0 interfaces.
+			 *    the remapping here is per interface according to the
+			 *    DRAM size of the current interface for DRAM training purpose.
 			 */
-			plat_dram_temp_addr_decode_cfg(ap_id, iface);
+			plat_dram_temp_addr_decode_cfg(ap_id, ap_cnt, iface, &gwin_temp_win,
+						       &ccu_dram_win, &ccu_temp_win);
+			if ((ap_id == 0) && (dram_iface_mem_sz_get() > (3 * _1GB_)))
+				plat_dram_mca_remap(0, ccu_dram_win.target_id,
+						    dram_iface_mem_sz_get(), 3 * _1GB_, _1GB_);
 
 			/* Call DRAM init per interface */
 			ret = dram_init();
@@ -406,6 +441,8 @@ int plat_dram_init(void)
 				ERROR("DRAM interface %d on AP-%d failed\n", i, ap_id);
 				return ret;
 			}
+			/* Remove the temporary GWIN and CCU windows configured before DRAM training */
+			plat_dram_temp_addr_decode_remove(ap_id, &gwin_temp_win, &ccu_temp_win);
 
 			iface_cnt++;
 			/* Update status of interface */
@@ -440,12 +477,13 @@ int plat_dram_init(void)
 
 		INFO("AP-%d DRAM size is 0x%lx (%lldGB)\n",
 		     ap_id, ap_dram_size, ap_dram_size/_1GB_);
-		/* Remap the physical memory shadowed by the internal registers configration
+		/* Remap the physical memory shadowed by the internal registers configuration
 		 * address space to the top of the detected memory area.
 		 * Only the AP0 overlaps this configuration area with the DRAM, so only its memory
 		 * controller has to remap the overlapped region to the upper memory.
 		 * With less than 3GB of DRAM the internal registers space remapping is not needed
 		 * since there is no overlap between DRAM and the configuration address spaces
+		 * The remapping here is for AP0 total DRAM size for operational mode purpose
 		 */
 		if ((ap_id == 0)  && (ap_dram_size > (3 * _1GB_)))
 			plat_dram_mca_remap(0, ap_dram_tgt, ap_dram_size, 3 * _1GB_, _1GB_);
