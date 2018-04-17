@@ -53,7 +53,7 @@ uint64_t mrvl_sip_smc_handler(uint32_t smc_fid,
 		if (x1 & MVEBU_SD_OFFSET)
 			x1 = (x1 & ~0xffffff) + MVEBU_COMPHY_OFFSET;
 
-		if (!(x1 & MVEBU_COMPHY_OFFSET)) {
+		if ((x1 & 0xffffff) != MVEBU_COMPHY_OFFSET) {
 			ERROR("%s: Wrong smc (0x%x) address: %lx\n",  __func__, smc_fid, x1);
 			SMC_RET1(handle, SMC_UNK);
 		}
