@@ -53,7 +53,28 @@ static struct mv_ddr_topology_map board_topology_map = {
 	MV_DDR_64BIT_ECC_PUP8_BUS_MASK, /* subphys mask */
 	MV_DDR_CFG_SPD,			/* ddr configuration data source */
 	{ {0} },			/* raw spd data */
-	{0}				/* timing parameters */
+	{0},				/* timing parameters */
+	{					/* electrical configuration */
+		{				/* memory electrical configuration */
+			MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+			MV_DDR_RTT_NOM_PARK_RZQ_DIV1,	/* rtt_park */
+			MV_DDR_RTT_WR_RZQ_DIV2,	/* rtt_wr */
+			MV_DDR_DIC_RZQ_DIV7	/* dic */
+		},
+		{				/* phy electrical configuration */
+			MV_DDR_OHM_30,	/* data_drv_p */
+			MV_DDR_OHM_30,	/* data_drv_n */
+			MV_DDR_OHM_30,	/* ctrl_drv_p */
+			MV_DDR_OHM_30,	/* ctrl_drv_n */
+			MV_DDR_OHM_60,	/* odt_p */
+			MV_DDR_OHM_60	/* odt_n */
+		},
+		{				/* mac electrical configuration */
+			MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+			MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
+			MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_read */
+		},
+	}
 };
 
 struct mv_ddr_topology_map *mv_ddr_topology_map_get(void)
