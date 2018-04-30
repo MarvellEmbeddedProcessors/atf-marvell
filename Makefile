@@ -40,10 +40,27 @@ ENABLE_PMF			:= ${ENABLE_RUNTIME_INSTRUMENTATION}
 PLAT				:= ${DEFAULT_PLAT}
 # Enable compilation for Palladium emulation platform
 PALLADIUM			:= 0
+# flag to switch from PLL to ARO
+ARO_ENABLE			:= 0
 # Disable LLC in A8K family of SoCs
 LLC_DISABLE			:= 0
 # Make non-trusted image by default
 MARVELL_SECURE_BOOT	:= 	0
+
+ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
+ifeq (${PALLADIUM},1)
+CP_NUM				:= 0
+else
+CP_NUM				:= 2
+endif
+endif
+
+# Disable BL31 cache for Power-Managment
+ifeq ($(PLAT),$(filter $(PLAT),a70x0))
+BL31_CACHE_DISABLE		:= 1
+else
+BL31_CACHE_DISABLE		:= 0
+endif
 
 # Marvell images
 BOOT_IMAGE			:= boot-image.bin
@@ -639,8 +656,10 @@ else
         $(eval $(call add_define,AARCH64))
 endif
 $(eval $(call add_define,PALLADIUM))
+$(eval $(call add_define,ARO_ENABLE))
 $(eval $(call add_define,LLC_DISABLE))
 $(eval $(call add_define,CP_NUM))
+$(eval $(call add_define,BL31_CACHE_DISABLE))
 
 ################################################################################
 # Include BL specific makefiles
