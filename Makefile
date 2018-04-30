@@ -56,6 +56,14 @@ ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
 PCI_EP_SUPPORT			:= 1
 endif
 
+ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
+ifeq (${PALLADIUM},1)
+CP_NUM				:= 0
+else
+CP_NUM				:= 2
+endif
+endif
+
 # Disable BL31 cache for Power-Managment
 ifeq ($(PLAT),$(filter $(PLAT),a70x0))
 BL31_CACHE_DISABLE		:= 1
