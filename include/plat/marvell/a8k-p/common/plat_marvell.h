@@ -109,5 +109,4 @@ void ble_prepare_exit(void);
 int jtag_init_ihb_dual_ap(void);
 int gic600_multi_chip_init(void);
 
-int plat_marvell_early_cpu_powerdown(int ap_count);
 #endif /* __PLAT_MARVELL_H__ */
