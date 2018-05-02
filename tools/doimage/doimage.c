@@ -171,8 +171,8 @@ typedef struct _sec_options {
 } sec_options;
 
 typedef struct _options {
-	char bin_ext_file[MAX_FILENAME];
-	char sec_cfg_file[MAX_FILENAME];
+	char bin_ext_file[MAX_FILENAME+1];
+	char sec_cfg_file[MAX_FILENAME+1];
 	sec_options *sec_opts;
 	uint32_t  load_addr;
 	uint32_t  exec_addr;
@@ -1437,9 +1437,9 @@ error:
 
 int main(int argc, char *argv[])
 {
-	char in_file[MAX_FILENAME];
-	char out_file[MAX_FILENAME];
-	char ext_file[MAX_FILENAME];
+	char in_file[MAX_FILENAME+1];
+	char out_file[MAX_FILENAME+1];
+	char ext_file[MAX_FILENAME+1];
 	FILE *in_fd = NULL;
 	FILE *out_fd = NULL;
 	int parse = 0;
