@@ -169,11 +169,12 @@ static void ble_plat_avs_config(void)
 	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	switch (device_id) {
 	case MVEBU_80X0_DEV_ID:
+	case MVEBU_80X0_CP115_DEV_ID:
 		/* Set the new AVS value - fix the default one on A80x0 */
 		mmio_write_32(AVS_EN_CTRL_REG, AVS_A8K_CLK_VALUE);
 		break;
-
 	case MVEBU_70X0_DEV_ID:
+	case MVEBU_70X0_CP115_DEV_ID:
 		/* Only fix AVS for CPU clocks lower than 1600MHz on A70x0 */
 		reg_val = mmio_read_32(MVEBU_AP_SAR_REG_BASE(
 						FREQ_MODE_AP_SAR_REG_NUM));
@@ -183,7 +184,6 @@ static void ble_plat_avs_config(void)
 		    (reg_val < CPU_DDR_RCLK_INVALID))
 			mmio_write_32(AVS_EN_CTRL_REG, AVS_A7K_LOW_CLK_VALUE);
 		break;
-
 	default:
 		ERROR("Unsupported Device ID 0x%x\n", device_id);
 	}
@@ -260,7 +260,8 @@ static void ble_plat_svc_config(void)
 	single_cluster = (single_cluster >> EFUSE_AP_LD0_CLUSTER_DOWN_OFFS) & 1;
 
 	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
-	if (device_id == MVEBU_80X0_DEV_ID) {
+	if (device_id == MVEBU_80X0_DEV_ID ||
+	    device_id == MVEBU_80X0_CP115_DEV_ID) {
 		/* A8040/A8020 */
 		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",
 			single_cluster == 0 ? "8040" : "8020", freq_pidi_mode);
@@ -291,7 +292,8 @@ static void ble_plat_svc_config(void)
 			avs_workpoint = svc[0];
 			break;
 		}
-	} else if (device_id == MVEBU_70X0_DEV_ID) {
+	} else if (device_id == MVEBU_70X0_DEV_ID ||
+		   device_id == MVEBU_70X0_CP115_DEV_ID) {
 		/* A7040/A7020/A6040 */
 		NOTICE("SVC: DEV ID: %s, FREQ Mode: 0x%x\n",
 			single_cluster == 0 ? "7040" : "7020", freq_pidi_mode);
