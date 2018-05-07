@@ -8,6 +8,7 @@
 #include <io_driver.h>
 #include <io_semihosting.h>
 #include <io_storage.h>
+#include <platform_def.h>
 #include <semihosting.h>
 
 
@@ -133,7 +134,9 @@ static int sh_file_read(io_entity_t *entity, uintptr_t buffer, size_t length,
 	long file_handle;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_read != NULL);
 
 	file_handle = (long)entity->info;
@@ -158,7 +161,9 @@ static int sh_file_write(io_entity_t *entity, const uintptr_t buffer,
 	size_t bytes = length;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_written != NULL);
 
 	file_handle = (long)entity->info;

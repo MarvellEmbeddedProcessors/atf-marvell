@@ -9,6 +9,7 @@
 #include <io_driver.h>
 #include <io_memmap.h>
 #include <io_storage.h>
+#include <platform_def.h>
 #include <string.h>
 #include <utils.h>
 
@@ -169,7 +170,9 @@ static int memmap_block_read(io_entity_t *entity, uintptr_t buffer,
 	size_t pos_after;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_read != NULL);
 
 	fp = (file_state_t *) entity->info;
@@ -197,7 +200,9 @@ static int memmap_block_write(io_entity_t *entity, const uintptr_t buffer,
 	size_t pos_after;
 
 	assert(entity != NULL);
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
 	assert(buffer != (uintptr_t)NULL);
+#endif
 	assert(length_written != NULL);
 
 	fp = (file_state_t *) entity->info;

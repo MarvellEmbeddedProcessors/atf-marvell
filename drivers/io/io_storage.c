@@ -279,7 +279,11 @@ int io_read(uintptr_t handle,
 		size_t *length_read)
 {
 	int result = -ENODEV;
-	assert(is_valid_entity(handle) && (buffer != (uintptr_t)NULL));
+	assert(is_valid_entity(handle)
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
+	       && (buffer != (uintptr_t)NULL)
+#endif
+	      );
 
 	io_entity_t *entity = (io_entity_t *)handle;
 
@@ -299,7 +303,11 @@ int io_write(uintptr_t handle,
 		size_t *length_written)
 {
 	int result = -ENODEV;
-	assert(is_valid_entity(handle) && (buffer != (uintptr_t)NULL));
+	assert(is_valid_entity(handle)
+#ifndef PLAT_ALLOW_ZERO_ADDR_COPY
+	       && (buffer != (uintptr_t)NULL)
+#endif
+	      );
 
 	io_entity_t *entity = (io_entity_t *)handle;
 
