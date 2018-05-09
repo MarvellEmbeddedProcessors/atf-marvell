@@ -256,7 +256,7 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 			break;
 		case(4):
 			 /* For comphy 4:
-			  * 0x1 = SGMII/HS-SGMII Port2
+			  * 0x1 = SGMII/HS-SGMII Port1
 			  * 0x2 = SGMII/HS-SGMII Port0: XFI/SFI, RXAUI_Lane0
 			  *
 			  * We want to check if SGMII1/HS_SGMII1 is the requested mode in order to
@@ -265,8 +265,8 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 			  * SGMII0/HS_SGMII0 too.
 			  */
 			if ((mode == COMPHY_SGMII_MODE || mode == COMPHY_HS_SGMII_MODE) &&
-			    COMPHY_GET_ID(comphy_mode) == 2)
-				reg |= COMMON_SELECTOR_COMPHY4_SGMII2 << comphy_offset;
+			    COMPHY_GET_ID(comphy_mode) == 1)
+				reg |= COMMON_SELECTOR_COMPHY4_SGMII1 << comphy_offset;
 			else
 				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS << comphy_offset;
 			break;
