@@ -96,6 +96,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a72.S			\
 				$(PLAT_COMMON_BASE)/plat_bl31_setup.c		\
 				$(PLAT_COMMON_BASE)/plat_pm.c			\
 				$(MARVELL_COMMON_BASE)/mrvl_sip_svc.c		\
+				$(MARVELL_COMMON_BASE)/marvell_ddr_info.c	\
 				$(MARVELL_BL31_DRV)				\
 				$(MARVELL_GICV3_SOURCES)			\
 				$(MARVELL_MOCHI_DRV)				\

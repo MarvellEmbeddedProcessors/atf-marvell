@@ -9,6 +9,7 @@
 #include <runtime_svc.h>
 #include <smcc.h>
 #include "comphy/phy-comphy-cp110.h"
+#include <plat_private.h>
 
 /* #define DEBUG_COMPHY */
 #ifdef DEBUG_COMPHY
@@ -17,11 +18,15 @@
 #define debug(format, arg...)
 #endif
 
+/* Comphy related FID's */
 #define MV_SIP_COMPHY_POWER_ON	0x82000001
 #define MV_SIP_COMPHY_POWER_OFF	0x82000002
 #define MV_SIP_COMPHY_PLL_LOCK	0x82000003
 #define MV_SIP_COMPHY_XFI_TRAIN	0x82000004
 #define MV_SIP_COMPHY_DIG_RESET	0x82000005
+
+/* Miscellaneous FID's' */
+#define MV_SIP_DRAM_SIZE	0x82000010
 
 #define MAX_LANE_NR		6
 #define MVEBU_COMPHY_OFFSET	0x441000
@@ -65,6 +70,8 @@ uint64_t mrvl_sip_smc_handler(uint32_t smc_fid,
 	}
 
 	switch (smc_fid) {
+
+	/* Comphy related FID's */
 	case MV_SIP_COMPHY_POWER_ON:
 		/* x1:  comphy_base, x2: comphy_index, x3: comphy_mode */
 		ret = mvebu_cp110_comphy_power_on(x1, x2, x3);
@@ -84,6 +91,12 @@ uint64_t mrvl_sip_smc_handler(uint32_t smc_fid,
 	case MV_SIP_COMPHY_DIG_RESET:
 		/* x1:  comphy_base, x2: comphy_index, x3: mode, x4: command */
 		ret = mvebu_cp110_comphy_digital_reset(x1, x2, x3, x4);
+		SMC_RET1(handle, ret);
+
+	/* Miscellaneous FID's' */
+	case MV_SIP_DRAM_SIZE:
+		/* x1:  ap_base_addr */
+		ret = mvebu_get_dram_size(x1);
 		SMC_RET1(handle, ret);
 	default:
 		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);

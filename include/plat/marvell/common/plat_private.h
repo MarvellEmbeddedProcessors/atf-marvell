@@ -13,6 +13,8 @@
  ******************************************************************************/
 void plat_delay_timer_init(void);
 
+uint64_t mvebu_get_dram_size(uint64_t ap_base_addr);
+
 /*
  * GIC operation, mandatory functions required in Marvell standard platforms
  */
