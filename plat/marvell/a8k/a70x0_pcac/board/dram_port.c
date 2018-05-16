@@ -50,8 +50,8 @@ static struct mv_ddr_topology_map board_topology_map = {
 	{					/* electrical configuration */
 		{				/* memory electrical configuration */
 			MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
-			MV_DDR_RTT_NOM_PARK_RZQ_DIV1,	/* rtt_park */
-			MV_DDR_RTT_WR_RZQ_DIV2,	/* rtt_wr */
+			MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park */
+			MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr */
 			MV_DDR_DIC_RZQ_DIV7	/* dic */
 		},
 		{				/* phy electrical configuration */
