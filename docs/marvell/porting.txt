@@ -26,7 +26,7 @@ Armada-70x0/Armada-80x0 Porting
 	- In cases where a special physical address map is needed (e.g. Special size for PCIe MEM windows,
 	  large memory mapped SPI flash...), then porting of the SoC memory map is required.
 	- Note: For a detailed information on how CCU, IOWIN, AXI-MBUS & IOB work, please refer to the SoC functional spec,
-	  and under "doc/marvell/misc/mvebu-[ccu/iob/amb/io-win].txt" files.
+	  and under "docs/marvell/misc/mvebu-[ccu/iob/amb/io-win].txt" files.
 
   - bootloader recovery (marvell_plat_config.c):
 	- Background:
