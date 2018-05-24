@@ -461,9 +461,10 @@ int plat_dram_init(void)
 				** splitted into dual DRAMs
 				** */
 				iface->iface_base_addr >>= 1;
-				/* TODO: add EERATA */
-				if (iface->id == 1)
-					iface->iface_base_addr |= 1UL << 43;
+				if (ap810_rev_id_get(ap_id) == MVEBU_AP810_REV_ID_A0)
+					/* TODO: add ERRATA */
+					if (iface->id == 1)
+						iface->iface_base_addr |= 1UL << 43;
 			} else {
 				if (iface->id == 1)
 					ap_dram_tgt = DRAM_1_TID;
