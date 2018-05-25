@@ -61,7 +61,40 @@ struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 			MV_DDR_64BIT_ECC_PUP8_BUS_MASK, /* subphys mask */
 			MV_DDR_CFG_SPD,			/* ddr configuration data source */
 			{ {0} },			/* raw spd data */
-			{0}				/* timing parameters */
+			{0},				/* timing parameters */
+			{					/* electrical configuration */
+				{				/* memory electrical configuration */
+					MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+					{
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
+					},
+					{
+						MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr 1cs */
+						MV_DDR_RTT_WR_RZQ_DIV2		/* rtt_wr 2cs */
+					},
+					MV_DDR_DIC_RZQ_DIV7	/* dic */
+				},
+				{				/* phy electrical configuration */
+					MV_DDR_OHM_30,	/* data_drv_p */
+					MV_DDR_OHM_30,	/* data_drv_n */
+					MV_DDR_OHM_30,	/* ctrl_drv_p */
+					MV_DDR_OHM_30,	/* ctrl_drv_n */
+					{
+						MV_DDR_OHM_60,	/* odt_p 1cs */
+						MV_DDR_OHM_120	/* odt_p 2cs */
+					},
+					{
+						MV_DDR_OHM_60,	/* odt_n 1cs */
+						MV_DDR_OHM_120	/* odt_n 2cs */
+					},
+				},
+				{				/* mac electrical configuration */
+					MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+					MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
+					MV_DDR_ODT_CFG_NORMAL	/* odtcfg_read */
+				},
+			},
 		},
 	},
 	{
@@ -94,7 +127,40 @@ struct mv_ddr_iface dram_iface_ap0[DDR_MAX_UNIT_PER_AP] = {
 			MV_DDR_64BIT_ECC_PUP8_BUS_MASK, /* subphys mask */
 			MV_DDR_CFG_SPD,			/* ddr configuration data source */
 			{ {0} },			/* raw spd data */
-			{0}				/* timing parameters */
+			{0},				/* timing parameters */
+			{					/* electrical configuration */
+				{				/* memory electrical configuration */
+					MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+					{
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
+					},
+					{
+						MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr 1cs */
+						MV_DDR_RTT_WR_RZQ_DIV2		/* rtt_wr 2cs */
+					},
+					MV_DDR_DIC_RZQ_DIV7	/* dic */
+				},
+				{				/* phy electrical configuration */
+					MV_DDR_OHM_30,	/* data_drv_p */
+					MV_DDR_OHM_30,	/* data_drv_n */
+					MV_DDR_OHM_30,	/* ctrl_drv_p */
+					MV_DDR_OHM_30,	/* ctrl_drv_n */
+					{
+						MV_DDR_OHM_60,	/* odt_p 1cs */
+						MV_DDR_OHM_120	/* odt_p 2cs */
+					},
+					{
+						MV_DDR_OHM_60,	/* odt_n 1cs */
+						MV_DDR_OHM_120	/* odt_n 2cs */
+					},
+				},
+				{				/* mac electrical configuration */
+					MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+					MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
+					MV_DDR_ODT_CFG_NORMAL	/* odtcfg_read */
+				},
+			},
 		},
 	},
 };
@@ -129,7 +195,40 @@ struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP] = {
 			MV_DDR_64BIT_ECC_PUP8_BUS_MASK, /* subphys mask */
 			MV_DDR_CFG_SPD,			/* ddr configuration data source */
 			{ {0} },			/* raw spd data */
-			{0}				/* timing parameters */
+			{0},				/* timing parameters */
+			{					/* electrical configuration */
+				{				/* memory electrical configuration */
+					MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+					{
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
+					},
+					{
+						MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr 1cs */
+						MV_DDR_RTT_WR_RZQ_DIV2		/* rtt_wr 2cs */
+					},
+					MV_DDR_DIC_RZQ_DIV7	/* dic */
+				},
+				{				/* phy electrical configuration */
+					MV_DDR_OHM_30,	/* data_drv_p */
+					MV_DDR_OHM_30,	/* data_drv_n */
+					MV_DDR_OHM_30,	/* ctrl_drv_p */
+					MV_DDR_OHM_30,	/* ctrl_drv_n */
+					{
+						MV_DDR_OHM_60,	/* odt_p 1cs */
+						MV_DDR_OHM_120	/* odt_p 2cs */
+					},
+					{
+						MV_DDR_OHM_60,	/* odt_n 1cs */
+						MV_DDR_OHM_120	/* odt_n 2cs */
+					},
+				},
+				{				/* mac electrical configuration */
+					MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+					MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
+					MV_DDR_ODT_CFG_NORMAL	/* odtcfg_read */
+				},
+			},
 		},
 	},
 	{
@@ -162,7 +261,40 @@ struct mv_ddr_iface dram_iface_ap1[DDR_MAX_UNIT_PER_AP] = {
 			MV_DDR_64BIT_ECC_PUP8_BUS_MASK, /* subphys mask */
 			MV_DDR_CFG_SPD,			/* ddr configuration data source */
 			{ {0} },			/* raw spd data */
-			{0}				/* timing parameters */
+			{0},				/* timing parameters */
+			{					/* electrical configuration */
+				{				/* memory electrical configuration */
+					MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+					{
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
+						MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
+					},
+					{
+						MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr 1cs */
+						MV_DDR_RTT_WR_RZQ_DIV2		/* rtt_wr 2cs */
+					},
+					MV_DDR_DIC_RZQ_DIV7	/* dic */
+				},
+				{				/* phy electrical configuration */
+					MV_DDR_OHM_30,	/* data_drv_p */
+					MV_DDR_OHM_30,	/* data_drv_n */
+					MV_DDR_OHM_30,	/* ctrl_drv_p */
+					MV_DDR_OHM_30,	/* ctrl_drv_n */
+					{
+						MV_DDR_OHM_60,	/* odt_p 1cs */
+						MV_DDR_OHM_120	/* odt_p 2cs */
+					},
+					{
+						MV_DDR_OHM_60,	/* odt_n 1cs */
+						MV_DDR_OHM_120	/* odt_n 2cs */
+					},
+				},
+				{				/* mac electrical configuration */
+					MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+					MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
+					MV_DDR_ODT_CFG_NORMAL	/* odtcfg_read */
+				},
+			},
 		},
 	},
 };
