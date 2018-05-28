@@ -116,6 +116,17 @@
 
 #define EFUSE_AP_LD0_CLUSTER_DOWN_OFFS	4
 
+/* Return the AP revision of the chip */
+static unsigned int ble_get_ap_type(void)
+{
+	unsigned int chip_rev_id;
+
+	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
+	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
+
+	return chip_rev_id;
+}
+
 /******************************************************************************
  * The routine allows to save the CCU and IO windows configuration during DRAM
  * setup and restore them afterwards before exiting the BLE stage.
@@ -486,7 +497,6 @@ static void aro_to_pll(void)
 int ble_plat_setup(int *skip)
 {
 	int ret;
-	unsigned int chip_rev_id;
 
 	/* Power down unused CPUs */
 	plat_marvell_early_cpu_powerdown();
@@ -513,11 +523,8 @@ int ble_plat_setup(int *skip)
 	/* Setup AVS */
 	ble_plat_svc_config();
 
-	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
-	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
-
 	/* work with PLL clock driver in AP807 */
-	if (chip_rev_id == CHIP_ID_AP807)
+	if (ble_get_ap_type() == CHIP_ID_AP807)
 		aro_to_pll();
 
 #if ARO_ENABLE
