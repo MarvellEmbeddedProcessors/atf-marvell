@@ -217,6 +217,12 @@ static void ble_plat_svc_config(void)
 	uint32_t device_id, single_cluster;
 	uint8_t  svc[4], perr[4], i, sw_ver;
 
+	/* Due to a bug in A3900 device_id skip SVC config
+	 * TODO: add SVC config once it is decided for a3900
+	 */
+	if (ble_get_ap_type() == CHIP_ID_AP807)
+		return;
+
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
 	reg_val &= ~EFUSE_SRV_CTRL_LD_SELECT_OFFS;
