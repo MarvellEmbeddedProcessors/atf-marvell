@@ -16,7 +16,7 @@
 
 /* #define DEBUG_COMPHY */
 #ifdef DEBUG_COMPHY
-#define debug(format...) NOTICE(format)
+#define debug(format...) printf(format)
 #else
 #define debug(format, arg...)
 #endif
@@ -164,11 +164,12 @@ static inline uint32_t polling_with_timeout(uintptr_t addr, uint32_t val,
 
 static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
 {
-	debug("Write to addr = 0x%lx, data = 0x%x (mask = 0x%x) - old val = 0x%x",
-	      addr, data, mask, mmio_read_32(addr));
+	debug("<atf>: Write to address = %#010lx, data = %#010x (mask = %#010x) - ",
+	      addr, data, mask);
+	debug("old value = %#010x ==> ", mmio_read_32(addr));
 	mmio_clrsetbits_32(addr, mask, data);
 
-	debug("new val 0x%x\n", mmio_read_32(addr));
+	debug("new val %#010x\n", mmio_read_32(addr));
 }
 
 /* Clear PIPE selector - avoid collision with previous configuration */
