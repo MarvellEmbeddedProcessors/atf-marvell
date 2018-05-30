@@ -16,31 +16,53 @@
 #include <stdio.h>
 
 /* PLL's registers with local base address since each AP has its own EAWG*/
-#define PLL_CLUSTER_1_0_ADDRES	(MVEBU_DFX_SAR_LOCAL_AP + 0x2E0)
-#define PLL_CLUSTER_2_3_ADDRES	(MVEBU_DFX_SAR_LOCAL_AP + 0x2E8)
-#define PLL_RING_ADDRESS	(MVEBU_DFX_SAR_LOCAL_AP + 0x2F0)
-#define PLL_IO_ADDRESS		(MVEBU_DFX_SAR_LOCAL_AP + 0x2F8)
-#define PLL_PIDI_ADDRESS	(MVEBU_DFX_SAR_LOCAL_AP + 0x310)
-#define PLL_DSS_ADDRESS		(MVEBU_DFX_SAR_LOCAL_AP + 0x300)
+#define PLL_DSS_FRACT_ADDRESS		(MVEBU_DFX_SSCG_LOCAL_AP + 0x1B0)
+#define PLL_DSS_FRACT_EN_ADDRESS	(MVEBU_DFX_SSCG_LOCAL_AP + 0x1B4)
+#define PLL_CLUSTER_1_0_ADDRES		(MVEBU_DFX_SAR_LOCAL_AP + 0x2E0)
+#define PLL_CLUSTER_2_3_ADDRES		(MVEBU_DFX_SAR_LOCAL_AP + 0x2E8)
+#define PLL_RING_ADDRESS		(MVEBU_DFX_SAR_LOCAL_AP + 0x2F0)
+#define PLL_IO_ADDRESS			(MVEBU_DFX_SAR_LOCAL_AP + 0x2F8)
+#define PLL_PIDI_ADDRESS		(MVEBU_DFX_SAR_LOCAL_AP + 0x310)
+#define PLL_DSS_ADDRESS			(MVEBU_DFX_SAR_LOCAL_AP + 0x300)
 
 /* frequencies values */
-#define PLL_FREQ_3000		0x2D477001 /* 3000 */
-#define PLL_FREQ_2700		0x2B06B001 /* 2700 */
-#define PLL_FREQ_2500		0x2B063001 /* 2500 */
-#define PLL_FREQ_2400		0x2AE5F001 /* 2400 */
-#define PLL_FREQ_2200		0x2AC57001 /* 2200 */
-#define PLL_FREQ_2000		0x2FC9F002 /* 2000 */
-#define PLL_FREQ_1800		0x2D88F002 /* 1800 */
-#define PLL_FREQ_1600		0x2D47F002 /* 1600 */
-#define PLL_FREQ_1466		0x3535F012 /* 1466.5 */
-#define PLL_FREQ_1400		0x2D26F002 /* 1400 */
-#define PLL_FREQ_1333		0x3313F012 /* 1333.5 */
-#define PLL_FREQ_1300		0x2B067002 /* 1300 */
-#define PLL_FREQ_1200		0x2AE5F002 /* 1200 */
-#define PLL_FREQ_1100           0x2AC57002 /* 1100 */
-#define PLL_FREQ_1066		0x30CFF012 /* 1066 */
-#define PLL_FREQ_1000		0x2AC4F002 /* 1000 */
-#define PLL_FREQ_800		0x2883F002 /* 800 */
+#define PLL_FREQ_3000		0x6D477001 /* 3000 */
+#define PLL_FREQ_2700		0x6B06B001 /* 2700 */
+#define PLL_FREQ_2500		0x6B063001 /* 2500 */
+#define PLL_FREQ_2400		0x6AE5F001 /* 2400 */
+#define PLL_FREQ_2200		0x6AC57001 /* 2200 */
+#define PLL_FREQ_2000		0x6FC9F002 /* 2000 */
+#define PLL_FREQ_1800		0x6D88F002 /* 1800 */
+#define PLL_FREQ_1600		0x6D47F002 /* 1600 */
+#define PLL_FREQ_1466		0x6D274002 /* 1466.5 */
+#define PLL_FREQ_1400		0x6D26F002 /* 1400 */
+#define PLL_FREQ_1333		0x6B069002 /* 1333.5 */
+#define PLL_FREQ_1300		0x6B067002 /* 1300 */
+#define PLL_FREQ_1200		0x6AE5F002 /* 1200 */
+#define PLL_FREQ_1100		0x6AC57002 /* 1100 */
+#define PLL_FREQ_1000		0x6AC4F002 /* 1000 */
+#define PLL_FREQ_800		0x6883F002 /* 800 */
+
+/* fractional frequencies values and enable or disable values */
+#define PLL_FRAC_FREQ_3000		0x0 /* 3000 */
+#define PLL_FRAC_FREQ_2700		0x0 /* 2700 */
+#define PLL_FRAC_FREQ_2500		0x0 /* 2500 */
+#define PLL_FRAC_FREQ_2400		0x0 /* 2400 */
+#define PLL_FRAC_FREQ_2200		0x0 /* 2200 */
+#define PLL_FRAC_FREQ_2000		0x0 /* 2000 */
+#define PLL_FRAC_FREQ_1800		0x0 /* 1800 */
+#define PLL_FRAC_FREQ_1600		0x0 /* 1600 */
+#define PLL_FRAC_FREQ_1466		0x0CE7356F /* 1466.5 */
+#define PLL_FRAC_FREQ_1400		0x0 /* 1400 */
+#define PLL_FRAC_FREQ_1333		0xAC0 /* 1333.5 */
+#define PLL_FRAC_FREQ_1300		0x0 /* 1300 */
+#define PLL_FRAC_FREQ_1200		0x0 /* 1200 */
+#define PLL_FRAC_FREQ_1100		0x0 /* 1100 */
+#define PLL_FRAC_FREQ_1000		0x0 /* 1000 */
+#define PLL_FRAC_FREQ_800		0x0 /* 800 */
+
+#define PLL_FRAC_FREQ_DIS		0x0
+#define PLL_FRAC_FREQ_EN		0x2
 
 /* PLL device control registers */
 #define PLL_CONTROL_REG(ap, n)	(MVEBU_DFX_SR_BASE(ap) + ((n > 0) ? (0xD34 + ((n + 1) * 0x4)) : 0xD34))
@@ -67,6 +89,8 @@ enum pll_type {
 	IO,
 	PIDI,
 	DSS,
+	DSS_FRAC_EN,
+	DSS_FRAC,
 	PLL_CLUSTER_0_FREQ, /* PLL for cluster0 and cluster1 */
 	PLL_CLUSTER_2_FREQ, /* PLL for cluster2 and cluster3 */
 	PLL_LAST,
@@ -78,42 +102,42 @@ unsigned int pll_freq_tables[SAR_SUPPORTED_TABLES]
 			    [SAR_SUPPORTED_OPTIONS]
 			    [PLL_LAST + 2] = {
 	{
-		/* RING, IO, PIDI, DSS, PLL_CLUSTER_0_FREQ, PLL_CLUSTER_2_FREQ, CPU_FREQ */
-		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800,
-		 PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_800},
-		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1200},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200,
-		 PLL_FREQ_2200, PLL_FREQ_2200, TARGET_FREQ_2200, DDR_FREQ_1200},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_2200, PLL_FREQ_2200, TARGET_FREQ_2200, DDR_FREQ_1333},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_2500, PLL_FREQ_2500, TARGET_FREQ_2500, DDR_FREQ_1333},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1466,
-		 PLL_FREQ_2500, PLL_FREQ_2500, TARGET_FREQ_2500, DDR_FREQ_1466},
-		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1600,
-		 PLL_FREQ_2700, PLL_FREQ_2700, TARGET_FREQ_2700, DDR_FREQ_1600},
+		/* RING, IO, PIDI, DSS_FRAC_EN, DSS, DSS_FRAC, PLL_CLUSTER_0_FREQ, PLL_CLUSTER_2_FREQ, CPU_FREQ */
+		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_800, PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_800},
+		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_1200, PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1200},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1200, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_1200, PLL_FREQ_2200, PLL_FREQ_2200, TARGET_FREQ_2200, DDR_FREQ_1200},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_2200, PLL_FREQ_2200, TARGET_FREQ_2200, DDR_FREQ_1333},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_2500, PLL_FREQ_2500, TARGET_FREQ_2500, DDR_FREQ_1333},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1466, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1466, PLL_FREQ_2500, PLL_FREQ_2500, TARGET_FREQ_2500, DDR_FREQ_1466},
+		{PLL_FREQ_1400, PLL_FREQ_1000, PLL_FREQ_1000, PLL_FREQ_1600, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1600, PLL_FREQ_2700, PLL_FREQ_2700, TARGET_FREQ_2700, DDR_FREQ_1600},
 	},
 	{
-		/* RING, IO, PIDI, DSS, PLL_CLUSTER_0_FREQ, PLL_CLUSTER_2_FREQ, CPU_FREQ */
-		{PLL_FREQ_800, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800,
-		 PLL_FREQ_1200, PLL_FREQ_1200, TARGET_FREQ_1200, DDR_FREQ_800},
-		{PLL_FREQ_800, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_1200},
-		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_1333},
-		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 PLL_FREQ_1800, PLL_FREQ_1800, TARGET_FREQ_1800, DDR_FREQ_1200},
-		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_1800, PLL_FREQ_1800, TARGET_FREQ_1800, DDR_FREQ_1333},
-		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200,
-		 PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1200},
-		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
-		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333,
-		 PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
+		/* RING, IO, PIDI, DSS_FRAC_EN, DSS, DSS_FRAC, PLL_CLUSTER_0_FREQ, PLL_CLUSTER_2_FREQ, CPU_FREQ */
+		{PLL_FREQ_800, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_800, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_800, PLL_FREQ_1200, PLL_FREQ_1200, TARGET_FREQ_1200, DDR_FREQ_800},
+		{PLL_FREQ_800, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_1200, PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_1200},
+		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_1600, PLL_FREQ_1600, TARGET_FREQ_1600, DDR_FREQ_1333},
+		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_1200, PLL_FREQ_1800, PLL_FREQ_1800, TARGET_FREQ_1800, DDR_FREQ_1200},
+		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_1800, PLL_FREQ_1800, TARGET_FREQ_1800, DDR_FREQ_1333},
+		{PLL_FREQ_1200, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1200, PLL_FRAC_FREQ_DIS,
+		 PLL_FRAC_FREQ_1200, PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1200},
+		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
+		{PLL_FREQ_1300, PLL_FREQ_800, PLL_FREQ_1000, PLL_FREQ_1333, PLL_FRAC_FREQ_EN,
+		 PLL_FRAC_FREQ_1333, PLL_FREQ_2000, PLL_FREQ_2000, TARGET_FREQ_2000, DDR_FREQ_1333},
 	},
 };
 
@@ -122,6 +146,8 @@ unsigned int pll_base_address[PLL_LAST] = {
 	PLL_IO_ADDRESS, /* IO */
 	PLL_PIDI_ADDRESS, /* PIDI */
 	PLL_DSS_ADDRESS, /* DSS */
+	PLL_DSS_FRACT_EN_ADDRESS, /* DSS FRACTIONAL EN */
+	PLL_DSS_FRACT_ADDRESS, /* DSS FRACTIONAL */
 	PLL_CLUSTER_1_0_ADDRES, /* PLL for cluster0 and cluster1 */
 	PLL_CLUSTER_2_3_ADDRES, /* PLL for cluster2 and cluster3 */
 };
@@ -187,7 +213,8 @@ void clocks_fetch_options(uint32_t *freq_mode, uint32_t *clk_index)
 /* prepares the transactions to be send to each AP's EAWG FIFO */
 static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 				       struct eawg_transaction *trans_array,
-				       int clock_id_first, int clock_id_last)
+				       int clock_id_first, int clock_id_last,
+				       int *transactions_num)
 {
 	int pll, i;
 
@@ -195,8 +222,18 @@ static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 	for (pll = clock_id_first, i = 0 ; pll <= clock_id_last ; pll++) {
 
 		if (pll_base_address[pll] == -1) {
-			printf("PLL number %d value is not intialized", pll);
+			printf("PLL number %d value is not initialized", pll);
 			return -1;
+		}
+
+		/* in case the DSS fractional frequency is disabled skip
+		 * the current and the next transactions which are:
+		 * 1. fractionl frequency enable
+		 * 2. fraction frequency value
+		 */
+		if ((pll == DSS_FRAC_EN) && (plls_clocks_vals[pll] == PLL_FRAC_FREQ_DIS)) {
+			pll++;
+			continue;
 		}
 
 		/* For each PLL type there's 4 transactions to be written */
@@ -227,6 +264,7 @@ static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 		trans_array[i].delay = 0x0;
 
 		i++;
+		(*transactions_num)++;
 	}
 
 	return 0;
@@ -258,6 +296,7 @@ int ap810_clocks_init(int ap_count)
 	uint32_t freq_mode, clk_config;
 	int ddr_clock_option;
 	int clock_id_end;
+	int transactions_num = 0;
 	int ap;
 
 	/* check if the total number of transactions doesn't exceeds EAWG's
@@ -279,6 +318,8 @@ int ap810_clocks_init(int ap_count)
 	plls_clocks_vals[IO] = pll_freq_tables[freq_mode][clk_config][IO];
 	plls_clocks_vals[PIDI] = pll_freq_tables[freq_mode][clk_config][PIDI];
 	plls_clocks_vals[DSS] = pll_freq_tables[freq_mode][clk_config][DSS];
+	plls_clocks_vals[DSS_FRAC_EN] = pll_freq_tables[freq_mode][clk_config][DSS_FRAC_EN];
+	plls_clocks_vals[DSS_FRAC] = pll_freq_tables[freq_mode][clk_config][DSS_FRAC];
 	plls_clocks_vals[PLL_CLUSTER_0_FREQ] = pll_freq_tables[freq_mode][clk_config][PLL_CLUSTER_0_FREQ];
 	plls_clocks_vals[PLL_CLUSTER_2_FREQ] = pll_freq_tables[freq_mode][clk_config][PLL_CLUSTER_2_FREQ];
 
@@ -287,13 +328,13 @@ int ap810_clocks_init(int ap_count)
 	plat_dram_freq_update(ddr_clock_option);
 
 #if ARO_ENABLE
-	clock_id_end = DSS;
+	clock_id_end = DSS_FRAC;
 #else
 	clock_id_end = PLL_CLUSTER_2_FREQ;
 	clocks_switch_aro_pll(PLL_MODE, ap_count);
 #endif
 
-	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, clock_id_end))
+	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, clock_id_end, &transactions_num))
 		return -1;
 
 	/* one extra transaction to write to a scratch-pad register in each AP */
@@ -308,7 +349,7 @@ int ap810_clocks_init(int ap_count)
 
 	/* write transactions to each APs' EAWG FIFO */
 	for (ap = 0 ; ap < ap_count ; ap++) {
-		if (eawg_load_transactions(trans_array, ((clock_id_end + 1) * TRANS_PER_PLL), ap)) {
+		if (eawg_load_transactions(trans_array, (transactions_num * TRANS_PER_PLL), ap)) {
 			printf("couldn't load all transactions to AP%d EAWG FIFO\n", ap);
 			return -1;
 		}
