@@ -118,10 +118,11 @@ uintptr_t bl2_plat_get_ap_mss_regs(int ap_idx)
 
 uint32_t bl2_plat_get_cp_count(int ap_idx)
 {
+	uint32_t revision = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	/* A8040: two CPs.
 	 * A7040: one CP.
 	 */
-	if (cp110_device_id_get(MVEBU_CP_REGS_BASE(0)) == MVEBU_80X0_DEV_ID)
+	if (revision == MVEBU_80X0_DEV_ID || revision == MVEBU_80X0_CP115_DEV_ID)
 		return 2;
 	else
 		return 1;
