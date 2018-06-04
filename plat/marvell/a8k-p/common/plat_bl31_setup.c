@@ -25,9 +25,7 @@
 #define GSPMU_CPU_CONTROL			(0x1 << 0)
 
 #define CCU_HTC_CR(ap)				(MVEBU_CCU_BASE(ap) + 0x200)
-#define CCU_READ_UNIQ_ENABLE			19
 #define CCU_SET_POC_OFFSET			5
-#define CCU_PASS_DIRTY_ENABLE			1
 
 #define GEVENT_CR_PORTx_EVENT_MASK(ap, port)	(MVEBU_AR_RFU_BASE(ap) + 0x500 + port * 0x4)
 
@@ -224,19 +222,10 @@ static void ap810_init_aurora2(int ap_id)
 	llc_enable(ap_id, 1);
 #endif /* !LLC_DISABLE */
 
-	reg = mmio_read_32(CCU_HTC_CR(ap_id));
-	/* Configure all reads snoop to be read unique
-	** relevant for A0 revision & single AP only
-	** */
-	if ((ap810_rev_id_get(ap_id) == MVEBU_AP810_REV_ID_A0) &&
-			(ap810_get_ap_count() == 1)) {
-		reg &= ~(0x1 << CCU_READ_UNIQ_ENABLE | 0x1 << CCU_PASS_DIRTY_ENABLE);
-		reg |= (0x1 << CCU_READ_UNIQ_ENABLE);
-	}
-
 	/* Set point of coherency to DDR. This is
 	 * required by units which have SW cache coherency
 	 */
+	reg = mmio_read_32(CCU_HTC_CR(ap_id));
 	reg |= (0x1 << CCU_SET_POC_OFFSET);
 	mmio_write_32(CCU_HTC_CR(ap_id), reg);
 
