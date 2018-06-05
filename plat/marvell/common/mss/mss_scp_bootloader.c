@@ -71,7 +71,7 @@
 #define MSS_HANDSHAKE_TIMEOUT		5000
 #endif
 
-static int mss_check_image_ready(struct mss_pm_ctrl_block *mss_pm_crtl)
+static int mss_check_image_ready(volatile struct mss_pm_ctrl_block *mss_pm_crtl)
 {
 	int timeout = MSS_HANDSHAKE_TIMEOUT;
 
@@ -155,7 +155,7 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t mss_regs)
  */
 static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t ap_idx)
 {
-	struct mss_pm_ctrl_block *mss_pm_crtl;
+	volatile struct mss_pm_ctrl_block *mss_pm_crtl;
 	int ret;
 
 	/* TODO: add PM Control Info from platform */
