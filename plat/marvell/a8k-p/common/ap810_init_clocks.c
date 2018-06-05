@@ -214,7 +214,7 @@ void clocks_fetch_options(uint32_t *freq_mode, uint32_t *clk_index)
 static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 				       struct eawg_transaction *trans_array,
 				       int clock_id_first, int clock_id_last,
-				       int *transactions_num)
+				       int *transactions_num, int *sub_transactions_num)
 {
 	int pll, i;
 
@@ -228,12 +228,25 @@ static int clocks_prepare_transactions(uint32_t *plls_clocks_vals,
 
 		/* in case the DSS fractional frequency is disabled skip
 		 * the current and the next transactions which are:
-		 * 1. fractionl frequency enable
+		 * 1. fractional frequency enable
 		 * 2. fraction frequency value
+		 * in case the fractional frequency is enabled
+		 * add a single "sub transaction" per register configuration
 		 */
 		if ((pll == DSS_FRAC_EN) && (plls_clocks_vals[pll] == PLL_FRAC_FREQ_DIS)) {
 			pll++;
 			continue;
+		} else {
+			if ((pll == DSS_FRAC_EN) || (pll == DSS_FRAC)) {
+				/* setting the new desired frequency */
+				trans_array[i].address = pll_base_address[pll];
+				trans_array[i].data = plls_clocks_vals[pll];
+				trans_array[i].delay = 0x1;
+
+				i++;
+				(*sub_transactions_num)++;
+				continue;
+			}
 		}
 
 		/* For each PLL type there's 4 transactions to be written */
@@ -297,6 +310,7 @@ int ap810_clocks_init(int ap_count)
 	int ddr_clock_option;
 	int clock_id_end;
 	int transactions_num = 0;
+	int sub_transactions_num = 0;
 	int ap;
 
 	/* check if the total number of transactions doesn't exceeds EAWG's
@@ -334,7 +348,8 @@ int ap810_clocks_init(int ap_count)
 	clocks_switch_aro_pll(PLL_MODE, ap_count);
 #endif
 
-	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, clock_id_end, &transactions_num))
+	if (clocks_prepare_transactions(plls_clocks_vals, trans_array, RING, clock_id_end,
+					&transactions_num, &sub_transactions_num))
 		return -1;
 
 	/* one extra transaction to write to a scratch-pad register in each AP */
@@ -349,7 +364,9 @@ int ap810_clocks_init(int ap_count)
 
 	/* write transactions to each APs' EAWG FIFO */
 	for (ap = 0 ; ap < ap_count ; ap++) {
-		if (eawg_load_transactions(trans_array, (transactions_num * TRANS_PER_PLL), ap)) {
+		if (eawg_load_transactions(trans_array,
+					  (transactions_num * TRANS_PER_PLL +
+					   sub_transactions_num), ap)) {
 			printf("couldn't load all transactions to AP%d EAWG FIFO\n", ap);
 			return -1;
 		}
