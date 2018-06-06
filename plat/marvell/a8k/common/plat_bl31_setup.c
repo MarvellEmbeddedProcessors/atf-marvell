@@ -102,7 +102,8 @@ void bl31_plat_arch_setup(void)
 			mci_initialize(MVEBU_MCI0);
 
 	/* initialize MCI & CP1 */
-		cp110_init(MVEBU_CP_REGS_BASE(cp));
+		cp110_init(MVEBU_CP_REGS_BASE(cp),
+			   STREAM_ID_BASE + (cp * MAX_STREAM_ID_PER_CP));
 
 	/* Should be called only after setting IOB windows */
 		marvell_bl31_mpp_init(cp);

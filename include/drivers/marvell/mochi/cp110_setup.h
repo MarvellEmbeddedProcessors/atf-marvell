@@ -22,6 +22,8 @@
 #define MVEBU_CP110_SA_DEV_ID		(0x110)
 #define MVEBU_CP110_REF_ID_A1		1
 #define MVEBU_CP110_REF_ID_A2		2
+#define MAX_STREAM_ID_PER_CP		(0x10)
+#define STREAM_ID_BASE			(0x40)
 
 static inline uint32_t cp110_device_id_get(uintptr_t base)
 {
@@ -42,7 +44,7 @@ static inline uint32_t cp110_rev_id_get(uintptr_t base)
 		MVEBU_DEVICE_REV_OFFSET;
 }
 
-void cp110_init(uintptr_t cp110_base);
+void cp110_init(uintptr_t cp110_base, uint32_t stream_id);
 void cp110_ble_init(uintptr_t cp110_base);
 
 #endif /* __PLAT_CP110_H__ */

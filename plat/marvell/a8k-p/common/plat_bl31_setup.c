@@ -85,7 +85,10 @@ static void cp110_die_init(void)
 
 	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++)
 		for (cp_id = 0; cp_id < ap810_get_cp_per_ap_cnt(ap_id); cp_id++)
-			cp110_init(MVEBU_CP_REGS_BASE(ap_id, cp_id));
+			cp110_init(MVEBU_CP_REGS_BASE(ap_id, cp_id),
+				   STREAM_ID_BASE +
+				   (cp_id * MAX_STREAM_ID_PER_CP));
+
 }
 
 /*

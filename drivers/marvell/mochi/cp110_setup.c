@@ -169,39 +169,24 @@ enum axi_attr {
  * but some are configured inside the unit registers
  */
 #define RFU_STREAM_ID_BASE	(0x450000)
-#define AUDIO_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x0)
-#define TDM_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x4)
-#define USB3D_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x8)
 #define USB3H_0_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0xC)
 #define USB3H_1_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x10)
 #define SATA_0_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x14)
 #define SATA_1_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x18)
-#define DBG_TRC_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x24)
-#define SDIO_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x28)
-#define DAP_STREAM_ID_REG	(RFU_STREAM_ID_BASE + 0x2C)
 
 #define CP_DMA_0_STREAM_ID_REG  (0x6B0010)
 #define CP_DMA_1_STREAM_ID_REG  (0x6D0010)
 
-/* We allocate IDs 0-127 for PCI since
- * SR-IOV devices can generate many functions
- * that need a unique Stream-ID.
- */
-#define MAX_PCIE_STREAM_ID	(0x80)
+/* We allocate IDs 128-255 for PCIe */
+#define MAX_STREAM_ID		(0x80)
 
 uintptr_t stream_id_reg[] = {
-	AUDIO_STREAM_ID_REG,
-	TDM_STREAM_ID_REG,
-	USB3D_STREAM_ID_REG,
 	USB3H_0_STREAM_ID_REG,
 	USB3H_1_STREAM_ID_REG,
-	SATA_0_STREAM_ID_REG,
-	SATA_1_STREAM_ID_REG,
-	DBG_TRC_STREAM_ID_REG,
-	SDIO_STREAM_ID_REG,
-	DAP_STREAM_ID_REG,
 	CP_DMA_0_STREAM_ID_REG,
 	CP_DMA_1_STREAM_ID_REG,
+	SATA_0_STREAM_ID_REG,
+	SATA_1_STREAM_ID_REG,
 	0
 };
 
@@ -266,28 +251,30 @@ static void cp110_pcie_clk_cfg(uintptr_t base)
 }
 
 /* Set a unique stream id for all DMA capable devices */
-static void cp110_stream_id_init(uintptr_t base)
+static void cp110_stream_id_init(uintptr_t base, uint32_t stream_id)
 {
-	int i = 0, sata_stream_id = -1;
-	uint32_t stream_id = MAX_PCIE_STREAM_ID;
+	int i = 0;
 
 	while (stream_id_reg[i]) {
+		if (i > MAX_STREAM_ID_PER_CP) {
+			NOTICE("Too many Stream IDs per CP, allocate only the first %d Stream IDs\n",
+			       MAX_STREAM_ID_PER_CP);
+			return;
+		}
+
+		if ((stream_id_reg[i] == CP_DMA_0_STREAM_ID_REG) ||
+		    (stream_id_reg[i] == CP_DMA_1_STREAM_ID_REG))
+			mmio_write_32(base + stream_id_reg[i],
+				      stream_id << 16 |  stream_id);
+		else
+			mmio_write_32(base + stream_id_reg[i], stream_id);
+
 		/* SATA port 0/1 are in the same SATA unit, and they should use
 		 * the same STREAM ID number
 		 */
-		if (((stream_id_reg[i] == SATA_0_STREAM_ID_REG) ||
-		    (stream_id_reg[i] == SATA_1_STREAM_ID_REG)) &&
-		    sata_stream_id != -1) {
-			mmio_write_32(base + stream_id_reg[i],
-				      sata_stream_id << 16 | sata_stream_id);
-		} else {
-			mmio_write_32(base + stream_id_reg[i],
-				      stream_id << 16 | stream_id);
-			if ((stream_id_reg[i] == SATA_0_STREAM_ID_REG) ||
-			    (stream_id_reg[i] == SATA_1_STREAM_ID_REG))
-				sata_stream_id = stream_id;
+		if (stream_id_reg[i] != SATA_0_STREAM_ID_REG)
 			stream_id++;
-		}
+
 		i++;
 	}
 }
@@ -422,7 +409,7 @@ static void cp110_amb_adec_init(uintptr_t base)
 	init_amb_adec(base);
 }
 
-void cp110_init(uintptr_t cp110_base)
+void cp110_init(uintptr_t cp110_base, uint32_t stream_id)
 {
 	INFO("%s: Initialize CPx - base = %lx\n", __func__, cp110_base);
 
@@ -445,7 +432,7 @@ void cp110_init(uintptr_t cp110_base)
 	icu_init(cp110_base, &icu_config);
 
 	/* configure stream id for CP0 */
-	cp110_stream_id_init(cp110_base);
+	cp110_stream_id_init(cp110_base, stream_id);
 
 	/* Open AMB bridge for comphy for CP0 & CP1*/
 	amb_bridge_init(cp110_base);
