@@ -18,6 +18,9 @@ ERRATA_A72_859971	:= 1
 # Enable MSS support for a8k family
 MSS_SUPPORT		:= 1
 
+# Disable EL3 cache for power management
+BL31_CACHE_DISABLE	:= 1
+
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
 
