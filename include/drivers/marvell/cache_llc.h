@@ -33,6 +33,7 @@ void llc_enable(int, int excl_mode);
 int llc_is_exclusive(int);
 void llc_save(int);
 void llc_resume(int);
+void llc_runtime_enable(int ap_index);
 #endif
 
 #endif /* _CACHE_LLC_H_ */

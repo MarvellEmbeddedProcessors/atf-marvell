@@ -4,11 +4,15 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <assert.h>
 #include <cache_llc.h>
+#include <ccu.h>
 #include <mmio.h>
 #include <plat_def.h>
+
+#define CCU_HTC_CR(ap_index)		(MVEBU_CCU_BASE(ap_index) + 0x200)
+#define CCU_SET_POC_OFFSET		5
 
 void llc_cache_sync(int ap_index)
 {
@@ -76,4 +80,34 @@ void llc_save(int ap_index)
 void llc_resume(int ap_index)
 {
 	/* TBD */
+}
+
+void llc_runtime_enable(int ap_index)
+{
+	uint32_t reg;
+
+	reg = mmio_read_32(LLC_CTRL(ap_index));
+	if (reg & LLC_CTRL_EN)
+		return;
+
+	INFO("Enabling LLC\n");
+
+	/*
+	 * Enable L2 UniqueClean evictions
+	 *  Note: this configuration assumes that LLC is configured
+	 *	  in exclusive mode.
+	 *	  Later on in the code this assumption will be validated
+	 */
+	__asm__ volatile ("mrs %0, s3_1_c15_c0_0" : "=r" (reg));
+	reg |=  (1 << 14);
+	__asm__ volatile ("msr s3_1_c15_c0_0, %0" : : "r" (reg));
+
+	llc_enable(ap_index, 1);
+
+	/* Set point of coherency to DDR.
+	 * This is required by units which have SW cache coherency
+	 */
+	reg = mmio_read_32(CCU_HTC_CR(ap_index));
+	reg |= (0x1 << CCU_SET_POC_OFFSET);
+	mmio_write_32(CCU_HTC_CR(ap_index), reg);
 }

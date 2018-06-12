@@ -5,6 +5,8 @@
  * https://spdx.org/licenses
  */
 
+#include <ap_setup.h>
+#include <cache_llc.h>
 #include <debug.h>
 #include <runtime_svc.h>
 #include <smcc.h>
@@ -27,6 +29,7 @@
 
 /* Miscellaneous FID's' */
 #define MV_SIP_DRAM_SIZE	0x82000010
+#define MV_SIP_LLC_ENABLE	0x82000011
 
 #define MAX_LANE_NR		6
 #define MVEBU_COMPHY_OFFSET	0x441000
@@ -47,6 +50,7 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 			       u_register_t flags)
 {
 	u_register_t ret;
+	int i;
 
 	debug("%s: got SMC (0x%x) x1 0x%lx, x2 0x%lx, x3 0x%lx\n",
 						 __func__, smc_fid, x1, x2, x3);
@@ -98,6 +102,12 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 		/* x1:  ap_base_addr */
 		ret = mvebu_get_dram_size(x1);
 		SMC_RET1(handle, ret);
+	case MV_SIP_LLC_ENABLE:
+		for (i = 0; i < ap_get_count(); i++)
+			llc_runtime_enable(i);
+
+		SMC_RET1(handle, 0);
+
 	default:
 		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);
 		SMC_RET1(handle, SMC_UNK);
