@@ -34,6 +34,8 @@
 	.globl	fiq_aarch32
 	.globl	serror_aarch32
 
+	.weak dabort_lower_el_handler
+
 	/* ---------------------------------------------------------------------
 	 * This macro handles Synchronous exceptions.
 	 * Only SMC exceptions are supported.
@@ -67,6 +69,9 @@
 
 	cmp	x30, #EC_AARCH64_SMC
 	b.eq	smc_handler64
+
+	cmp	x30, #EC_DABORT_LOWER_EL
+	b.eq	dabort_lower_el_handler
 
 	/* Other kinds of synchronous exceptions are not handled */
 	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
@@ -403,3 +408,12 @@ rt_svc_fw_critical_error:
 	msr	spsel, #1
 	no_ret	report_unhandled_exception
 endfunc smc_handler
+
+	/* ---------------------------------------------------------------------
+	 * Weak handler for data abort calls from lower exception levels, can be
+	 * overwritten by platform handler.
+	 * ---------------------------------------------------------------------
+	 */
+dabort_lower_el_handler:
+	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
+	b	report_unhandled_exception
