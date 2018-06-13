@@ -65,6 +65,9 @@
 #define MVEBU_CP0_I2C_BASE		(MVEBU_CP_REGS_BASE(0) + 0x701000)
 #define MVEBU_AP_EXT_TSEN_BASE		(MVEBU_RFU_BASE + 0x8084)
 
+#define MVEBU_AP_MC_TRUSTZONE_REG_LOW(ap, win)	(MVEBU_REGS_BASE_AP(ap) + 0x20080 + ((win) * 0x8))
+#define MVEBU_AP_MC_TRUSTZONE_REG_HIGH(ap, win)	(MVEBU_REGS_BASE_AP(ap) + 0x20084 + ((win) * 0x8))
+
 /* MCI indirect access definitions */
 #define MCI_MAX_UNIT_ID				2
 /* SoC RFU / IHBx4 Control */
