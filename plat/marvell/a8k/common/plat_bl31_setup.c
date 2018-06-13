@@ -14,6 +14,7 @@
 #include <plat_config.h>
 #include <plat_marvell.h>
 #include <plat_private.h>
+#include <mc_trustzone/mc_trustzone.h>
 
 #include <mss_ipc_drv.h>
 #include <mss_mem.h>
@@ -75,6 +76,24 @@ _Bool is_pm_fw_running(void)
 	return pm_fw_running;
 }
 
+/* For TrusTzone we treat the "target" filed of addr_map_win
+ * stuct as attribute
+ */
+static const struct addr_map_win tz_map[] = {
+	{PLAT_MARVELL_ATF_BASE, 0x200000, TZ_PERM_ABORT}
+};
+
+/* Configure MC TrustZone regions */
+static void plat_marvell_security_setup(void)
+{
+	int tz_nr, win_id;
+
+	tz_nr = ARRAY_SIZE(tz_map);
+
+	for (win_id = 0; win_id < tz_nr; win_id++)
+		tz_enable_win(MVEBU_AP0, tz_map, win_id);
+}
+
 /* This function overruns the same function in marvell_bl31_setup.c */
 void bl31_plat_arch_setup(void)
 {
@@ -116,4 +135,6 @@ void bl31_plat_arch_setup(void)
 
 	/* Configure GPIO */
 	marvell_gpio_config();
+
+	plat_marvell_security_setup();
 }
