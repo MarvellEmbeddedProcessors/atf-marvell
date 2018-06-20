@@ -57,6 +57,10 @@ Build Instructions
 
 	- MARVELL_SECURE_BOOT: build trusted(=1)/non trusted(=0) image, default is non trusted.
 
+	- BLE_PATH:
+		Points to BLE (Binary ROM extension) sources folder. Only required for A8K and A8K+ builds.
+		The parameter is optional, its default value is "ble".
+
 	- MV_DDR_PATH:
 		For A7/8K, use this parameter to point to mv_ddr driver sources to allow BLE build. For A37x0,
 		it is used for ddr_tool build.

@@ -109,3 +109,9 @@ ENABLE_PLAT_COMPAT	:= 	0
 
 # MSS (SCP) build
 include $(PLAT_COMMON_BASE)/mss/mss_a8kp.mk
+
+# BLE (ROM context execution code, AKA binary extension)
+BLE_PATH	?=  ble
+
+include ${BLE_PATH}/ble.mk
+$(eval $(call MAKE_BL,e))

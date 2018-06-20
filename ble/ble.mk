@@ -9,8 +9,8 @@ MV_DDR_LIB		= 	$(CURDIR)/$(BUILD_PLAT)/ble/mv_ddr_lib.a
 BLE_LIBS		= 	$(MV_DDR_LIB)
 PLAT_MARVELL		=	plat/marvell
 
-BLE_SOURCES		+= 	ble/ble_main.c				\
-				ble/ble_mem.S				\
+BLE_SOURCES		+= 	$(BLE_PATH)/ble_main.c				\
+				$(BLE_PATH)/ble_mem.S				\
 				drivers/delay_timer/delay_timer.c	\
 				$(PLAT_MARVELL)/common/plat_delay_timer.c
 
@@ -19,7 +19,7 @@ PLAT_INCLUDES		+= 	-I$(MV_DDR_PATH) \
 				-I$(CURDIR)/include/lib/stdlib/sys \
 				-Idrivers/marvell
 
-BLE_LINKERFILE		:=	ble/ble.ld.S
+BLE_LINKERFILE		:=	$(BLE_PATH)/ble.ld.S
 
 FORCE:
 

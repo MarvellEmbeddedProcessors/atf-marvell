@@ -734,15 +734,6 @@ $(eval $(call add_define,CP_NUM))
 $(eval $(call add_define,BL31_CACHE_DISABLE))
 
 ################################################################################
-# Include BL specific makefiles
-################################################################################
-
-ifdef BLE_SOURCES
-NEED_BLE := yes
-include ble/ble.mk
-endif
-
-################################################################################
 # Build targets
 ################################################################################
 
@@ -757,11 +748,6 @@ msg_start:
 # Check if deprecated declarations and cpp warnings should be treated as error or not.
 ifeq (${ERROR_DEPRECATED},0)
     CPPFLAGS		+= 	-Wno-error=deprecated-declarations -Wno-error=cpp
-endif
-
-# Expand build macros for the different images
-ifeq (${NEED_BLE},yes)
-$(if ${BLE}, ,$(eval $(call MAKE_BL,e)))
 endif
 
 ifeq (${NEED_BL1},yes)
