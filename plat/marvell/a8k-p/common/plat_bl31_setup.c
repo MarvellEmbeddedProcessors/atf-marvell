@@ -220,10 +220,10 @@ static void ap810_init_aurora2(int ap_id)
 	reg |= GSPMU_CPU_CONTROL;
 	mmio_write_32(MVEBU_CCU_GSPMU_CR(ap_id), reg);
 
-#if !LLC_DISABLE
+#if LLC_ENABLE
 	/* Enable LLC in exclusive mode */
 	llc_enable(ap_id, 1);
-#endif /* !LLC_DISABLE */
+#endif /* LLC_ENABLE */
 
 	/* Set point of coherency to DDR. This is
 	 * required by units which have SW cache coherency

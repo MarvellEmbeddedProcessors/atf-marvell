@@ -122,7 +122,7 @@ static void init_aurora2(void)
 	reg |= GSPMU_CPU_CONTROL;
 	mmio_write_32(CCU_GSPMU_CR, reg);
 
-#if !LLC_DISABLE
+#if LLC_ENABLE
 	/* Enable LLC for AP806 in exclusive mode */
 	llc_enable(0, 1);
 
@@ -133,7 +133,7 @@ static void init_aurora2(void)
 	reg = mmio_read_32(CCU_HTC_CR);
 	reg |= (0x1 << CCU_SET_POC_OFFSET);
 	mmio_write_32(CCU_HTC_CR, reg);
-#endif /* !LLC_DISABLE */
+#endif /* LLC_ENABLE */
 
 	apn806_errata_wa_init();
 }

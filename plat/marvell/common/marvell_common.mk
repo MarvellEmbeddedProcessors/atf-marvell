@@ -16,9 +16,9 @@ SEPARATE_CODE_AND_RODATA	:= 1
 # flag to switch from PLL to ARO
 ARO_ENABLE			:= 0
 $(eval $(call add_define,ARO_ENABLE))
-# Disable LLC in A8K family of SoCs
-LLC_DISABLE			:= 0
-$(eval $(call add_define,LLC_DISABLE))
+# Enable/Disable LLC
+LLC_ENABLE			:= 1
+$(eval $(call add_define,LLC_ENABLE))
 
 PLAT_INCLUDES		+=	-I.	-Iinclude/common/tbbr		       \
 				-I$(MARVELL_PLAT_INCLUDE_BASE)/common	       \

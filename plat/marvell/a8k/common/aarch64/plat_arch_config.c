@@ -32,7 +32,7 @@ void plat_enable_affinity(void)
 
 void psci_arch_init(int die_index)
 {
-#if !LLC_DISABLE
+#if LLC_ENABLE
 	/* check if LLC is in exclusive mode
 	 * as L2 is configured to UniqueClean eviction
 	 * (in a8k reset handler)

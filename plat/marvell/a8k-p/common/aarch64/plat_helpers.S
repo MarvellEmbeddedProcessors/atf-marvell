@@ -128,7 +128,7 @@ func plat_reset_handler
 	orr x5, x5, #(1 << 21) /* Enable L1/L2 cache ECC & Parity */
 	msr s3_1_c11_c0_2, x5  /* L2 Ctrl */
 
-#if !LLC_DISABLE
+#if LLC_ENABLE
 	/*
 	 * Enable L2 UniqueClean evictions
 	 *  Note: this configuration assumes that LLC is configured
