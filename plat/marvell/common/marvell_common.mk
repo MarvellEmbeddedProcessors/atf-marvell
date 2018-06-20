@@ -6,8 +6,20 @@
 MARVELL_PLAT_BASE		:= plat/marvell
 MARVELL_PLAT_INCLUDE_BASE	:= include/plat/marvell
 
+include $(MARVELL_PLAT_BASE)/version.mk
+include $(MARVELL_PLAT_BASE)/marvell.mk
+
+VERSION_STRING			+=(Marvell-${SUBVERSION})
+
 SEPARATE_CODE_AND_RODATA	:= 1
- 
+
+# flag to switch from PLL to ARO
+ARO_ENABLE			:= 0
+$(eval $(call add_define,ARO_ENABLE))
+# Disable LLC in A8K family of SoCs
+LLC_DISABLE			:= 0
+$(eval $(call add_define,LLC_DISABLE))
+
 PLAT_INCLUDES		+=	-I.	-Iinclude/common/tbbr		       \
 				-I$(MARVELL_PLAT_INCLUDE_BASE)/common	       \
 				-I$(MARVELL_PLAT_INCLUDE_BASE)/common/aarch64
@@ -52,3 +64,4 @@ ifeq (${MSS_SUPPORT}, 1)
 include $(MARVELL_PLAT_BASE)/common/mss/mss_common.mk
 endif
 
+fip: mrvl_flash

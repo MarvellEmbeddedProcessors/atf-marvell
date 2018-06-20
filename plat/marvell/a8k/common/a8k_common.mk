@@ -3,15 +3,15 @@
 #
 # SPDX-License-Identifier:     BSD-3-Clause
 # https://spdx.org/licenses
- 
+
+include tools/doimage/doimage.mk
+
 PLAT_FAMILY		:= a8k
 PLAT_FAMILY_BASE	:= plat/marvell/$(PLAT_FAMILY)
 PLAT_INCLUDE_BASE	:= include/plat/marvell/$(PLAT_FAMILY)
 PLAT_COMMON_BASE	:= $(PLAT_FAMILY_BASE)/common
 MARVELL_DRV_BASE	:= drivers/marvell
 MARVELL_COMMON_BASE	:= plat/marvell/common
-
-CALL_DOIMAGE		:= y
 
 ERRATA_A72_859971	:= 1
 
@@ -20,6 +20,31 @@ MSS_SUPPORT		:= 1
 
 # Disable EL3 cache for power management
 BL31_CACHE_DISABLE	:= 1
+$(eval $(call add_define,BL31_CACHE_DISABLE))
+
+# Enable end point only for 7040 PCAC
+ifeq ($(PLAT),$(filter $(PLAT),a70x0_pcac))
+PCI_EP_SUPPORT		:= 1
+else
+PCI_EP_SUPPORT		:= 0
+endif
+ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
+PCI_EP_SUPPORT		:= 1
+endif
+$(eval $(call add_define,PCI_EP_SUPPORT))
+$(eval $(call assert_boolean,PCI_EP_SUPPORT))
+
+DOIMAGEPATH		?=	tools/doimage
+DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
+
+ifeq ($(findstring a80x0,${PLAT}),)
+DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_7K.cfg
+else
+DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_8K.cfg
+endif # PLAT == a8K/a7K
+
+ROM_BIN_EXT ?= $(BUILD_PLAT)/ble.bin
+DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
 
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
@@ -117,4 +142,9 @@ BLE_PATH	?=  ble
 
 include ${BLE_PATH}/ble.mk
 $(eval $(call MAKE_BL,e))
+
+mrvl_flash: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
+	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
+	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
+	${DOIMAGETOOL} ${DOIMAGE_FLAGS} ${BUILD_PLAT}/${BOOT_IMAGE} ${BUILD_PLAT}/${FLASH_IMAGE}
 

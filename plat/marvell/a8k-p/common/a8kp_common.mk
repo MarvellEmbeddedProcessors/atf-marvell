@@ -4,6 +4,7 @@
 # SPDX-License-Identifier:	BSD-3-Clause
 # https://spdx.org/licenses
 #
+include tools/doimage/doimage.mk
 
 PLAT_FAMILY		:= a8k-p
 PLAT_FAMILY_BASE	:= plat/marvell/$(PLAT_FAMILY)
@@ -12,12 +13,24 @@ PLAT_COMMON_BASE	:= $(PLAT_FAMILY_BASE)/common
 MARVELL_DRV_BASE	:= drivers/marvell
 MARVELL_COMMON_BASE	:= plat/marvell/common
 
-CALL_DOIMAGE		:= y
-
 ERRATA_A72_859971       := 1
 
 # Enable MSS support for a8kp family
 MSS_SUPPORT		:= 1
+
+ifeq (${PALLADIUM},1)
+CP_NUM			:= 0
+else
+CP_NUM			:= 2
+endif
+$(eval $(call add_define,CP_NUM))
+
+DOIMAGEPATH		?=	tools/doimage
+DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
+
+ROM_BIN_EXT	?= $(BUILD_PLAT)/ble.bin
+DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
+
 
 # This define specifies DDR type for BLE
 $(eval $(call add_define,CONFIG_DDR4))
@@ -115,3 +128,8 @@ BLE_PATH	?=  ble
 
 include ${BLE_PATH}/ble.mk
 $(eval $(call MAKE_BL,e))
+
+mrvl_flash: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
+	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
+	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
+	${DOIMAGETOOL} ${DOIMAGE_FLAGS} ${BUILD_PLAT}/${BOOT_IMAGE} ${BUILD_PLAT}/${FLASH_IMAGE}

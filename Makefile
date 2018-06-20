@@ -21,8 +21,6 @@ MAKEOVERRIDES =
 MAKE_HELPERS_DIRECTORY := make_helpers/
 include ${MAKE_HELPERS_DIRECTORY}build_macros.mk
 include ${MAKE_HELPERS_DIRECTORY}build_env.mk
-include tools/doimage/doimage.mk
-include version.mk
 
 ################################################################################
 # Default values for build configurations, and their dependencies
@@ -38,44 +36,6 @@ include ${MAKE_HELPERS_DIRECTORY}defaults.mk
 ENABLE_ASSERTIONS		:= ${DEBUG}
 ENABLE_PMF			:= ${ENABLE_RUNTIME_INSTRUMENTATION}
 PLAT				:= ${DEFAULT_PLAT}
-# Enable compilation for Palladium emulation platform
-PALLADIUM			:= 0
-# flag to switch from PLL to ARO
-ARO_ENABLE			:= 0
-# Disable LLC in A8K family of SoCs
-LLC_DISABLE			:= 0
-# Make non-trusted image by default
-MARVELL_SECURE_BOOT	:= 	0
-# Enable end point only for 7040 PCAC
-ifeq ($(PLAT),$(filter $(PLAT),a70x0_pcac))
-PCI_EP_SUPPORT			:= 1
-else
-PCI_EP_SUPPORT			:= 0
-endif
-ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
-PCI_EP_SUPPORT			:= 1
-endif
-
-ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
-ifeq (${PALLADIUM},1)
-CP_NUM				:= 0
-else
-CP_NUM				:= 2
-endif
-endif
-
-ifeq ($(PLAT),$(filter $(PLAT),a8xxy))
-ifeq (${PALLADIUM},1)
-CP_NUM				:= 0
-else
-CP_NUM				:= 2
-endif
-endif
-
-# Marvell images
-BOOT_IMAGE			:= boot-image.bin
-BOOT_ENC_IMAGE			:= boot-image-enc.bin
-FLASH_IMAGE			:= flash-image.bin
 
 ################################################################################
 # Checkpatch script options
@@ -139,7 +99,7 @@ endif
 ifeq (${BUILD_STRING},)
         BUILD_STRING	:=	$(shell git describe --always --dirty --tags 2> /dev/null)
 endif
-VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${SUBVERSION}:${BUILD_STRING}
+VERSION_STRING		:=	v${VERSION_MAJOR}.${VERSION_MINOR}(${BUILD_TYPE}):${BUILD_STRING}
 
 # The cert_create tool cannot generate certificates individually, so we use the
 # target 'certificates' to create them all
@@ -524,101 +484,6 @@ ifdef FDT_SOURCES
 NEED_FDT := yes
 endif
 
-ifeq ($(PLAT),a3700)
-#*********** A3700 *************
-DOIMAGEPATH	:= $(WTP)
-DOIMAGETOOL	:= $(DOIMAGEPATH)/wtptp/linux/tbb_linux
-
-ifeq ($(MARVELL_SECURE_BOOT),1)
-DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-tim.txt
-IMAGESPATH	:= $(DOIMAGEPATH)/tim/trusted
-
-TIMNCFG		:= $(DOIMAGEPATH)/atf-timN.txt
-TIMNSIG		:= $(IMAGESPATH)/timnsign.txt
-TIM2IMGARGS	:= -i $(DOIMAGE_CFG) -n $(TIMNCFG)
-TIMN_IMAGE	:= $$(grep "Image Filename:" -m 1 $(TIMNCFG) | cut -c 17-)
-else #MARVELL_SECURE_BOOT
-DOIMAGE_CFG	:= $(DOIMAGEPATH)/atf-ntim.txt
-IMAGESPATH	:= $(DOIMAGEPATH)/tim/untrusted
-TIM2IMGARGS	:= -i $(DOIMAGE_CFG)
-endif #MARVELL_SECURE_BOOT
-
-TIMBUILD		:= $(DOIMAGEPATH)/script/buildtim.sh
-TIM2IMG			:= $(DOIMAGEPATH)/script/tim2img.pl
-
-# WTMI_IMG is used to specify the customized RTOS image runing over CM3 processor. By default, it
-# points to a baremetal binary of fuse programming in A3700_utils.
-WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/fuse/build/fuse.bin
-
-# WTMI_SYSINIT_IMG is used for the system early initialization, such as AVS settings, clock-tree
-# setup and dynamic DDR PHY training. After the initialization is done, this image will be wiped out
-# from the memory and CM3 will continue with RTOS image or other application.
-WTMI_SYSINIT_IMG	:= $(DOIMAGEPATH)/wtmi/sys_init/build/sys_init.bin
-
-# WTMI_MULTI_IMG is composed of CM3 RTOS image (WTMI_IMG) and sys-init image (WTMI_SYSINIT_IMG).
-WTMI_MULTI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
-
-WTMI_ENC_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi-enc.bin
-BUILD_UART		:= uart-images
-
-SRCPATH			:= $(dir $(BL33))
-
-CLOCKSPRESET		?= CPU_800_DDR_800
-
-DDR_TOPOLOGY		?= 0
-
-BOOTDEV			?= SPINOR
-PARTNUM			?= 0
-
-TIM_IMAGE		:= $$(grep "Image Filename:" -m 1 $(DOIMAGE_CFG) | cut -c 17-)
-TIMBLDARGS		:= $(MARVELL_SECURE_BOOT) $(BOOTDEV) $(IMAGESPATH) $(DOIMAGEPATH) $(CLOCKSPRESET) \
-				$(DDR_TOPOLOGY) $(PARTNUM) $(DEBUG) $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 1
-TIMBLDUARTARGS		:= $(MARVELL_SECURE_BOOT) UART $(IMAGESPATH) $(DOIMAGEPATH) $(CLOCKSPRESET) \
-				$(DDR_TOPOLOGY) 0 0 $(DOIMAGE_CFG) $(TIMNCFG) $(TIMNSIG) 0
-DOIMAGE_FLAGS		:= -r $(DOIMAGE_CFG) -v -D
-
-else # PLAT != a3700
-#*********** A8K *************
-DOIMAGEPATH		?=	tools/doimage
-DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
-
-ifeq ($(findstring a80x0,${PLAT}),)
-DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_7K.cfg
-else
-DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_8K.cfg
-endif # PLAT == a8K/a7K
-
-ifeq (${MARVELL_SECURE_BOOT},1)
-DOIMAGE_SEC_FLAGS := -c $(DOIMAGE_SEC)
-DOIMAGE_LIBS_CHECK = \
-        if ! [ -d "/usr/include/mbedtls" ]; then \
-                        echo "****************************************" >&2; \
-                        echo "Missing mbedTLS installation! " >&2; \
-                        echo "Please download it from \"tls.mbed.org\"" >&2; \
-			echo "Alternatively on Debian/Ubuntu system install" >&2; \
-			echo "\"libmbedtls-dev\" package" >&2; \
-                        echo "Make sure to use version 2.1.0 or later" >&2; \
-                        echo "****************************************" >&2; \
-                exit 1; \
-        else if ! [ -f "/usr/include/libconfig.h" ]; then \
-                        echo "********************************************************" >&2; \
-                        echo "Missing Libconfig installation!" >&2; \
-                        echo "Please download it from \"www.hyperrealm.com/libconfig/\"" >&2; \
-                        echo "Alternatively on Debian/Ubuntu system install packages" >&2; \
-                        echo "\"libconfig8\" and \"libconfig8-dev\"" >&2; \
-                        echo "********************************************************" >&2; \
-                exit 1; \
-        fi \
-        fi
-else #MARVELL_SECURE_BOOT
-DOIMAGE_LIBS_CHECK =
-DOIMAGE_SEC_FLAGS =
-endif #MARVELL_SECURE_BOOT
-
-ROM_BIN_EXT ?= $(BUILD_PLAT)/ble.bin
-DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
-
-endif # PLAT == a3700
 ################################################################################
 # Build options checks
 ################################################################################
@@ -662,9 +527,6 @@ $(eval $(call assert_boolean,BL2_IN_XIP_MEM))
 
 $(eval $(call assert_numeric,ARM_ARCH_MAJOR))
 $(eval $(call assert_numeric,ARM_ARCH_MINOR))
-
-$(eval $(call assert_boolean,MARVELL_SECURE_BOOT))
-$(eval $(call assert_boolean,PCI_EP_SUPPORT))
 
 ################################################################################
 # Add definitions to the cpp preprocessor based on the current build options.
@@ -726,12 +588,6 @@ ifeq (${ARCH},aarch32)
 else
         $(eval $(call add_define,AARCH64))
 endif
-$(eval $(call add_define,PALLADIUM))
-$(eval $(call add_define,ARO_ENABLE))
-$(eval $(call add_define,LLC_DISABLE))
-$(eval $(call add_define,PCI_EP_SUPPORT))
-$(eval $(call add_define,CP_NUM))
-$(eval $(call add_define,BL31_CACHE_DISABLE))
 
 ################################################################################
 # Build targets
@@ -813,7 +669,6 @@ clean:
 	$(call SHELL_REMOVE_DIR,${BUILD_PLAT})
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
-	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 realclean distclean:
 	@echo "  REALCLEAN"
@@ -821,7 +676,6 @@ realclean distclean:
 	$(call SHELL_DELETE_ALL, ${CURDIR}/cscope.*)
 	${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
-	${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${DOIMAGEPATH} clean
 
 checkcodebase:		locate-checkpatch
 	@echo "  CHECKING STYLE"
@@ -893,76 +747,12 @@ ${BUILD_PLAT}/${FWU_FIP_NAME}: ${FWU_FIP_DEPS} ${FIPTOOL}
 	@${ECHO_BLANK_LINE}
 
 fiptool: ${FIPTOOL}
-ifeq (${CALL_DOIMAGE}, y)
-ifeq ($(PLAT),a3700)
-fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL}
-	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
-	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
-	$(shell truncate -s %4 ${BUILD_PLAT}/${BOOT_IMAGE})
-	$(shell truncate -s %4 $(WTMI_IMG))
-	@echo
-	@echo "Building uart images"
-	$(TIMBUILD) $(TIMBLDUARTARGS)
-	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(DOIMAGE_CFG)
-	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
-ifeq ($(MARVELL_SECURE_BOOT),1)
-	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(TIMNCFG)
-	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
-endif
-	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
-	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
-	@rm -rf $(BUILD_PLAT)/$(BUILD_UART)*
-	@mkdir $(BUILD_PLAT)/$(BUILD_UART)
-	@mv -t $(BUILD_PLAT)/$(BUILD_UART) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG)
-	@find . -name "*_h.*" |xargs cp -ut $(BUILD_PLAT)/$(BUILD_UART)
-	@mv $(subst .bin,_h.bin,$(WTMI_MULTI_IMG)) $(BUILD_PLAT)/$(BUILD_UART)/wtmi_h.bin
-	@tar czf $(BUILD_PLAT)/$(BUILD_UART).tgz -C $(BUILD_PLAT) ./$(BUILD_UART)
-	@echo
-	@echo "Building flash image"
-	$(TIMBUILD) $(TIMBLDARGS)
-	sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(DOIMAGE_CFG)
-	sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(DOIMAGE_CFG)
-ifeq ($(MARVELL_SECURE_BOOT),1)
-	@sed -i 's|WTMI_IMG|$(WTMI_MULTI_IMG)|1' $(TIMNCFG)
-	@sed -i 's|BOOT_IMAGE|$(BUILD_PLAT)/$(BOOT_IMAGE)|1' $(TIMNCFG)
-	@echo -e "\n\t=======================================================\n";
-	@echo -e "\t  Secure boot. Encrypting wtmi and boot-image \n";
-	@echo -e "\t=======================================================\n";
-	@truncate -s %16 $(WTMI_MULTI_IMG)
-	@openssl enc -aes-256-cbc -e -in $(WTMI_MULTI_IMG) -out $(WTMI_ENC_IMG) \
-	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
-	-iv `cat $(IMAGESPATH)/iv.txt` -p
-	@truncate -s %16 $(BUILD_PLAT)/$(BOOT_IMAGE);
-	@openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) -out $(BUILD_PLAT)/$(BOOT_ENC_IMAGE) \
-	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
-	-iv `cat $(IMAGESPATH)/iv.txt` -p
-endif
-	$(DOIMAGETOOL) $(DOIMAGE_FLAGS)
-	@if [ -e "$(TIMNCFG)" ]; then $(DOIMAGETOOL) -r $(TIMNCFG); fi
-	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then sed -i 's|$(WTMI_MULTI_IMG)|$(WTMI_ENC_IMG)|1;s|$(BOOT_IMAGE)|$(BOOT_ENC_IMAGE)|1;' $(TIMNCFG); fi
-	$(TIM2IMG) $(TIM2IMGARGS) -o $(BUILD_PLAT)/$(FLASH_IMAGE)
-	@mv -t $(BUILD_PLAT) $(TIM_IMAGE) $(DOIMAGE_CFG) $(TIMN_IMAGE) $(TIMNCFG) $(WTMI_IMG) $(WTMI_SYSINIT_IMG) $(WTMI_MULTI_IMG)
-	@if [ "$(MARVELL_SECURE_BOOT)" = "1" ]; then mv -t $(BUILD_PLAT) $(WTMI_ENC_IMG) OtpHash.txt; fi
-	@find . -name "*.txt" | grep -E "CSK[[:alnum:]]_KeyHash.txt|Tim_msg.txt|TIMHash.txt" | xargs rm -f
-else
-fip: ${BUILD_PLAT}/${FIP_NAME} ${DOIMAGETOOL} ${BUILD_PLAT}/ble.bin
-	$(shell truncate -s %128K ${BUILD_PLAT}/bl1.bin)
-	$(shell cat ${BUILD_PLAT}/bl1.bin ${BUILD_PLAT}/${FIP_NAME} > ${BUILD_PLAT}/${BOOT_IMAGE})
-	${DOIMAGETOOL} ${DOIMAGE_FLAGS} ${BUILD_PLAT}/${BOOT_IMAGE} ${BUILD_PLAT}/${FLASH_IMAGE}
-endif
-else
 fip: ${BUILD_PLAT}/${FIP_NAME}
-endif
 fwu_fip: ${BUILD_PLAT}/${FWU_FIP_NAME}
 
 .PHONY: ${FIPTOOL}
 ${FIPTOOL}:
 	${Q}${MAKE} CPPFLAGS="-DVERSION='\"${VERSION_STRING}\"'" --no-print-directory -C ${FIPTOOLPATH}
-
-.PHONY: ${DOIMAGETOOL}
-${DOIMAGETOOL}:
-	@$(DOIMAGE_LIBS_CHECK)
-	${Q}${MAKE} --no-print-directory -C ${DOIMAGEPATH} WTMI_IMG=$(WTMI_IMG)
 
 cscope:
 	@echo "  CSCOPE"
