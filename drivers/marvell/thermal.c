@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2017 Marvell International Ltd.
  *
- * SPDX-License-Identifier:	GPL-2.0
+ * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
 
@@ -25,7 +25,7 @@ int marvell_thermal_init(struct tsen_config *tsen_cfg)
 		return -1;
 	}
 
-	INFO("thermal sensor was initialized\n");
+	VERBOSE("thermal sensor was initialized\n");
 
 	return 0;
 }

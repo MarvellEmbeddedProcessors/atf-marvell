@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2017 Marvell International Ltd.
  *
- * SPDX-License-Identifier:	GPL-2.0
+ * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
 
