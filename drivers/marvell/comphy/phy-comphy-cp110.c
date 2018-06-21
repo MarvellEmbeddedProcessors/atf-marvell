@@ -2171,7 +2171,7 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint64_t comphy_index, uin
 		err = mvebu_cp110_comphy_ap_power_on(comphy_base, comphy_index);
 		break;
 	default:
-		ERROR("comphy%ld: unsupported comphy mode\n", comphy_index);
+		ERROR("comphy%lld: unsupported comphy mode\n", comphy_index);
 		err = -EINVAL;
 		break;
 	}

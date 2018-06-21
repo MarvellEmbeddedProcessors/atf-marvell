@@ -255,13 +255,13 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 
 	/* Size should be non-zero, up to 4GB and multiple of 1MB */
 	if (!size || (size >> 32) || (size % (1 << 20))) {
-		ERROR("Invalid remap size %lx\n", size);
+		ERROR("Invalid remap size %llx\n", size);
 		return;
 	}
 
 	/* Remap addresses must be multiple of remap size */
 	if ((from % size) || (to % size)) {
-		ERROR("Invalid remap address %lx -> %lx\n", from, to);
+		ERROR("Invalid remap address %llx -> %llx\n", from, to);
 		return;
 	}
 

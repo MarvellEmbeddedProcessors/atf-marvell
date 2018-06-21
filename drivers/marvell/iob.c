@@ -49,14 +49,14 @@ static void iob_win_check(struct addr_map_win *win, uint32_t win_num)
 	if (IS_NOT_ALIGN(win->base_addr, IOB_WIN_ALIGNMENT)) {
 		win->base_addr = ALIGN_UP(win->base_addr, IOB_WIN_ALIGNMENT);
 		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Align up the base address to 0x%lx\n", win->base_addr);
+		printf("Align up the base address to 0x%llx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, IOB_WIN_ALIGNMENT)) {
 		win->win_size = ALIGN_UP(win->win_size, IOB_WIN_ALIGNMENT);
 		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Aligning size to 0x%lx\n", win->win_size);
+		printf("Aligning size to 0x%llx\n", win->win_size);
 	}
 }
 
@@ -105,7 +105,7 @@ static void dump_iob(void)
 				** reserved for CP configuration space. */
 				end = start + (16 << 20);
 			}
-			printf("iob   %02d %s   0x%016lx 0x%016lx\n"
+			printf("iob   %02d %s   0x%016llx 0x%016llx\n"
 					, win_id, iob_target_name[target_id], start, end);
 		}
 	}

@@ -42,13 +42,13 @@ static void gwin_check(struct addr_map_win *win)
 	/* The base is always 64M aligned */
 	if (IS_NOT_ALIGN(win->base_addr, GWIN_ALIGNMENT_64M)) {
 		win->base_addr &= ~(GWIN_ALIGNMENT_64M - 1);
-		NOTICE("%s: Align the base address to 0x%lx\n", __func__, win->base_addr);
+		NOTICE("%s: Align the base address to 0x%llx\n", __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, GWIN_ALIGNMENT_64M)) {
 		win->win_size = ALIGN_UP(win->win_size, GWIN_ALIGNMENT_64M);
-		NOTICE("%s: Aligning window size to 0x%lx\n", __func__, win->win_size);
+		NOTICE("%s: Aligning window size to 0x%llx\n", __func__, win->win_size);
 	}
 }
 
@@ -155,7 +155,7 @@ static void dump_gwin(int ap_index)
 			alr = (alr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
 			ahr = mmio_read_32(GWIN_AHR_OFFSET(ap_index, win_num));
 			ahr = (ahr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
-			printf("\tgwin   %d     0x%016lx 0x%016lx\n", (cr >> 8) & 0xF, alr, ahr);
+			printf("\tgwin   %d     0x%016llx 0x%016llx\n", (cr >> 8) & 0xF, alr, ahr);
 		}
 	}
 	return;
