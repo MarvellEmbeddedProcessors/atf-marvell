@@ -83,7 +83,7 @@ static void cp110_die_init(void)
 {
 	int ap_id, cp_id;
 
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++)
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++)
 		for (cp_id = 0; cp_id < ap810_get_cp_per_ap_cnt(ap_id); cp_id++)
 			cp110_init(MVEBU_CP_REGS_BASE(ap_id, cp_id),
 				   STREAM_ID_BASE +
@@ -123,7 +123,7 @@ static void ap810_dvm_affinity(int ap_id)
 		mmio_write_32(CCU_HTC_GACR(ap_id, i), AP810_MAX_AP_MASK);
 
 	mmio_write_32(CCU_HTC_GASET(ap_id),
-			AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - ap810_get_ap_count()));
+			AP810_MAX_AP_MASK >> (AP810_MAX_AP_NUM - ap_get_count()));
 
 	debug_exit();
 }
@@ -279,7 +279,7 @@ static void ap810_setup_events(int ap_id)
 	 */
 	switch (ap_id) {
 	case 0:
-		if (ap810_get_ap_count() == 2) {
+		if (ap_get_count() == 2) {
 			/* Port 2 - unmask local GEvent */
 			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 2), 0x2f);
 			/* Port 4 (Local) - unmask Port 2 */
@@ -296,7 +296,7 @@ static void ap810_setup_events(int ap_id)
 		}
 		break;
 	case 1:
-		if (ap810_get_ap_count() == 2) {
+		if (ap_get_count() == 2) {
 			/* Port 0 - unmask local GEvent */
 			mmio_write_32(GEVENT_CR_PORTx_EVENT_MASK(ap_id, 0), 0x2f);
 			/* Port 4 (Local) - unmask Port 0 */
@@ -347,7 +347,7 @@ static void ap810_generic_timer_init(void)
 	 * In this code, we re-initialize the timer in the all APs.
 	 * TODO: move this code to be timer calibration algorithm
 	 */
-	for (i = 0; i < ap810_get_ap_count(); i++) {
+	for (i = 0; i < ap_get_count(); i++) {
 		/* Disable timer */
 		reg = mmio_read_32(MVEBU_MSS_GTCR_REG(i));
 		reg &= ~MVEBU_MSS_GTCR_ENABLE_BIT;
@@ -358,7 +358,7 @@ static void ap810_generic_timer_init(void)
 		mmio_write_32(MVEBU_MSS_GTCVHR_REG(i), 0x0);
 	}
 
-	if (ap810_get_ap_count() == 2) {
+	if (ap_get_count() == 2) {
 		/* Enable timer */
 		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
 		mmio_write_32(MVEBU_MSS_GTCR_REG(1), MVEBU_MSS_GTCR_ENABLE_BIT);
@@ -369,7 +369,7 @@ static void ap810_generic_timer_init(void)
 		ap1 = mmio_read_32(MVEBU_MSS_GTCVLR_REG(1));
 		INFO("Read time AP0 = %x - AP1 = %x\n", ap0, ap1);
 #endif
-	} else if (ap810_get_ap_count() == 4) {
+	} else if (ap_get_count() == 4) {
 		mmio_write_32(MVEBU_MSS_GTCR_REG(0), MVEBU_MSS_GTCR_ENABLE_BIT);
 		mmio_write_32(MVEBU_MSS_GTCR_REG(1), MVEBU_MSS_GTCR_ENABLE_BIT);
 		mmio_write_32(MVEBU_MSS_GTCR_REG(2), MVEBU_MSS_GTCR_ENABLE_BIT);
@@ -396,7 +396,7 @@ static void ap810_bl31_init(void)
 
 	debug_enter();
 
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		INFO("Initialize AP-%d\n", ap_id);
 		/* Setup Aurora2. */
 		ap810_init_aurora2(ap_id);

@@ -80,7 +80,7 @@ struct addr_map_win gwin_memory_map4_ap3[] = {
 
 int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
-	int ap_count = ap810_get_ap_count();
+	int ap_count = ap_get_count();
 
 	if (ap_count < 3) {
 		switch (ap) {
@@ -172,7 +172,7 @@ uint32_t marvell_get_ccu_gcr_target(int ap)
 
 int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
-	int ap_count = ap810_get_ap_count();
+	int ap_count = ap_get_count();
 
 	if (ap_count < 3) {
 		switch (ap) {
@@ -243,7 +243,7 @@ uint32_t marvell_get_io_win_gcr_target(int ap_index)
 
 int marvell_get_io_win_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
 {
-	int ap_count = ap810_get_ap_count();
+	int ap_count = ap_get_count();
 
 	if (ap_count < 3) {
 		switch (ap) {
@@ -513,7 +513,7 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 {
 	int  ap, cp;
 
-	for (ap = 0; ap < ap810_get_ap_count(); ap++) {
+	for (ap = 0; ap < ap_get_count(); ap++) {
 		for (cp = 0; cp < ap810_get_cp_per_ap_cnt(ap); cp++) {
 			if (MVEBU_CP_REGS_BASE(ap, cp) == base) {
 				*win = iob_map[ap][cp];
@@ -558,7 +558,7 @@ int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
 {
 	int  ap, cp;
 
-	for (ap = 0; ap < ap810_get_ap_count(); ap++) {
+	for (ap = 0; ap < ap_get_count(); ap++) {
 		for (cp = 0; cp < ap810_get_cp_per_ap_cnt(ap); cp++) {
 			if (MVEBU_CP_REGS_BASE(ap, cp) == base) {
 				*win = amb_map[ap][cp];

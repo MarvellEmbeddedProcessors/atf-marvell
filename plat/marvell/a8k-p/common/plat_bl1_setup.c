@@ -137,7 +137,7 @@ static void a8kp_mci_turn_off_links(uintptr_t mci_base)
 	int ap_id, cp_id, mci_id;
 
 	/* Go over the APs and turn off the link of MCIs */
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs  */
@@ -214,7 +214,7 @@ static int mci_wa_initialize(void)
 	a8kp_mci_mpp_reset(MPP_MCI_RELEASE_FROM_RESET);
 
 	/* 3rd stage - Re-init the MCI phy in AP side & in CP side */
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs in every APx */
@@ -304,7 +304,7 @@ static int a8kp_mci_configure_threshold(void)
 	debug_enter();
 
 	/* Run MCI WA for performance improvements */
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		ap810_win_route_open(ap_id, mci_base, MVEBU_MCI_REG_SIZE_REMAP, IO_0_TID);
 
 		/* Go over the MCIs in every APx */
@@ -376,7 +376,7 @@ static void update_cp110_default_win(void)
 	/* Go over the APs and update every CP with
 	 * the new configuration address
 	 */
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		ap810_win_route_open(ap_id, cp110_temp_base, MVEBU_CP_DEFAULT_BASE_SIZE, IO_0_TID);
 
 		/* Go over the connected CPx in the APx */
@@ -421,7 +421,7 @@ static void ap810_addr_decode_init(void)
 
 	debug_enter();
 
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		INFO("Initialize address decode for AP-%d\n", ap_id);
 		/* configure IO-WIN windows */
 		init_io_win(ap_id);
@@ -449,7 +449,7 @@ static void ap810_soc_misc_configurations(void)
 
 	debug_enter();
 
-	for (ap = 0; ap < ap810_get_ap_count(); ap++) {
+	for (ap = 0; ap < ap_get_count(); ap++) {
 		/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
 		 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
 		 */

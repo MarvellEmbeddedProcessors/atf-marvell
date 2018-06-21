@@ -8,8 +8,9 @@
 #ifndef __APN810_SETUP_H__
 #define __APN810_SETUP_H__
 
+#include <ap_setup.h>
+
 void ap810_enumeration_algo(void);
-int ap810_get_ap_count(void);
 int ap810_get_cp_per_ap_cnt(int);
 int ap810_get_cp_per_ap_static_cnt(int);
 int ap810_rev_id_get(int ap_index);

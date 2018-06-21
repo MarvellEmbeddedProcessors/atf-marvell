@@ -42,7 +42,7 @@ static void bl2_store_num_of_cps(void)
 {
 	int i;
 
-	for (i = 0; i < ap810_get_ap_count(); i++)
+	for (i = 0; i < ap_get_count(); i++)
 		mmio_write_32(MVEBU_REGS_BASE_AP(i) + GP_LOG_REG_0,
 			      ap810_get_cp_per_ap_cnt(i));
 }
@@ -57,7 +57,7 @@ static void bl2_plat_mss_remap(void)
 	 * then MSS remap will remap the address to 0x81_0000_0000
 	 */
 	/* MSS remap for CP1 */
-	for (i = 0; i < ap810_get_ap_count(); i++) {
+	for (i = 0; i < ap_get_count(); i++) {
 		mmio_write_32(MSS_REMAP_WIN1_ALR(i), MSS_WIN_ALR_VAL);
 		mmio_write_32(MSS_REMAP_WIN1_AHR(i), MSS_WIN_AHR_VAL);
 		mmio_write_32(MSS_REMAP_WIN1_CR(i), MSS_WIN1_CR_ADDR_MASK |
@@ -114,7 +114,7 @@ uint32_t bl2_plat_get_cp_count(int ap_idx)
 
 uint32_t bl2_plat_get_ap_count(void)
 {
-	return ap810_get_ap_count();
+	return ap_get_count();
 }
 
 void bl2_plat_configure_mss_windows(uintptr_t mss_regs)

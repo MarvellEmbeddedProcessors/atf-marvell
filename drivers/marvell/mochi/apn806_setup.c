@@ -249,3 +249,8 @@ void ap_ble_init(void)
 {
 }
 
+int ap_get_count(void)
+{
+	return 1;
+}
+

@@ -131,7 +131,7 @@ void plat_dram_freq_update(enum ddr_freq freq_option)
 	uint32_t ifaces_size, i, ap_id;
 
 	/* Update DDR topology for all APs for all interfaces */
-	for (ap_id = 0; ap_id < ap810_get_ap_count(); ap_id++) {
+	for (ap_id = 0; ap_id < ap_get_count(); ap_id++) {
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		for (i = 0; i < ifaces_size; i++, iface++)
 			iface->tm.interface_params[0].memory_freq = freq_option;
@@ -302,7 +302,7 @@ static void plat_dram_interfaces_update(void)
 {
 	struct mv_ddr_iface *iface = NULL;
 	uint32_t ifaces_size, i, ap_id, iface_cnt;
-	const uint32_t ap_cnt = ap810_get_ap_count();
+	const uint32_t ap_cnt = ap_get_count();
 
 	debug_enter();
 
@@ -395,7 +395,7 @@ int plat_dram_init(void)
 {
 	struct mv_ddr_iface *iface = NULL;
 	uint32_t ifaces_size, i, ap_id, ret, iface_cnt;
-	const uint32_t ap_cnt = ap810_get_ap_count();
+	const uint32_t ap_cnt = ap_get_count();
 	uint64_t ap_dram_size;
 	uint32_t ap_dram_tgt;
 

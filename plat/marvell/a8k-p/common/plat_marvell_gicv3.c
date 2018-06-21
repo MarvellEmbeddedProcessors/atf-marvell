@@ -112,7 +112,7 @@ int gic600_multi_chip_init(void)
 
 	INFO("GIC-600 Multi Chip initialization\n");
 	/* Go over APs and configure the routing table */
-	for (nb_id = 0; nb_id < ap810_get_ap_count(); nb_id++) {
+	for (nb_id = 0; nb_id < ap_get_count(); nb_id++) {
 		unsigned int spi_block_min, spi_blocks;
 
 		INFO("Configure AP %d\n", nb_id);

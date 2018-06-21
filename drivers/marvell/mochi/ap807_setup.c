@@ -215,3 +215,9 @@ void ap_ble_init(void)
 	ap807_dram_phy_access_config();
 }
 
+int ap_get_count(void)
+{
+	return 1;
+}
+
+

@@ -5,6 +5,7 @@
  * https://spdx.org/licenses
  */
 
+#include <ap_setup.h>
 #include <ap810_setup.h>
 #include <ap810_init_clocks.h>
 #include <a8kp_plat_def.h>
@@ -43,7 +44,7 @@ int ble_plat_setup(int *skip)
 
 #if !PALLADIUM
 	/* SW WA for AP link bring-up over JTAG connection */
-	if ((ap810_get_ap_count() != 1) &&
+	if ((ap_get_count() != 1) &&
 	    (ap810_rev_id_get(MVEBU_AP0) == MVEBU_AP810_REV_ID_A0))
 		jtag_init_ihb_dual_ap();
 #endif
@@ -56,7 +57,7 @@ int ble_plat_setup(int *skip)
 	ap810_enumeration_algo();
 
 	/* init clocks for single AP */
-	ap810_clocks_init(ap810_get_ap_count());
+	ap810_clocks_init(ap_get_count());
 
 	/* TODO: need to check if need early cpu powerdown */
 

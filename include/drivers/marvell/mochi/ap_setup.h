@@ -9,4 +9,6 @@
 
 void ap_init(void);
 void ap_ble_init(void);
+int ap_get_count(void);
+
 #endif /* __AP_SETUP_H__ */
