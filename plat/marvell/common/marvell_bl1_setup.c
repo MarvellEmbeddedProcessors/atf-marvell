@@ -80,7 +80,7 @@ void marvell_bl1_plat_arch_setup(void)
 				  BL1_RO_DATA_END
 #if USE_COHERENT_MEM
 				, BL_COHERENT_RAM_BASE,
-				  BL_COHERENT_RAM_LIMIT
+				  BL_COHERENT_RAM_END
 #endif
 				);
 	enable_mmu_el3(0);
