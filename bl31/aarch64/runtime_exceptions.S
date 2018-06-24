@@ -35,6 +35,29 @@
 	.globl	serror_aarch32
 
 	.weak dabort_lower_el_handler
+	.weak	serror_lower_el_handler
+
+	/* ---------------------------------------------------------------------
+	 * This macro handles Asynchronous exceptions.
+	 * Only system error are supported
+	 * ---------------------------------------------------------------------
+	 */
+	.macro	handle_async_exception
+	/* Enable the SError interrupt */
+	msr	daifclr, #DAIF_ABT_BIT
+
+	str	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
+
+	mrs	x30, esr_el3
+	ubfx	x30, x30, #ESR_EC_SHIFT, #ESR_EC_LENGTH
+
+	cmp	x30, #EC_SERROR
+	b.eq	serror_lower_el_handler
+
+	/* Other kinds of asynchronous exceptions are not handled */
+	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
+	b	report_unhandled_exception
+	.endm
 
 	/* ---------------------------------------------------------------------
 	 * This macro handles Synchronous exceptions.
@@ -259,7 +282,7 @@ vector_entry serror_aarch64
 	 * SError exceptions from lower ELs are not currently supported.
 	 * Report their occurrence.
 	 */
-	b	report_unhandled_exception
+	handle_async_exception
 	check_vector_size serror_aarch64
 
 	/* ---------------------------------------------------------------------
@@ -415,5 +438,14 @@ endfunc smc_handler
 	 * ---------------------------------------------------------------------
 	 */
 dabort_lower_el_handler:
+	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
+	b	report_unhandled_exception
+
+	/* ---------------------------------------------------------------------
+	 * Weak handler for serror calls from lower exception levels, can be
+	 * overwritten by platform handler.
+	 * ---------------------------------------------------------------------
+	 */
+serror_lower_el_handler:
 	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
 	b	report_unhandled_exception
