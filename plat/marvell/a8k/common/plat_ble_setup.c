@@ -16,6 +16,7 @@
 #include <mv_ddr_if.h>
 #include <mvebu_def.h>
 #include <plat_marvell.h>
+#include "ap807_clocks_init.h"
 
 /* Register for skip image use */
 #define SCRATCH_PAD_REG2		0xF06F00A8
@@ -82,21 +83,16 @@
 					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
 					 (0x1 << AVS_ENABLE_OFFSET))
 
+#define AVS_A3900_HIGH_CLK_VALUE	((0x80 << 24) | \
+					 (0x2f5 << 13) | \
+					 (0x2f5 << 3) | \
+					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
+					 (0x1 << AVS_ENABLE_OFFSET))
+
 #define MVEBU_AP_EFUSE_SRV_CTRL_REG	(MVEBU_AP_GEN_MGMT_BASE + 0x8)
 #define EFUSE_SRV_CTRL_LD_SELECT_OFFS	6
 #define EFUSE_SRV_CTRL_LD_SEL_USER_MASK	(1 << EFUSE_SRV_CTRL_LD_SELECT_OFFS)
 
-/* Notify bootloader on DRAM setup */
-#define AP807_CPU_ARO_0_CTRL_0		(MVEBU_RFU_BASE + 0x82A8)
-#define AP807_CPU_ARO_1_CTRL_0		(MVEBU_RFU_BASE + 0x8D00)
-
-/* 0 - ARO clock is enabled, 1 - ARO clock is disabled */
-#define AP807_CPU_ARO_CLK_EN_OFFSET	0
-#define AP807_CPU_ARO_CLK_EN_MASK	(0x1 << AP807_CPU_ARO_CLK_EN_OFFSET)
-
-/* 0 - ARO is the clock source, 1 - PLL is the clock source */
-#define AP807_CPU_ARO_SEL_PLL_OFFSET	5
-#define AP807_CPU_ARO_SEL_PLL_MASK	(0x1 << AP807_CPU_ARO_SEL_PLL_OFFSET)
 
 /*
  * - Identification information in the LD-0 eFuse:
@@ -211,37 +207,44 @@ static void ble_plat_mmap_config(int restore)
  */
 static void ble_plat_avs_config(void)
 {
-	uint32_t reg_val, device_id;
+	uint32_t freq_mode, device_id;
+	uint32_t avs_val = 0;
 
+	freq_mode =
+		SAR_CLOCK_FREQ_MODE(mmio_read_32(MVEBU_AP_SAR_REG_BASE(
+						 FREQ_MODE_AP_SAR_REG_NUM)));
 	/* Due to a bug in A3900 device_id we need a special handling here */
 	if (ble_get_ap_type() == CHIP_ID_AP807) {
-		VERBOSE("AVS: Setting AP807 AVS CTRL to 0x%x\n",
-			AVS_A3900_CLK_VALUE);
-		mmio_write_32(AVS_EN_CTRL_REG, AVS_A3900_CLK_VALUE);
-		return;
+		/* Increase CPU voltage for higher CPU clock */
+		if (freq_mode == CPU_2000_DDR_1200_RCLK_1200)
+			avs_val = AVS_A3900_HIGH_CLK_VALUE;
+		else
+			avs_val = AVS_A3900_CLK_VALUE;
+	} else {
+		/* Check which SoC is running and act accordingly */
+		device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
+		switch (device_id) {
+		case MVEBU_80X0_DEV_ID:
+		case MVEBU_80X0_CP115_DEV_ID:
+			/* Fix the default AVS value on A80x0 */
+			avs_val = AVS_A8K_CLK_VALUE;
+			break;
+		case MVEBU_70X0_DEV_ID:
+		case MVEBU_70X0_CP115_DEV_ID:
+			/* Only fix AVS for CPU clocks lower than 1600MHz */
+			if ((freq_mode > CPU_1600_DDR_900_RCLK_900_2) &&
+			    (freq_mode < CPU_DDR_RCLK_INVALID))
+				avs_val = AVS_A7K_LOW_CLK_VALUE;
+			break;
+		default:
+			ERROR("Unsupported Device ID 0x%x\n", device_id);
+			return;
+		}
 	}
 
-	/* Check which SoC is running and act accordingly */
-	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
-	switch (device_id) {
-	case MVEBU_80X0_DEV_ID:
-	case MVEBU_80X0_CP115_DEV_ID:
-		/* Set the new AVS value - fix the default one on A80x0 */
-		mmio_write_32(AVS_EN_CTRL_REG, AVS_A8K_CLK_VALUE);
-		break;
-	case MVEBU_70X0_DEV_ID:
-	case MVEBU_70X0_CP115_DEV_ID:
-		/* Only fix AVS for CPU clocks lower than 1600MHz on A70x0 */
-		reg_val = mmio_read_32(MVEBU_AP_SAR_REG_BASE(
-						FREQ_MODE_AP_SAR_REG_NUM));
-		reg_val &= SAR_CLOCK_FREQ_MODE_MASK;
-		reg_val >>= SAR_CLOCK_FREQ_MODE_OFFSET;
-		if ((reg_val > CPU_1600_DDR_900_RCLK_900_2) &&
-		    (reg_val < CPU_DDR_RCLK_INVALID))
-			mmio_write_32(AVS_EN_CTRL_REG, AVS_A7K_LOW_CLK_VALUE);
-		break;
-	default:
-		ERROR("Unsupported Device ID 0x%x\n", device_id);
+	if (avs_val) {
+		VERBOSE("AVS: Setting AVS CTRL to 0x%x\n", avs_val);
+		mmio_write_32(AVS_EN_CTRL_REG, avs_val);
 	}
 }
 
@@ -609,35 +612,11 @@ static int  ble_skip_current_image(void)
 }
 #endif
 
-/* Switch to ARO from PLL in ap807 */
-static void aro_to_pll(void)
-{
-	unsigned int reg;
-
-	/* switch from ARO to PLL */
-	reg = mmio_read_32(AP807_CPU_ARO_0_CTRL_0);
-	reg |= AP807_CPU_ARO_SEL_PLL_MASK;
-	mmio_write_32(AP807_CPU_ARO_0_CTRL_0, reg);
-
-	reg = mmio_read_32(AP807_CPU_ARO_1_CTRL_0);
-	reg |= AP807_CPU_ARO_SEL_PLL_MASK;
-	mmio_write_32(AP807_CPU_ARO_1_CTRL_0, reg);
-
-	mdelay(1000);
-
-	/* disable ARO clk driver */
-	reg = mmio_read_32(AP807_CPU_ARO_0_CTRL_0);
-	reg |= (AP807_CPU_ARO_CLK_EN_MASK);
-	mmio_write_32(AP807_CPU_ARO_0_CTRL_0, reg);
-
-	reg = mmio_read_32(AP807_CPU_ARO_1_CTRL_0);
-	reg |= (AP807_CPU_ARO_CLK_EN_MASK);
-	mmio_write_32(AP807_CPU_ARO_1_CTRL_0, reg);
-}
 
 int ble_plat_setup(int *skip)
 {
 	int ret;
+	unsigned int freq_mode;
 
 	/* Power down unused CPUs */
 	plat_marvell_early_cpu_powerdown();
@@ -664,9 +643,14 @@ int ble_plat_setup(int *skip)
 	/* Setup AVS */
 	ble_plat_svc_config();
 
+	/* read clk option from sampled-at-reset register */
+	freq_mode =
+		SAR_CLOCK_FREQ_MODE(mmio_read_32(MVEBU_AP_SAR_REG_BASE(
+						 FREQ_MODE_AP_SAR_REG_NUM)));
+
 	/* work with PLL clock driver in AP807 */
 	if (ble_get_ap_type() == CHIP_ID_AP807)
-		aro_to_pll();
+		ap807_clocks_init(freq_mode);
 
 #if ARO_ENABLE
 	init_aro();

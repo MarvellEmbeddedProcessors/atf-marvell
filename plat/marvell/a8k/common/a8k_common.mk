@@ -71,6 +71,7 @@ BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c	\
 				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	\
 				$(PLAT_COMMON_BASE)/plat_pm.c		\
 				$(MARVELL_DRV_BASE)/aro.c		\
+				$(MARVELL_DRV_BASE)/ap807_clocks_init.c	\
 				$(MARVELL_DRV_BASE)/thermal.c		\
 				$(PLAT_COMMON_BASE)/plat_thermal.c	\
 				$(BLE_PORTING_SOURCES)			\
