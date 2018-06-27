@@ -60,6 +60,12 @@
 					 (0x24 << AVS_LOW_VDD_LIMIT_OFFSET) | \
 					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
 					 (0x1 << AVS_ENABLE_OFFSET))
+/* VDD limit is 0.82V for all A3900 devices 0- AVS offsets are not the same as in A70x0 */
+#define AVS_A3900_CLK_VALUE		((0x80 << 24) | \
+					 (0x2c2 << 13) | \
+					 (0x2c2 << 3) | \
+					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
+					 (0x1 << AVS_ENABLE_OFFSET))
 
 #define MVEBU_AP_EFUSE_SRV_CTRL_REG	(MVEBU_AP_GEN_MGMT_BASE + 0x8)
 #define EFUSE_SRV_CTRL_LD_SELECT_OFFS	6
@@ -176,6 +182,13 @@ static void ble_plat_avs_config(void)
 {
 	uint32_t reg_val, device_id;
 
+	/* Due to a bug in A3900 device_id we need a special handling here */
+	if (ble_get_ap_type() == CHIP_ID_AP807) {
+		VERBOSE("AVS: Setting AP807 AVS CTRL to 0x%x\n", AVS_A3900_CLK_VALUE);
+		mmio_write_32(AVS_EN_CTRL_REG, AVS_A3900_CLK_VALUE);
+		return;
+	}
+
 	/* Check which SoC is running and act accordingly */
 	device_id = cp110_device_id_get(MVEBU_CP_REGS_BASE(0));
 	switch (device_id) {
@@ -220,8 +233,11 @@ static void ble_plat_svc_config(void)
 	/* Due to a bug in A3900 device_id skip SVC config
 	 * TODO: add SVC config once it is decided for a3900
 	 */
-	if (ble_get_ap_type() == CHIP_ID_AP807)
+	if (ble_get_ap_type() == CHIP_ID_AP807) {
+		NOTICE("SVC: SVC is not supported on AP807\n");
+		ble_plat_avs_config();
 		return;
+	}
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
