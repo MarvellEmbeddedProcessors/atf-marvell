@@ -22,26 +22,11 @@ MSS_SUPPORT		:= 1
 BL31_CACHE_DISABLE	:= 1
 $(eval $(call add_define,BL31_CACHE_DISABLE))
 
-# Enable end point only for 7040 PCAC
-ifeq ($(PLAT),$(filter $(PLAT),a70x0_pcac))
-PCI_EP_SUPPORT		:= 1
-else
-PCI_EP_SUPPORT		:= 0
-endif
-ifeq ($(PLAT),$(filter $(PLAT),a80x0_ocp))
-PCI_EP_SUPPORT		:= 1
-endif
 $(eval $(call add_define,PCI_EP_SUPPORT))
 $(eval $(call assert_boolean,PCI_EP_SUPPORT))
 
 DOIMAGEPATH		?=	tools/doimage
 DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
-
-ifeq ($(findstring a80x0,${PLAT}),)
-DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_7K.cfg
-else
-DOIMAGE_SEC     	:= 	${DOIMAGEPATH}/secure/sec_img_8K.cfg
-endif # PLAT == a8K/a7K
 
 ROM_BIN_EXT ?= $(BUILD_PLAT)/ble.bin
 DOIMAGE_FLAGS	+= -b $(ROM_BIN_EXT) $(NAND_DOIMAGE_FLAGS) $(DOIMAGE_SEC_FLAGS)
@@ -70,8 +55,7 @@ PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a8k_common.c \
 BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 				$(PLAT_FAMILY_BASE)/$(PLAT)/board/marvell_plat_config.c
 
-MARVELL_MOCHI_DRV	:=	$(MARVELL_DRV_BASE)/mochi/apn806_setup.c \
-				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
+MARVELL_MOCHI_DRV	+=	$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
 
 BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c		\
 				$(MARVELL_MOCHI_DRV)			       \

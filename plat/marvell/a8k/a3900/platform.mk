@@ -5,13 +5,12 @@
 # https://spdx.org/licenses
 #
 
+PCI_EP_SUPPORT		:= 0
+
+DOIMAGE_SEC     	:=	tools/doimage/secure/sec_img_7K.cfg
+
+MARVELL_MOCHI_DRV	:=	drivers/marvell/mochi/ap807_setup.c
+
 include plat/marvell/a8k/common/a8k_common.mk
 
 include plat/marvell/common/marvell_common.mk
-
-# A3900 Z2 use AP807 instead AP806, update the source list
-BL31_SOURCES	:=	$(filter-out $(MARVELL_DRV_BASE)/mochi/apn806_setup.c, $(BL31_SOURCES))
-BL31_SOURCES	+=	$(MARVELL_DRV_BASE)/mochi/ap807_setup.c
-
-BLE_SOURCES	:= $(filter-out $(MARVELL_DRV_BASE)/mochi/apn806_setup.c, $(BLE_SOURCES))
-BLE_SOURCES	+= $(MARVELL_DRV_BASE)/mochi/ap807_setup.c
