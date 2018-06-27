@@ -88,6 +88,12 @@
 #define DEVICE0_BASE			MVEBU_REGS_BASE
 #define DEVICE0_SIZE			0x10000000
 
+#define PCIE_ECAM_BASE			0xE0000000
+#define PCIE_ECAM_SIZE			0x10000000
+#define PCIE_ECAM_BUS0_SIZE		0x100000
+#define PCIE_ECAM_BUS1_BASE		(PCIE_ECAM_BASE + PCIE_ECAM_BUS0_SIZE)
+#define PCIE_ECAM_BUS1_SIZE		(PCIE_ECAM_SIZE - PCIE_ECAM_BUS0_SIZE)
+
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants
  ******************************************************************************/

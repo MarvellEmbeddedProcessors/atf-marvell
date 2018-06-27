@@ -94,6 +94,10 @@ static void plat_marvell_security_setup(void)
 		tz_enable_win(MVEBU_AP0, tz_map, win_id);
 }
 
+#ifdef MVEBU_PCIE_ECAM_WA
+extern int bl31_ext_lib_main(void);
+#endif
+
 /* This function overruns the same function in marvell_bl31_setup.c */
 void bl31_plat_arch_setup(void)
 {
@@ -137,4 +141,8 @@ void bl31_plat_arch_setup(void)
 	marvell_gpio_config();
 
 	plat_marvell_security_setup();
+
+#ifdef MVEBU_PCIE_ECAM_WA
+	bl31_ext_lib_main();
+#endif
 }

@@ -204,4 +204,9 @@
 
 #define BL32_BASE                                 TRUSTED_DRAM_BASE
 
+#ifdef MVEBU_PCIE_ECAM_WA
+#define HANDLE_EA_EL3_FIRST
+#define OVERRIDE_SERROR_HANDLER
+#endif
+
 #endif /* __PLATFORM_DEF_H__ */

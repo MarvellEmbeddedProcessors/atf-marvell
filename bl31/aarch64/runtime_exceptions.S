@@ -35,7 +35,9 @@
 	.globl	serror_aarch32
 
 	.weak dabort_lower_el_handler
+#ifndef OVERRIDE_SERROR_HANDLER
 	.weak	serror_lower_el_handler
+#endif
 
 	/* ---------------------------------------------------------------------
 	 * This macro handles Asynchronous exceptions.
@@ -446,6 +448,8 @@ dabort_lower_el_handler:
 	 * overwritten by platform handler.
 	 * ---------------------------------------------------------------------
 	 */
+#ifndef OVERRIDE_SERROR_HANDLER
 serror_lower_el_handler:
 	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
 	b	report_unhandled_exception
+#endif

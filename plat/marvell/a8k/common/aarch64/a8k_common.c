@@ -4,7 +4,7 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <plat_marvell.h>
 
 
@@ -12,6 +12,11 @@
 #define MAP_DEVICE0	MAP_REGION_FLAT(DEVICE0_BASE,			\
 					DEVICE0_SIZE,			\
 					MT_DEVICE | MT_RW | MT_SECURE)
+
+/* MMU entry for PCIe ECAM range */
+#define MAP_PCIE_ECAM_REG	MAP_REGION_FLAT(PCIE_ECAM_BASE,		\
+						PCIE_ECAM_SIZE,		\
+						MT_DEVICE | MT_RW | MT_SECURE)
 
 /*
  * Table of regions for various BL stages to map using the MMU.
@@ -50,6 +55,9 @@ const mmap_region_t plat_marvell_mmap[] = {
 const mmap_region_t plat_marvell_mmap[] = {
 	MARVELL_MAP_SHARED_RAM,
 	MAP_DEVICE0,
+#ifdef MVEBU_PCIE_ECAM_WA
+	MAP_PCIE_ECAM_REG,
+#endif
 	MARVELL_MAP_DRAM,
 	{0}
 };
