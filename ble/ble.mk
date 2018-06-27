@@ -15,9 +15,12 @@ BLE_SOURCES		+= 	$(BLE_PATH)/ble_main.c				\
 				$(PLAT_MARVELL)/common/plat_delay_timer.c
 
 PLAT_INCLUDES		+= 	-I$(MV_DDR_PATH) \
+				-I$(CURDIR)/include/ \
+				-I$(CURDIR)/include/drivers \
+				-I$(CURDIR)/include/lib \
 				-I$(CURDIR)/include/lib/stdlib \
 				-I$(CURDIR)/include/lib/stdlib/sys \
-				-Idrivers/marvell
+				-I$(CURDIR)/drivers/marvell
 
 BLE_LINKERFILE		:=	$(BLE_PATH)/ble.ld.S
 
