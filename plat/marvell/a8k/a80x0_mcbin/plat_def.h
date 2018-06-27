@@ -13,4 +13,6 @@
 #define I2C_SPD_ADDR		0x53	/* Access SPD data */
 #define I2C_SPD_P0_ADDR		0x36	/* Select SPD data page 0 */
 
+#define MVEBU_PCIE_ECAM_WA
+
 #endif /* __MVEBU_DEF_H__ */
