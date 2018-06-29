@@ -1889,23 +1889,56 @@ static int mvebu_cp110_comphy_usb3_power_on(uint64_t comphy_base,
 	return ret;
 }
 
-/* This function performs RX training for one Feed Forward Equalization (FFE)
- * value.
- * The RX traiing result is stored in 'Saved DFE values Register' (SAV_F0D).
- *
- * Return '0' on success, error code in  a case of failure.
- */
-static int mvebu_cp110_comphy_test_single_ffe(uint64_t comphy_base,
-					      uint8_t comphy_index,
-					      uint32_t ffe, uint32_t *result)
+int mvebu_cp110_comphy_xfi_rx_training(uint64_t comphy_base,
+					      uint8_t comphy_index)
 {
-	uint32_t mask, data, timeout;
+	uint32_t mask, data, timeout, ffe_cap, ffe_res, align90, adapted_dfe;
 	uintptr_t hpipe_addr, sd_ip_addr;
 
 	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
 				comphy_index);
-
 	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+
+	debug_enter();
+
+	debug("stage: RF Reset\n");
+
+	/* Release from hard reset */
+	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
+	data = 0x0 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RF_RESET_IN_MASK;
+	data |= 0x0 << SD_EXTERNAL_CONFIG1_RF_RESET_IN_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
+	data = 0x1 << SD_EXTERNAL_CONFIG1_RESET_IN_OFFSET;
+	mask |= SD_EXTERNAL_CONFIG1_RESET_CORE_MASK;
+	data |= 0x1 << SD_EXTERNAL_CONFIG1_RESET_CORE_OFFSET;
+	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
+
+	/* Wait 50ms - until band gap and ref clock ready */
+	mdelay(50);
+
+	debug("Preparation for rx_training\n\n");
+
+	/* Use the FFE table */
+	mask = HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_MASK;
+	data = 0 << HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
+
+	/* Use auto-calibration value */
+	mask = HPIPE_CAL_RXCLKALIGN_90_EXT_EN_MASK;
+	data = 0 << HPIPE_CAL_RXCLKALIGN_90_EXT_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_RX_CLK_ALIGN90_AND_TX_IDLE_CALIB_CTRL_REG, data, mask);
+
+	/* Use Tx/Rx training results */
+	mask = HPIPE_DFE_RES_FORCE_MASK;
+	data = 0 << HPIPE_DFE_RES_FORCE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_DFE_REG0, data, mask);
+
+	debug("PRBS31 loppback\n\n");
 
 	/* Configure PRBS counters */
 	mask = HPIPE_PHY_TEST_PATTERN_SEL_MASK;
@@ -1913,167 +1946,164 @@ static int mvebu_cp110_comphy_test_single_ffe(uint64_t comphy_base,
 	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
 
 	mask = HPIPE_PHY_TEST_DATA_MASK;
-	data = 0x64 << HPIPE_PHY_TEST_DATA_OFFSET;
+	data = 0xc4 << HPIPE_PHY_TEST_DATA_OFFSET;
 	reg_set(hpipe_addr + HPIPE_PHY_TEST_DATA_REG, data, mask);
 
 	mask = HPIPE_PHY_TEST_EN_MASK;
 	data = 0x1 << HPIPE_PHY_TEST_EN_OFFSET;
 	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
 
-	mdelay(50);
+	mdelay(10);
+	debug("Enable TX/RX training\n\n");
 
-	/* Set the FFE value */
-	mask = HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_MASK;
-	data = ffe << HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_OFFSET;
-	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
-
-	/* Start RX training */
-	mask = SD_EXTERNAL_STATUS_START_RX_TRAINING_MASK;
-	data = 1 << SD_EXTERNAL_STATUS_START_RX_TRAINING_OFFSET;
-	reg_set(sd_ip_addr + SD_EXTERNAL_STATUS_REG, data, mask);
+	mask = HPIPE_TRX_RX_TRAIN_EN_MASK;
+	data = 0x1 << HPIPE_TRX_RX_TRAIN_EN_OFFSET;
+	mask |= HPIPE_TRX_RX_ANA_IF_CLK_ENE_MASK;
+	data |= 0x1 << HPIPE_TRX_RX_ANA_IF_CLK_ENE_OFFSET;
+	mask |= HPIPE_TRX_TX_CTRL_CLK_EN_MASK;
+	data |= 0x1 << HPIPE_TRX_TX_CTRL_CLK_EN_OFFSET;
+	mask |= HPIPE_TRX_UPDATE_THEN_HOLD_MASK;
+	data |= 0x1 << HPIPE_TRX_UPDATE_THEN_HOLD_OFFSET;
+	mask |= HPIPE_TRX_TX_F0T_EO_BASED_MASK;
+	data |= 0x1 << HPIPE_TRX_TX_F0T_EO_BASED_OFFSET;
+	reg_set(hpipe_addr + HPIPE_TRX_TRAIN_CTRL_0_REG, data, mask);
 
 	/* Check the result of RX training */
 	timeout = RX_TRAINING_TIMEOUT;
+	mask = HPIPE_INTERRUPT_TRX_TRAIN_DONE_OFFSET |
+		HPIPE_INTERRUPT_DFE_DONE_INT_OFFSET |
+		HPIPE_INTERRUPT_RX_TRAIN_COMPLETE_INT_MASK;
 	while (timeout) {
-		data = mmio_read_32(sd_ip_addr + SD_EXTERNAL_STATAUS1_REG);
-		if (data & SD_EXTERNAL_STATAUS1_REG_RX_TRAIN_COMP_MASK)
+		data = mmio_read_32(hpipe_addr + HPIPE_INTERRUPT_1_REGISTER);
+		if (data & mask)
 			break;
 		mdelay(1);
 		timeout--;
 	}
 
-	if (timeout == 0)
+	debug("RX training result: interrupt reg 0x%lx = 0x%x\n\n",
+	       hpipe_addr + HPIPE_INTERRUPT_1_REGISTER, data);
+
+	if (timeout == 0 || data & HPIPE_TRX_TRAIN_TIME_OUT_INT_MASK) {
+		ERROR("Rx training timeout...\n");
 		return -ETIMEDOUT;
+	}
 
-	if (data & SD_EXTERNAL_STATAUS1_REG_RX_TRAIN_FAILED_MASK)
+	if (data & HPIPE_TRX_TRAIN_FAILED_MASK) {
+		ERROR("Rx training failed...\n");
 		return -EINVAL;
+	}
 
-	/* Stop RX training */
-	mask = SD_EXTERNAL_STATUS_START_RX_TRAINING_MASK;
-	data = 0 << SD_EXTERNAL_STATUS_START_RX_TRAINING_OFFSET;
-	reg_set(sd_ip_addr + SD_EXTERNAL_STATUS_REG, data, mask);
+	mask = HPIPE_TRX_RX_TRAIN_EN_MASK;
+	data = 0x0 << HPIPE_TRX_RX_TRAIN_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_TRX_TRAIN_CTRL_0_REG, data, mask);
 
-	/* Read the result */
-	data = mmio_read_32(hpipe_addr + HPIPE_SAVED_DFE_VALUES_REG);
-	data &= HPIPE_SAVED_DFE_VALUES_SAV_F0D_MASK;
-	data >>= HPIPE_SAVED_DFE_VALUES_SAV_F0D_OFFSET;
-	*result = data;
+	debug("Training done, reading results...\n\n");
 
-	mask = HPIPE_PHY_TEST_RESET_MASK;
-	data = 0x1 << HPIPE_PHY_TEST_RESET_OFFSET;
-	mask |= HPIPE_PHY_TEST_EN_MASK;
-	data |= 0x0 << HPIPE_PHY_TEST_EN_OFFSET;
-	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
+	mask = HPIPE_ADAPTED_FFE_ADAPTED_FFE_RES_MASK;
+	ffe_res = ((mmio_read_32(hpipe_addr + HPIPE_ADAPTED_FFE_CAPACITOR_COUNTER_CTRL_REG)
+		    & mask) >> HPIPE_ADAPTED_FFE_ADAPTED_FFE_RES_OFFSET);
 
-	mask = HPIPE_PHY_TEST_RESET_MASK;
-	data = 0x0 << HPIPE_PHY_TEST_RESET_OFFSET;
-	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
+	mask = HPIPE_ADAPTED_FFE_ADAPTED_FFE_CAP_MASK;
+	ffe_cap = ((mmio_read_32(hpipe_addr + HPIPE_ADAPTED_FFE_CAPACITOR_COUNTER_CTRL_REG)
+		    & mask) >> HPIPE_ADAPTED_FFE_ADAPTED_FFE_CAP_OFFSET);
 
-	return 0;
-}
+	mask = HPIPE_DATA_PHASE_ADAPTED_OS_PH_MASK;
+	align90 = ((mmio_read_32(hpipe_addr + HPIPE_DATA_PHASE_OFF_CTRL_REG)
+		    & mask) >> HPIPE_DATA_PHASE_ADAPTED_OS_PH_OFFSET);
 
-/* This function runs complete RX training sequence:
- *	- Run RX training for all possible Feed Forward Equalization values
- *	- Choose the FFE which gives the best result.
- *	- Run RX training again with the best result.
- *
- * Return '0' on success, error code in  a case of failure.
- */
-int mvebu_cp110_comphy_xfi_rx_training(uint64_t comphy_base,
-					      uint8_t comphy_index)
-{
-	uint32_t mask, data, max_rx_train = 0, max_rx_train_index = 0;
-	uintptr_t hpipe_addr;
-	uint32_t rx_train_result;
-	int ret, i;
+	mask = HPIPE_ADAPTED_DFE_RES_MASK;
+	adapted_dfe = ((mmio_read_32(hpipe_addr + HPIPE_ADAPTED_DFE_COEFFICIENT_1_REG)
+		    & mask) >> HPIPE_ADAPTED_DFE_RES_OFFSET);
 
-	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
-				comphy_index);
+	debug("================================================\n");
+	debug("Switching to static configuration:\n");
+	debug("FFE_RES = 0x%x FFE_CAP = 0x%x align90 = 0x%x adapted_dfe 0x%x\n",
+	       ffe_res, ffe_cap, align90, adapted_dfe);
+	debug("Full results after training: 0x%lx = 0x%x, 0x%lx = 0x%x, 0x%lx = 0x%x\n",
+	       (hpipe_addr + HPIPE_ADAPTED_FFE_CAPACITOR_COUNTER_CTRL_REG),
+	       mmio_read_32(hpipe_addr + HPIPE_ADAPTED_FFE_CAPACITOR_COUNTER_CTRL_REG),
+	       (hpipe_addr + HPIPE_DATA_PHASE_OFF_CTRL_REG),
+	       mmio_read_32(hpipe_addr + HPIPE_DATA_PHASE_OFF_CTRL_REG),
+	       (hpipe_addr + HPIPE_ADAPTED_DFE_COEFFICIENT_1_REG),
+	       mmio_read_32(hpipe_addr + HPIPE_ADAPTED_DFE_COEFFICIENT_1_REG));
+	debug("================================================\n");
 
-	debug_enter();
+	/* Update FFE_RES */
+	mask = HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_MASK;
+	data = ffe_res << HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
 
-	/* Configure SQ threshold and CDR lock */
-	mask = HPIPE_SQUELCH_THRESH_IN_MASK;
-	data = 0xc << HPIPE_SQUELCH_THRESH_IN_OFFSET;
-	reg_set(hpipe_addr + HPIPE_SQUELCH_FFE_SETTING_REG, data, mask);
+	/* Update FFE_CAP */
+	mask = HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_MASK;
+	data = ffe_cap << HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
 
-	mask = HPIPE_SQ_DEGLITCH_WIDTH_P_MASK;
-	data = 0xf << HPIPE_SQ_DEGLITCH_WIDTH_P_OFFSET;
-	mask |= HPIPE_SQ_DEGLITCH_WIDTH_N_MASK;
-	data |= 0xf << HPIPE_SQ_DEGLITCH_WIDTH_N_OFFSET;
-	mask |= HPIPE_SQ_DEGLITCH_EN_MASK;
-	data |= 0x1 << HPIPE_SQ_DEGLITCH_EN_OFFSET;
-	reg_set(hpipe_addr + HPIPE_SQ_GLITCH_FILTER_CTRL, data, mask);
-
-	mask = HPIPE_CDR_LOCK_DET_EN_MASK;
-	data = 0x1 << HPIPE_CDR_LOCK_DET_EN_OFFSET;
-	reg_set(hpipe_addr + HPIPE_LOOPBACK_REG, data, mask);
-
-	udelay(100);
-
-	/* Determine if we have a cable attached to this comphy, if not,
-	 * we can't perform RX training.
+	/* Bypass the FFE table settings and use the FFE settings directly from
+	 * registers FFE_RES_SEL and FFE_CAP_SEL
 	 */
-	data = mmio_read_32(hpipe_addr + HPIPE_SQUELCH_FFE_SETTING_REG);
-	if (data & HPIPE_SQUELCH_DETECTED_MASK) {
-		ERROR("Squelsh is not detected, can't perform RX training\n");
-		return -EINVAL;
-	}
+	mask = HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_MASK;
+	data = 1 << HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
 
-	data = mmio_read_32(hpipe_addr + HPIPE_LOOPBACK_REG);
-	if (!(data & HPIPE_CDR_LOCK_MASK)) {
-		ERROR("CDR is not locked, can't perform RX training\n");
-		return -EINVAL;
-	}
+	/* Use the value from CAL_OS_PH_EXT */
+	mask = HPIPE_CAL_RXCLKALIGN_90_EXT_EN_MASK;
+	data = 1 << HPIPE_CAL_RXCLKALIGN_90_EXT_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_RX_CLK_ALIGN90_AND_TX_IDLE_CALIB_CTRL_REG, data, mask);
 
-	/* Do preparations for RX training */
+	/* Update align90 */
+	mask = HPIPE_CAL_OS_PH_EXT_MASK;
+	data = align90 << HPIPE_CAL_OS_PH_EXT_OFFSET;
+	reg_set(hpipe_addr + HPIPE_RX_CLK_ALIGN90_AND_TX_IDLE_CALIB_CTRL_REG, data, mask);
+
+	/* Force DFE resolution (use gen table value) */
 	mask = HPIPE_DFE_RES_FORCE_MASK;
 	data = 0x0 << HPIPE_DFE_RES_FORCE_OFFSET;
 	reg_set(hpipe_addr + HPIPE_DFE_REG0, data, mask);
 
-	mask = HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_MASK;
-	data = 0xf << HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_OFFSET;
-	mask |= HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_MASK;
-	data |= 1 << HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_OFFSET;
-	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
+	/* 0x111-G1 DFE_Setting_4 */
+	mask = HPIPE_G1_SETTINGS_4_G1_DFE_RES_MASK;
+	data = adapted_dfe << HPIPE_G1_SETTINGS_4_G1_DFE_RES_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_4_REG, data, mask);
 
-	/* Perform RX training for all possible FFE (Feed Forward
-	 * Equalization, possible values are 0-7).
-	 * We update the best value reached and the FFE which gave this value.
-	 */
-	for (i = 0; i < MAX_NUM_OF_FFE; i++) {
-		rx_train_result = 0;
-		ret = mvebu_cp110_comphy_test_single_ffe(comphy_base,
-							 comphy_index, i,
-							 &rx_train_result);
+	debug("PRBS31 loppback\n\n");
 
-		if ((!ret) && (rx_train_result > max_rx_train)) {
-			max_rx_train = rx_train_result;
-			max_rx_train_index = i;
-		}
-	}
+	mask = HPIPE_PHY_TEST_PT_TESTMODE_MASK;
+	data = 0x1 << HPIPE_PHY_TEST_PT_TESTMODE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_OOB_0_REGISTER, data, mask);
 
-	/* If we were able to determine which FFE gives the best value,
-	 * now we need to set it and run RX training again (only for this
-	 * FFE).
-	 */
-	if (max_rx_train) {
-		ret = mvebu_cp110_comphy_test_single_ffe(comphy_base,
-							 comphy_index,
-							 max_rx_train_index,
-							 &rx_train_result);
+	/* Configure PRBS counters */
+	mask = HPIPE_PHY_TEST_PATTERN_SEL_MASK;
+	data = 0xe << HPIPE_PHY_TEST_PATTERN_SEL_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
 
-		if (ret == 0)
-			debug("RX Training passed (FFE = %d, result = 0x%x)\n",
-			       max_rx_train_index, rx_train_result);
-	} else {
-		ERROR("RX Training failed for comphy%d\n", comphy_index);
-		ret = -EINVAL;
-	}
+	mask = HPIPE_PHY_TEST_DATA_MASK;
+	data = 0xc4 << HPIPE_PHY_TEST_DATA_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_DATA_REG, data, mask);
 
-	debug_exit();
+	mask = HPIPE_PHY_TEST_EN_MASK;
+	data = 0x1 << HPIPE_PHY_TEST_EN_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
 
-	return ret;
+	/* Reset PRBS error counter */
+	mask = HPIPE_PHY_TEST_PATTERN_SEL_MASK;
+	data = 0x1 << HPIPE_PHY_TEST_RESET_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
+
+	mask = HPIPE_PHY_TEST_PATTERN_SEL_MASK;
+	data = 0x0 << HPIPE_PHY_TEST_RESET_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_CONTROL_REG, data, mask);
+
+	mask = HPIPE_PHY_TEST_PT_TESTMODE_MASK;
+	data = 0x1 << HPIPE_PHY_TEST_PT_TESTMODE_OFFSET;
+	reg_set(hpipe_addr + HPIPE_PHY_TEST_OOB_0_REGISTER, data, mask);
+
+	/* check */
+	debug("PRBS error counter[0x%lx] 0x%x\n\n",
+	       hpipe_addr + HPIPE_PHY_TEST_PRBS_ERROR_COUNTER_1_REG,
+	       mmio_read_32(hpipe_addr + HPIPE_PHY_TEST_PRBS_ERROR_COUNTER_1_REG));
+
+	return 0;
 }
 
 /* During AP the proper mode is auto-negotiated and the mac, pcs and serdes
