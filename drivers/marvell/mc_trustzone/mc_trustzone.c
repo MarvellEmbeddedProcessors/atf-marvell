@@ -47,7 +47,7 @@ void tz_enable_win(int ap_index, const struct addr_map_win *win, int win_id)
 
 	if (base & 0xfff) {
 		base = base & ~0xfff;
-		WARN("Attempt to open MC TrustZone window at 0x%x, truncate to 0x%x\n",
+		WARN("Attempt to open MC TrustZone window at 0x%llx, truncate to 0x%x\n",
 		     win->base_addr, base);
 	}
 
