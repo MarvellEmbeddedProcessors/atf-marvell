@@ -8,7 +8,7 @@
 #ifndef __PLAT_MACROS_S__
 #define __PLAT_MACROS_S__
 
-#include <arm_macros.S>
+#include <marvell_macros.S>
 
 /*
  * Required platform porting macros

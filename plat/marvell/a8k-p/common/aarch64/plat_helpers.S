@@ -6,9 +6,9 @@
  */
 
 #include <asm_macros.S>
-#include <arm_def.h>
-#include <platform_def.h>
+#include <marvell_def.h>
 #include <marvell_pm.h>
+#include <platform_def.h>
 
 	.globl  plat_marvell_calc_core_pos_die
 	.globl  plat_marvell_calc_core_pos

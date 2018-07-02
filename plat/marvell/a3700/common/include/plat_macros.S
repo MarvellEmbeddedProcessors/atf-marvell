@@ -7,7 +7,7 @@
 #ifndef __PLAT_MACROS_S__
 #define __PLAT_MACROS_S__
 
-#include <arm_macros.S>
+#include <marvell_macros.S>
 
 /* ---------------------------------------------
  * The below macro prints out relevant GIC and

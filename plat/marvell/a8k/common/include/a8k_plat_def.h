@@ -4,11 +4,11 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #ifndef __MVEBU_A8K_DEF_H__
 #define __MVEBU_A8K_DEF_H__
 
-#include <arm_def.h>
+#include <marvell_def.h>
 
 #define MVEBU_PRIMARY_CPU		0x0
 #define MVEBU_AP0			0x0

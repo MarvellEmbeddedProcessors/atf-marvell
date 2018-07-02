@@ -10,10 +10,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <arch.h>
-#include <arm_def.h>
 #include <assert.h>
 #include <console.h>
 #include <debug.h>
+#include <marvell_def.h>
 #include <plat_marvell.h>
 #include <plat_private.h>
 #include <platform.h>

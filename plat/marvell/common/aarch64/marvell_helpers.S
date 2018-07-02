@@ -34,7 +34,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <asm_macros.S>
-#include <arm_def.h>
+#include <marvell_def.h>
 #include <platform_def.h>
 #ifndef PLAT_a3700
 #include <ccu.h>

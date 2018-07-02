@@ -9,10 +9,10 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#include <arm_def.h>
 #include <debug.h>
 #include <gicv3.h>
 #include <interrupt_props.h>
+#include <marvell_def.h>
 #include <plat_marvell.h>
 #include <platform.h>
 #include <platform_def.h>

@@ -11,9 +11,9 @@
  */
 
 #include <arch_helpers.h>
-#include <arm_def.h>
 #include <bl_common.h>
 #include <console.h>
+#include <marvell_def.h>
 #include <platform_def.h>
 #include <plat_marvell.h>
 #include <string.h>

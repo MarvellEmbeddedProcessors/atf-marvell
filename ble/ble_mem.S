@@ -6,7 +6,7 @@
  */
 
 #include <asm_macros.S>
-#include <arm_def.h>
+#include <marvell_def.h>
 #include <platform_def.h>
 
 #define PTE_NON_EXEC_OFF	54	/* XN - eXecute Never bit offset - see VMSAv8-64 */

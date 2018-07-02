@@ -7,7 +7,7 @@
 #ifndef __MVEBU_A3700_DEF_H__
 #define __MVEBU_A3700_DEF_H__
 
-#include <arm_def.h>
+#include <marvell_def.h>
 
 
 #define MVEBU_MAX_CPUS_PER_CLUSTER	2

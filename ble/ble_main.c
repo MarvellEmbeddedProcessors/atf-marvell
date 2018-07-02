@@ -41,7 +41,7 @@ int exec_ble_main(int bootrom_flags)
 
 	NOTICE("Starting binary extension\n");
 
-	/* initiliaze time (for delay functionality) */
+	/* initialize time (for delay functionality) */
 	plat_delay_timer_init();
 
 #if PALLADIUM
