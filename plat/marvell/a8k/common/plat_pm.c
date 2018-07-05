@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <assert.h>
 #include <bakery_lock.h>
 #include <debug.h>
@@ -119,7 +119,8 @@ static int plat_marvell_cpu_powerdown(int cpu_id)
 	do {
 		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
 		exit_loop--;
-	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) && exit_loop > 0);
+	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) &&
+		 exit_loop > 0);
 
 	/* 3. Switch off CPU power */
 	reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
@@ -176,9 +177,12 @@ cpu_poweroff_error:
  */
 int plat_marvell_early_cpu_powerdown(void)
 {
-	uint32_t cpu_cluster_status = mmio_read_32(FEATURE_DISABLE_STATUS_REG)
-						& FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK;
-	/* if cpu_cluster_status bit is set, that means we have only single cluster */
+	uint32_t cpu_cluster_status =
+		mmio_read_32(FEATURE_DISABLE_STATUS_REG) &
+			     FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK;
+	/* if cpu_cluster_status bit is set,
+	 * that means we have only single cluster
+	 */
 	int cluster_count = cpu_cluster_status ? 1 : 2;
 
 	INFO("Powering off unused CPUs\n");
@@ -188,8 +192,10 @@ int plat_marvell_early_cpu_powerdown(void)
 		return -1;
 
 	/*
-	 * CPU2-3 are in AP806 2nd cluster (cluster-1), which doesn't exists in dual-core systems.
-	 * so need to check if we have dual-core (single cluster) or quad-code (2 clusters)
+	 * CPU2-3 are in AP806 2nd cluster (cluster-1),
+	 * which doesn't exists in dual-core systems.
+	 * so need to check if we have dual-core (single cluster)
+	 * or quad-code (2 clusters)
 	 */
 	if (cluster_count == 2) {
 		/* CPU2-3 are part of 2nd cluster */
@@ -208,7 +214,8 @@ int plat_marvell_early_cpu_powerdown(void)
 static int plat_marvell_cpu_powerup(u_register_t mpidr)
 {
 	uint32_t	reg_val;
-	int	cpu_id = MPIDR_CPU_GET(mpidr), cluster = MPIDR_CLUSTER_GET(mpidr);
+	int	cpu_id = MPIDR_CPU_GET(mpidr),
+		cluster = MPIDR_CLUSTER_GET(mpidr);
 	int	exit_loop = REG_WR_VALIDATE_TIMEOUT;
 
 	/* calculate absolute CPU ID */
@@ -238,11 +245,14 @@ static int plat_marvell_cpu_powerup(u_register_t mpidr)
 	reg_val |= 0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET;
 	mmio_write_32(PWRC_CPUN_CR_REG(cpu_id), reg_val);
 
-	/* 4. Read & Validate power ready - used in order to generate 16 Host CPU cycles */
+	/* 4. Read & Validate power ready
+	 * used in order to generate 16 Host CPU cycles
+	 */
 	do {
 		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
 		exit_loop--;
-	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)) && exit_loop > 0);
+	} while (!(reg_val & (0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)) &&
+		 exit_loop > 0);
 
 	if (exit_loop <= 0)
 		goto cpu_poweron_error;
@@ -257,7 +267,8 @@ static int plat_marvell_cpu_powerup(u_register_t mpidr)
 	do {
 		reg_val = mmio_read_32(PWRC_CPUN_CR_REG(cpu_id));
 		exit_loop--;
-	} while ((reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) && exit_loop > 0);
+	} while ((reg_val & (0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)) &&
+		 exit_loop > 0);
 
 	/* 7. De Assert CPU POR reset & Core reset */
 	reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
@@ -269,7 +280,8 @@ static int plat_marvell_cpu_powerup(u_register_t mpidr)
 	do {
 		reg_val = mmio_read_32(CCU_B_PRCRN_REG(cpu_id));
 		exit_loop--;
-	} while (!(reg_val & (0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)) && exit_loop > 0);
+	} while (!(reg_val & (0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)) &&
+		 exit_loop > 0);
 
 	if (exit_loop <= 0)
 		goto cpu_poweron_error;
@@ -289,7 +301,7 @@ static int plat_marvell_cpu_on(u_register_t mpidr)
 	int cluster;
 
 	/* Set barierr */
-	__asm__ volatile("dsb     sy");
+	dsbsy();
 
 	/* Get cpu number - use CPU ID */
 	cpu_id =  MPIDR_CPU_GET(mpidr);
@@ -301,7 +313,8 @@ static int plat_marvell_cpu_on(u_register_t mpidr)
 	mmio_write_32(MVEBU_REGS_BASE + MVEBU_PRIVATE_UID_REG, cluster + 0x4);
 
 	/* Set the cpu start address to BL1 entry point (align to 0x10000) */
-	mmio_write_32(MVEBU_CCU_RVBAR(cpu_id), PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
+	mmio_write_32(MVEBU_CCU_RVBAR(cpu_id),
+		      PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
 
 	/* Get the cpu out of reset */
 	mmio_write_32(MVEBU_CCU_CPU_UN_RESET(cpu_id), 0x10001);
@@ -315,7 +328,7 @@ static int plat_marvell_cpu_on(u_register_t mpidr)
  *****************************************************************************
  */
 static int a8k_validate_power_state(unsigned int power_state,
-			    psci_power_state_t *req_state)
+				    psci_power_state_t *req_state)
 {
 	int pstate = psci_get_pstate_type(power_state);
 	int pwr_lvl = psci_get_pstate_pwrlvl(power_state);
@@ -371,7 +384,8 @@ static int a8k_pwr_domain_on(u_register_t mpidr)
 	plat_marvell_cpu_powerup(mpidr);
 
 	if (is_pm_fw_running()) {
-		unsigned int target = ((mpidr & 0xFF) + (((mpidr >> 8) & 0xFF) * 2));
+		unsigned int target =
+				((mpidr & 0xFF) + (((mpidr >> 8) & 0xFF) * 2));
 
 		/*
 		 * pm system synchronization - used to synchronize
@@ -437,9 +451,8 @@ static void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 		/* trace message */
 		PM_TRACE(TRACE_PWR_DOMAIN_OFF);
 	} else {
-	INFO("%s: is not supported without SCP\n", __func__);
-	return;
-}
+		INFO("%s: is not supported without SCP\n", __func__);
+	}
 }
 
 /* Get PM config to power off the SoC */
@@ -463,14 +476,16 @@ static void plat_exit_bootrom(void)
 /*
  * Prepare for the power off of the system via GPIO
  */
-static void plat_marvell_power_off_gpio(struct power_off_method *pm_cfg)
+static void plat_marvell_power_off_gpio(const struct power_off_method *pm_cfg,
+					register_t *gpio_addr,
+					register_t *gpio_data)
 {
 	unsigned int gpio;
 	unsigned int idx;
 	unsigned int shift;
 	unsigned int reg;
 	unsigned int addr;
-	gpio_info_t *info;
+	const gpio_info_t *info;
 	unsigned int tog_bits;
 
 	assert((pm_cfg->cfg.gpio.pin_count < PMIC_GPIO_MAX_NUMBER) &&
@@ -480,26 +495,35 @@ static void plat_marvell_power_off_gpio(struct power_off_method *pm_cfg)
 	for (gpio = 0; gpio < pm_cfg->cfg.gpio.pin_count; gpio++) {
 		info = &pm_cfg->cfg.gpio.info[gpio];
 		/* Set PMIC GPIO to output mode */
-		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT_EN(info->cp_index, info->gpio_index));
-		mmio_write_32(MVEBU_CP_GPIO_DATA_OUT_EN(info->cp_index, info->gpio_index),
+		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT_EN(
+				   info->cp_index, info->gpio_index));
+		mmio_write_32(MVEBU_CP_GPIO_DATA_OUT_EN(
+			      info->cp_index, info->gpio_index),
 			      reg & ~MVEBU_GPIO_MASK(info->gpio_index));
 
 		/* Set the appropriate MPP to GPIO mode */
-		reg = mmio_read_32(MVEBU_PM_MPP_REGS(info->cp_index, info->gpio_index));
-		mmio_write_32(MVEBU_PM_MPP_REGS(info->cp_index, info->gpio_index),
+		reg = mmio_read_32(MVEBU_PM_MPP_REGS(info->cp_index,
+						     info->gpio_index));
+		mmio_write_32(MVEBU_PM_MPP_REGS(info->cp_index,
+						info->gpio_index),
 			reg & ~MVEBU_MPP_MASK(info->gpio_index));
 	}
 
 	/* Wait for MPP & GPIO pre-configurations done */
 	mdelay(pm_cfg->cfg.gpio.delay_ms);
 
-	/* Toggle the GPIO values, and leave final step to be triggered after  DDR self-refresh is enabled */
+	/* Toggle the GPIO values, and leave final step to be triggered
+	 * after  DDR self-refresh is enabled
+	 */
 	for (idx = 0; idx < pm_cfg->cfg.gpio.step_count; idx++) {
 		tog_bits = pm_cfg->cfg.gpio.seq[idx];
 
-		/* The GPIOs must be within same GPIO register, thus could get the original value by first GPIO */
+		/* The GPIOs must be within same GPIO register,
+		 * thus could get the original value by first GPIO
+		 */
 		info = &pm_cfg->cfg.gpio.info[0];
-		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index));
+		reg = mmio_read_32(MVEBU_CP_GPIO_DATA_OUT(
+				   info->cp_index, info->gpio_index));
 		addr = MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index);
 
 		for (gpio = 0; gpio < pm_cfg->cfg.gpio.pin_count; gpio++) {
@@ -510,16 +534,19 @@ static void plat_marvell_power_off_gpio(struct power_off_method *pm_cfg)
 				reg |= (1 << shift);
 		}
 
-		/* Set the GPIO register, for last step just store register address and values to system registers */
+		/* Set the GPIO register, for last step just store
+		 * register address and values to system registers
+		 */
 		if (idx < pm_cfg->cfg.gpio.step_count - 1) {
-			mmio_write_32(MVEBU_CP_GPIO_DATA_OUT(info->cp_index, info->gpio_index), reg);
+			mmio_write_32(MVEBU_CP_GPIO_DATA_OUT(
+				      info->cp_index, info->gpio_index), reg);
 			mdelay(pm_cfg->cfg.gpio.delay_ms);
 		} else {
-			/* Save GPIO register value to X17, and address to X18 */
-			__asm__ volatile (
-				"mov	x17, %0\n\t"
-				"mov	x18, %1\n\t"
-				: : "r" (reg), "r" (addr));
+			/* Save GPIO register and address values for
+			 * finishing the power down operation later
+			 */
+			*gpio_addr = addr;
+			*gpio_data = reg;
 		}
 	}
 }
@@ -527,11 +554,14 @@ static void plat_marvell_power_off_gpio(struct power_off_method *pm_cfg)
 /*
  * Prepare for the power off of the system
  */
-static void plat_marvell_power_off_prepare(struct power_off_method *pm_cfg)
+static void plat_marvell_power_off_prepare(
+					const struct power_off_method *pm_cfg,
+					register_t *addr, register_t *data)
 {
 	switch (pm_cfg->type) {
 	case PMIC_GPIO:
-		plat_marvell_power_off_gpio(pm_cfg);
+		plat_marvell_power_off_gpio(pm_cfg, addr, data);
+		break;
 	default:
 		break;
 	}
@@ -638,30 +668,32 @@ static void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state
 		/* trace message */
 		PM_TRACE(TRACE_PWR_DOMAIN_SUSPEND_FINISH);
 	} else {
-	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
+		uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
 
-	/* Only primary CPU requres platform init */
-	if (!plat_my_core_pos()) {
-		/* Initialize the console to provide early debug support */
-		console_init(PLAT_MARVELL_BOOT_UART_BASE,
-		    PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
-		    MARVELL_CONSOLE_BAUDRATE);
+		/* Only primary CPU requres platform init */
+		if (!plat_my_core_pos()) {
+			/* Initialize the console to provide
+			 * early debug support
+			 */
+			console_init(PLAT_MARVELL_BOOT_UART_BASE,
+				     PLAT_MARVELL_BOOT_UART_CLK_IN_HZ,
+				     MARVELL_CONSOLE_BAUDRATE);
 
-		bl31_plat_arch_setup();
-		marvell_bl31_platform_setup();
-		/*
-		 * Remove suspend to RAM marker from the mailbox
-		 * for treating a regular reset as a cold boot
-		 */
-		mailbox[MBOX_IDX_SUSPEND_MAGIC] = 0;
-		mailbox[MBOX_IDX_ROM_EXIT_ADDR] = 0;
+			bl31_plat_arch_setup();
+			marvell_bl31_platform_setup();
+			/*
+			 * Remove suspend to RAM marker from the mailbox
+			 * for treating a regular reset as a cold boot
+			 */
+			mailbox[MBOX_IDX_SUSPEND_MAGIC] = 0;
+			mailbox[MBOX_IDX_ROM_EXIT_ADDR] = 0;
 #if PLAT_MARVELL_SHARED_RAM_CACHED
-		flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
-		    MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
-		    2 * sizeof(uintptr_t));
+			flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
+			    MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+			    2 * sizeof(uintptr_t));
 #endif
+		}
 	}
-}
 }
 
 /*****************************************************************************
@@ -681,28 +713,34 @@ static void a8k_get_sys_suspend_power_state(psci_power_state_t *req_state)
 static void
 __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 {
-	struct power_off_method *pm_cfg;
+	const struct power_off_method *pm_cfg =
+			(const struct power_off_method *)plat_get_pm_cfg();
 	unsigned int srcmd;
 	unsigned int sdram_reg;
+	register_t gpio_data = 0, gpio_addr = 0;
 
 	if (is_pm_fw_running()) {
 		psci_power_down_wfi();
 		panic();
 	}
 
-	pm_cfg = (struct power_off_method *)plat_get_pm_cfg();
-
 	/* Prepare for power off */
-	plat_marvell_power_off_prepare(pm_cfg);
+	plat_marvell_power_off_prepare(pm_cfg, &gpio_addr, &gpio_data);
 
-	/* First step to enable DDR self-refresh to keep the data during suspend */
+	/* First step to enable DDR self-refresh
+	 * to keep the data during suspend
+	 */
 	mmio_write_32(MVEBU_MC_PWR_CTRL_REG, 0x8C1);
 
-	/* Save DDR self-refresh second step register and value to be issued later */
+	/* Save DDR self-refresh second step register
+	 * and value to be issued later
+	 */
 	sdram_reg = MVEBU_USER_CMD_0_REG;
 	srcmd = mmio_read_32(sdram_reg);
-	srcmd &= ~(MVEBU_USER_CMD_CH0_MASK | MVEBU_USER_CMD_CS_MASK | MVEBU_USER_CMD_SR_MASK);
-	srcmd |= (MVEBU_USER_CMD_CH0_EN | MVEBU_USER_CMD_CS_ALL | MVEBU_USER_CMD_SR_ENTER);
+	srcmd &= ~(MVEBU_USER_CMD_CH0_MASK | MVEBU_USER_CMD_CS_MASK |
+		 MVEBU_USER_CMD_SR_MASK);
+	srcmd |= (MVEBU_USER_CMD_CH0_EN | MVEBU_USER_CMD_CS_ALL |
+		 MVEBU_USER_CMD_SR_ENTER);
 
 	/*
 	 * Wait for DRAM is done using registers access only.
@@ -725,11 +763,13 @@ __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 		"	bne 1b\n\t"
 
 		/* Issue the command to trigger the SoC power off */
-		"	str	w17, [x18]\n\t"
+		"	str	%[gpio_data], [%[gpio_addr]]\n\t"
 
 		/* Trap the processor */
 		"	b .\n\t"
-		: : [srcmd] "r" (srcmd), [sdram_reg] "r" (sdram_reg) : "x1");
+		: : [srcmd] "r" (srcmd), [sdram_reg] "r" (sdram_reg),
+		    [gpio_addr] "r" (gpio_addr),  [gpio_data] "r" (gpio_data)
+		: "x1");
 
 	panic();
 }
