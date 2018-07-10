@@ -25,6 +25,9 @@ CP_NUM			:= 2
 endif
 $(eval $(call add_define,CP_NUM))
 
+AP_NUM			:= 2
+$(eval $(call add_define,AP_NUM))
+
 DOIMAGEPATH		?=	tools/doimage
 DOIMAGETOOL		?=	${DOIMAGEPATH}/doimage
 
