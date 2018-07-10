@@ -89,10 +89,12 @@
 #define MVEBU_CP_DEFAULT_BASE_ADDR		0xF2000000
 #define MVEBU_CP_DEFAULT_BASE_SIZE		0x2000000
 
+#define AP_IO_OFFSET				0x1d00000000
 /* 116GB per AP starting on top of DRAM region - 516GB */
-#define MVEBU_AP_IO_BASE(ap)			(0x8100000000 + (ap) * 0x1d00000000)
+#define MVEBU_AP_IO_BASE(ap)			(0x8100000000 + (ap) * AP_IO_OFFSET)
 /* 28GB per each CP starting at AP base + 4GB for SPI/STM region */
-#define MVEBU_CP_REGS_BASE(ap, cp)		(MVEBU_AP_IO_BASE(ap) + (cp) * 0x700000000)
+#define MVEBU_CP_OFFSET				0x700000000
+#define MVEBU_CP_REGS_BASE(ap, cp)		(MVEBU_AP_IO_BASE(ap) + (cp) * MVEBU_CP_OFFSET)
 
 #define MVEBU_CP_DFX_OFFSET			(0x400200)
 
