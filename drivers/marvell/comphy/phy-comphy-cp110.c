@@ -151,6 +151,8 @@ enum pcie_link_width {
 	PCIE_LNK_WIDTH_UNKNOWN  = 0xFF,
 };
 
+_Bool rx_trainng_done[AP_NUM][CP_NUM][MAX_LANE_NR] = {0};
+
 static void mvebu_cp110_get_ap_and_cp_nr(uint8_t *ap_nr, uint8_t *cp_nr, uint64_t comphy_base)
 {
 #if (AP_NUM == 1)
@@ -815,6 +817,12 @@ static int mvebu_cp110_comphy_xfi_power_on(uint64_t comphy_base,
 	debug_enter();
 
 	mvebu_cp110_get_ap_and_cp_nr(&ap_nr, &cp_nr, comphy_base);
+
+	if (rx_trainng_done[ap_nr][cp_nr][comphy_index]) {
+		debug("Skipping %s for comphy[%d][%d][%d], due to rx training\n",
+		       __func__, ap_nr, cp_nr, comphy_index);
+		return 0;
+	}
 
 	const struct xfi_params *xfi_static_values =
 			     &xfi_static_values_tab[ap_nr][cp_nr][comphy_index];
@@ -2205,6 +2213,8 @@ int mvebu_cp110_comphy_xfi_rx_training(uint64_t comphy_base,
 	       hpipe_addr + HPIPE_PHY_TEST_PRBS_ERROR_COUNTER_1_REG,
 	       mmio_read_32(hpipe_addr + HPIPE_PHY_TEST_PRBS_ERROR_COUNTER_1_REG));
 
+	rx_trainng_done[ap_nr][cp_nr][comphy_index] = 1;
+
 	return 0;
 }
 
@@ -2317,8 +2327,17 @@ int mvebu_cp110_comphy_power_off(uint64_t comphy_base, uint8_t comphy_index)
 {
 	uintptr_t sd_ip_addr, comphy_ip_addr;
 	uint32_t mask, data;
+	uint8_t ap_nr, cp_nr;
 
 	debug_enter();
+
+	mvebu_cp110_get_ap_and_cp_nr(&ap_nr, &cp_nr, comphy_base);
+
+	if (rx_trainng_done[ap_nr][cp_nr][comphy_index]) {
+		debug("Skipping %s for comphy[%d][%d][%d], due to rx training\n",
+		       __func__, ap_nr, cp_nr, comphy_index);
+		return 0;
+	}
 
 	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
 	comphy_ip_addr = COMPHY_ADDR(comphy_base, comphy_index);
