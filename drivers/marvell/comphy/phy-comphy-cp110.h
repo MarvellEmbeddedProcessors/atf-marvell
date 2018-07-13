@@ -27,6 +27,58 @@ struct xfi_params {
 	_Bool valid;
 };
 
+struct sata_params {
+	uint8_t g1_amp;
+	uint8_t g2_amp;
+	uint8_t g3_amp;
+
+	uint8_t g1_emph;
+	uint8_t g2_emph;
+	uint8_t g3_emph;
+
+	uint8_t g1_emph_en;
+	uint8_t g2_emph_en;
+	uint8_t g3_emph_en;
+
+	uint8_t g1_tx_amp_adj;
+	uint8_t g2_tx_amp_adj;
+	uint8_t g3_tx_amp_adj;
+
+	uint8_t g1_tx_emph_en;
+	uint8_t g2_tx_emph_en;
+	uint8_t g3_tx_emph_en;
+
+	uint8_t g1_tx_emph;
+	uint8_t g2_tx_emph;
+	uint8_t g3_tx_emph;
+
+	uint8_t g3_dfe_res;
+
+	uint8_t g3_ffe_res_sel;
+
+	uint8_t g3_ffe_cap_sel;
+
+	uint8_t allign_90;
+
+	uint8_t g1_rx_selmuff;
+	uint8_t g2_rx_selmuff;
+	uint8_t g3_rx_selmuff;
+
+	uint8_t g1_rx_selmufi;
+	uint8_t g2_rx_selmufi;
+	uint8_t g3_rx_selmufi;
+
+	uint8_t g1_rx_selmupf;
+	uint8_t g2_rx_selmupf;
+	uint8_t g3_rx_selmupf;
+
+	uint8_t g1_rx_selmupi;
+	uint8_t g2_rx_selmupi;
+	uint8_t g3_rx_selmupi;
+
+	_Bool valid;
+};
+
 int mvebu_cp110_comphy_is_pll_locked(uint64_t comphy_base, uint8_t comphy_index);
 int mvebu_cp110_comphy_power_off(uint64_t comphy_base, uint8_t comphy_index);
 int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint8_t comphy_index, uint64_t comphy_mode);
