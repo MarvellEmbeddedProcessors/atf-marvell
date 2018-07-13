@@ -404,9 +404,22 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 {
 	uintptr_t hpipe_addr, sd_ip_addr, comphy_addr;
 	uint32_t mask, data;
+	uint8_t ap_nr, cp_nr;
 	int ret = 0;
 
 	debug_enter();
+
+	mvebu_cp110_get_ap_and_cp_nr(&ap_nr, &cp_nr, comphy_base);
+
+	if (rx_trainng_done[ap_nr][cp_nr][comphy_index]) {
+		debug("Skipping %s for comphy[%d][%d][%d], due to rx training\n",
+		       __func__, ap_nr, cp_nr, comphy_index);
+		return 0;
+	}
+
+	const struct sata_params *sata_static_values =
+			     &sata_static_values_tab[ap_nr][cp_nr][comphy_index];
+
 
 	/* configure phy selector for SATA */
 	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
@@ -465,13 +478,13 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 	debug("stage: Analog parameters from ETP(HW)\n");
 	/* G1 settings */
 	mask = HPIPE_G1_SET_1_G1_RX_SELMUPI_MASK;
-	data = 0x0 << HPIPE_G1_SET_1_G1_RX_SELMUPI_OFFSET;
+	data = sata_static_values->g1_rx_selmupi << HPIPE_G1_SET_1_G1_RX_SELMUPI_OFFSET;
 	mask |= HPIPE_G1_SET_1_G1_RX_SELMUPF_MASK;
-	data |= 0x1 << HPIPE_G1_SET_1_G1_RX_SELMUPF_OFFSET;
+	data |= sata_static_values->g1_rx_selmupf << HPIPE_G1_SET_1_G1_RX_SELMUPF_OFFSET;
 	mask |= HPIPE_G1_SET_1_G1_RX_SELMUFI_MASK;
-	data |= 0x0 << HPIPE_G1_SET_1_G1_RX_SELMUFI_OFFSET;
+	data |= sata_static_values->g1_rx_selmufi << HPIPE_G1_SET_1_G1_RX_SELMUFI_OFFSET;
 	mask |= HPIPE_G1_SET_1_G1_RX_SELMUFF_MASK;
-	data |= 0x3 << HPIPE_G1_SET_1_G1_RX_SELMUFF_OFFSET;
+	data |= sata_static_values->g1_rx_selmuff << HPIPE_G1_SET_1_G1_RX_SELMUFF_OFFSET;
 	mask |= HPIPE_G1_SET_1_G1_RX_DIGCK_DIV_MASK;
 	data |= 0x1 << HPIPE_G1_SET_1_G1_RX_DIGCK_DIV_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G1_SET_1_REG, data, mask);
@@ -490,26 +503,26 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* G2 settings */
 	mask = HPIPE_G2_SET_1_G2_RX_SELMUPI_MASK;
-	data = 0x0 << HPIPE_G2_SET_1_G2_RX_SELMUPI_OFFSET;
+	data = sata_static_values->g2_rx_selmupi << HPIPE_G2_SET_1_G2_RX_SELMUPI_OFFSET;
 	mask |= HPIPE_G2_SET_1_G2_RX_SELMUPF_MASK;
-	data |= 0x1 << HPIPE_G2_SET_1_G2_RX_SELMUPF_OFFSET;
+	data |= sata_static_values->g2_rx_selmupf << HPIPE_G2_SET_1_G2_RX_SELMUPF_OFFSET;
 	mask |= HPIPE_G2_SET_1_G2_RX_SELMUFI_MASK;
-	data |= 0x0 << HPIPE_G2_SET_1_G2_RX_SELMUFI_OFFSET;
+	data |= sata_static_values->g2_rx_selmufi << HPIPE_G2_SET_1_G2_RX_SELMUFI_OFFSET;
 	mask |= HPIPE_G2_SET_1_G2_RX_SELMUFF_MASK;
-	data |= 0x3 << HPIPE_G2_SET_1_G2_RX_SELMUFF_OFFSET;
+	data |= sata_static_values->g2_rx_selmuff << HPIPE_G2_SET_1_G2_RX_SELMUFF_OFFSET;
 	mask |= HPIPE_G2_SET_1_G2_RX_DIGCK_DIV_MASK;
 	data |= 0x1 << HPIPE_G2_SET_1_G2_RX_DIGCK_DIV_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G2_SET_1_REG, data, mask);
 
 	/* G3 settings */
 	mask = HPIPE_G3_SET_1_G3_RX_SELMUPI_MASK;
-	data = 0x2 << HPIPE_G3_SET_1_G3_RX_SELMUPI_OFFSET;
+	data = sata_static_values->g3_rx_selmupi << HPIPE_G3_SET_1_G3_RX_SELMUPI_OFFSET;
 	mask |= HPIPE_G3_SET_1_G3_RX_SELMUPF_MASK;
-	data |= 0x2 << HPIPE_G3_SET_1_G3_RX_SELMUPF_OFFSET;
+	data |= sata_static_values->g3_rx_selmupf << HPIPE_G3_SET_1_G3_RX_SELMUPF_OFFSET;
 	mask |= HPIPE_G3_SET_1_G3_RX_SELMUFI_MASK;
-	data |= 0x3 << HPIPE_G3_SET_1_G3_RX_SELMUFI_OFFSET;
+	data |= sata_static_values->g3_rx_selmufi << HPIPE_G3_SET_1_G3_RX_SELMUFI_OFFSET;
 	mask |= HPIPE_G3_SET_1_G3_RX_SELMUFF_MASK;
-	data |= 0x3 << HPIPE_G3_SET_1_G3_RX_SELMUFF_OFFSET;
+	data |= sata_static_values->g3_rx_selmuff << HPIPE_G3_SET_1_G3_RX_SELMUFF_OFFSET;
 	mask |= HPIPE_G3_SET_1_G3_RX_DFE_EN_MASK;
 	data |= 0x1 << HPIPE_G3_SET_1_G3_RX_DFE_EN_OFFSET;
 	mask |= HPIPE_G3_SET_1_G3_RX_DIGCK_DIV_MASK;
@@ -562,9 +575,9 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* G3 Setting 3 */
 	mask = HPIPE_G3_FFE_CAP_SEL_MASK;
-	data = 0xf << HPIPE_G3_FFE_CAP_SEL_OFFSET;
+	data = sata_static_values->g3_ffe_cap_sel << HPIPE_G3_FFE_CAP_SEL_OFFSET;
 	mask |= HPIPE_G3_FFE_RES_SEL_MASK;
-	data |= 0x4 << HPIPE_G3_FFE_RES_SEL_OFFSET;
+	data |= sata_static_values->g3_ffe_res_sel << HPIPE_G3_FFE_RES_SEL_OFFSET;
 	mask |= HPIPE_G3_FFE_SETTING_FORCE_MASK;
 	data |= 0x1 << HPIPE_G3_FFE_SETTING_FORCE_OFFSET;
 	mask |= HPIPE_G3_FFE_DEG_RES_LEVEL_MASK;
@@ -575,12 +588,12 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* G3 Setting 4 */
 	mask = HPIPE_G3_DFE_RES_MASK;
-	data = 0x1 << HPIPE_G3_DFE_RES_OFFSET;
+	data = sata_static_values->g3_dfe_res << HPIPE_G3_DFE_RES_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G3_SETTING_4_REG, data, mask);
 
 	/* Offset Phase Control */
 	mask = HPIPE_OS_PH_OFFSET_MASK;
-	data = 0x61 << HPIPE_OS_PH_OFFSET_OFFSET;
+	data = sata_static_values->allign_90 << HPIPE_OS_PH_OFFSET_OFFSET;
 	mask |= HPIPE_OS_PH_OFFSET_FORCE_MASK;
 	data |= 0x1 << HPIPE_OS_PH_OFFSET_FORCE_OFFSET;
 	mask |= HPIPE_OS_PH_VALID_MASK;
@@ -595,40 +608,61 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* Set G1 TX amplitude and TX post emphasis value */
 	mask = HPIPE_G1_SET_0_G1_TX_AMP_MASK;
-	data = 0x8 << HPIPE_G1_SET_0_G1_TX_AMP_OFFSET;
+	data = sata_static_values->g1_amp << HPIPE_G1_SET_0_G1_TX_AMP_OFFSET;
 	mask |= HPIPE_G1_SET_0_G1_TX_AMP_ADJ_MASK;
-	data |= 0x1 << HPIPE_G1_SET_0_G1_TX_AMP_ADJ_OFFSET;
+	data |= sata_static_values->g1_tx_amp_adj << HPIPE_G1_SET_0_G1_TX_AMP_ADJ_OFFSET;
 	mask |= HPIPE_G1_SET_0_G1_TX_EMPH1_MASK;
-	data |= 0x1 << HPIPE_G1_SET_0_G1_TX_EMPH1_OFFSET;
+	data |= sata_static_values->g1_emph << HPIPE_G1_SET_0_G1_TX_EMPH1_OFFSET;
 	mask |= HPIPE_G1_SET_0_G1_TX_EMPH1_EN_MASK;
-	data |= 0x1 << HPIPE_G1_SET_0_G1_TX_EMPH1_EN_OFFSET;
+	data |= sata_static_values->g1_emph_en << HPIPE_G1_SET_0_G1_TX_EMPH1_EN_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G1_SET_0_REG, data, mask);
+
+	/* Set G1 emph */
+	mask = HPIPE_G1_SET_2_G1_TX_EMPH0_EN_MASK;
+	data = sata_static_values->g1_tx_emph_en << HPIPE_G1_SET_2_G1_TX_EMPH0_EN_OFFSET;
+	mask |= HPIPE_G1_SET_2_G1_TX_EMPH0_MASK;
+	data |= sata_static_values->g1_tx_emph << HPIPE_G1_SET_2_G1_TX_EMPH0_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G1_SET_2_REG, data, mask);
 
 	/* Set G2 TX amplitude and TX post emphasis value */
 	mask = HPIPE_G2_SET_0_G2_TX_AMP_MASK;
-	data = 0xa << HPIPE_G2_SET_0_G2_TX_AMP_OFFSET;
+	data = sata_static_values->g2_amp << HPIPE_G2_SET_0_G2_TX_AMP_OFFSET;
 	mask |= HPIPE_G2_SET_0_G2_TX_AMP_ADJ_MASK;
-	data |= 0x1 << HPIPE_G2_SET_0_G2_TX_AMP_ADJ_OFFSET;
+	data |= sata_static_values->g2_tx_amp_adj << HPIPE_G2_SET_0_G2_TX_AMP_ADJ_OFFSET;
 	mask |= HPIPE_G2_SET_0_G2_TX_EMPH1_MASK;
-	data |= 0x2 << HPIPE_G2_SET_0_G2_TX_EMPH1_OFFSET;
+	data |= sata_static_values->g2_emph << HPIPE_G2_SET_0_G2_TX_EMPH1_OFFSET;
 	mask |= HPIPE_G2_SET_0_G2_TX_EMPH1_EN_MASK;
-	data |= 0x1 << HPIPE_G2_SET_0_G2_TX_EMPH1_EN_OFFSET;
+	data |= sata_static_values->g2_emph_en << HPIPE_G2_SET_0_G2_TX_EMPH1_EN_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G2_SET_0_REG, data, mask);
+
+	/* Set G2 emph */
+	mask = HPIPE_G2_SET_2_G2_TX_EMPH0_EN_MASK;
+	data = sata_static_values->g2_tx_emph_en << HPIPE_G2_SET_2_G2_TX_EMPH0_EN_OFFSET;
+	mask |= HPIPE_G2_SET_2_G2_TX_EMPH0_MASK;
+	data |= sata_static_values->g2_tx_emph << HPIPE_G2_SET_2_G2_TX_EMPH0_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G2_SET_2_REG, data, mask);
 
 	/* Set G3 TX amplitude and TX post emphasis value */
 	mask = HPIPE_G3_SET_0_G3_TX_AMP_MASK;
-	data = 0x1e << HPIPE_G3_SET_0_G3_TX_AMP_OFFSET;
+	data = sata_static_values->g3_amp << HPIPE_G3_SET_0_G3_TX_AMP_OFFSET;
 	mask |= HPIPE_G3_SET_0_G3_TX_AMP_ADJ_MASK;
-	data |= 0x1 << HPIPE_G3_SET_0_G3_TX_AMP_ADJ_OFFSET;
+	data |= sata_static_values->g3_tx_amp_adj << HPIPE_G3_SET_0_G3_TX_AMP_ADJ_OFFSET;
 	mask |= HPIPE_G3_SET_0_G3_TX_EMPH1_MASK;
-	data |= 0xe << HPIPE_G3_SET_0_G3_TX_EMPH1_OFFSET;
+	data |= sata_static_values->g3_emph << HPIPE_G3_SET_0_G3_TX_EMPH1_OFFSET;
 	mask |= HPIPE_G3_SET_0_G3_TX_EMPH1_EN_MASK;
-	data |= 0x1 << HPIPE_G3_SET_0_G3_TX_EMPH1_EN_OFFSET;
+	data |= sata_static_values->g3_emph_en << HPIPE_G3_SET_0_G3_TX_EMPH1_EN_OFFSET;
 	mask |= HPIPE_G3_SET_0_G3_TX_SLEW_RATE_SEL_MASK;
 	data |= 0x4 << HPIPE_G3_SET_0_G3_TX_SLEW_RATE_SEL_OFFSET;
 	mask |= HPIPE_G3_SET_0_G3_TX_SLEW_CTRL_EN_MASK;
 	data |= 0x0 << HPIPE_G3_SET_0_G3_TX_SLEW_CTRL_EN_OFFSET;
 	reg_set(hpipe_addr + HPIPE_G3_SET_0_REG, data, mask);
+
+	/* Set G3 emph */
+	mask = HPIPE_G3_SET_2_G3_TX_EMPH0_EN_MASK;
+	data = sata_static_values->g3_tx_emph_en << HPIPE_G3_SET_2_G3_TX_EMPH0_EN_OFFSET;
+	mask |= HPIPE_G3_SET_2_G3_TX_EMPH0_MASK;
+	data |= sata_static_values->g3_tx_emph << HPIPE_G3_SET_2_G3_TX_EMPH0_OFFSET;
+	reg_set(hpipe_addr + HPIPE_G3_SET_2_REG, data, mask);
 
 	/* SERDES External Configuration 2 register */
 	mask = SD_EXTERNAL_CONFIG2_SSC_ENABLE_MASK;
