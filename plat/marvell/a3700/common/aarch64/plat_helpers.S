@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
@@ -27,7 +27,7 @@ endfunc plat_secondary_cold_boot_setup
 	/* ---------------------------------------------------------------------
 	 * unsigned long plat_get_my_entrypoint (void);
 	 *
-	 * Main job of this routine is to distinguish between a cold and warm boot
+	 * Main job of this routine is to distinguish between cold and warm boot
 	 * For a cold boot, return 0.
 	 * For a warm boot, read the mailbox and return the address it contains.
 	 * A magic number is placed before entrypoint to avoid mistake caused by
@@ -35,16 +35,19 @@ endfunc plat_secondary_cold_boot_setup
 	 * ---------------------------------------------------------------------
 	 */
 func plat_get_my_entrypoint
-	mov_imm x0, PLAT_MARVELL_MAILBOX_BASE /* Read first word and compare it with magic num */
-	ldr     x1, [x0]
+	/* Read first word and compare it with magic num */
+	mov_imm x0, PLAT_MARVELL_MAILBOX_BASE
+	ldr	x1, [x0]
 	mov_imm x2, PLAT_MARVELL_MAILBOX_MAGIC_NUM
-	cmp     x1, x2
-	beq     entrypoint                    /* If compare failed, return 0, i.e. cold boot */
-	mov     x0, #0
+	cmp	x1, x2
+	/* If compare failed, return 0, i.e. cold boot */
+	beq	entrypoint
+	mov	x0, #0
 	ret
 entrypoint:
-	add     x0, x0, #8                    /* Second word contains the jump address */
-	ldr     x0, [x0]
+	/* Second word contains the jump address */
+	add	x0, x0, #8
+	ldr	x0, [x0]
 	ret
 endfunc plat_get_my_entrypoint
 

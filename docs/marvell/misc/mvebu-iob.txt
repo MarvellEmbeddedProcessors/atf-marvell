@@ -1,6 +1,8 @@
 Marvell IOB address decoding bindings
 =====================================
 
+IO bridge configration driver (3rd stage address translation) for Marvell Armada 8K and 8K+ SoCs.
+
 The IOB includes a description of the address decoding configuration.
 
 IOB supports up to n (in CP110 n=24) windows for external memory transaction.

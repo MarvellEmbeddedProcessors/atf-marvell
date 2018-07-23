@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C)  2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #ifndef _MVEBU_H_
 #define _MVEBU_H_
 
@@ -20,7 +20,8 @@
 		(((number) + (align)) & ~((align)-1)) : (number))
 
 /* Macro for testing whether a number is a power of 2. Positive if so */
-#define IS_POWER_OF_2(number)	(number != 0 && ((number & (number - 1)) == 0))
+#define IS_POWER_OF_2(number)	((number) != 0 && \
+				(((number) & ((number) - 1)) == 0))
 
 /*
  * Macro for ronding up to next power of 2
@@ -28,7 +29,8 @@
  * then you can shift it left and get number which power of 2
  * Note: this Macro is for 32 bit number
  */
-#define ROUND_UP_TO_POW_OF_2(number)	(1 << (32 - __builtin_clz(number - 1)))
+#define ROUND_UP_TO_POW_OF_2(number)	(1 << \
+					(32 - __builtin_clz((number) - 1)))
 
 #define _1MB_				(1024ULL*1024ULL)
 #define _1GB_				(_1MB_*1024ULL)

@@ -19,7 +19,7 @@
 extern const mmap_region_t plat_marvell_mmap[];
 
 #define MARVELL_CASSERT_MMAP						\
-	CASSERT((ARRAY_SIZE(plat_marvell_mmap) + MARVELL_BL_REGIONS)		\
+	CASSERT((ARRAY_SIZE(plat_marvell_mmap) + MARVELL_BL_REGIONS)	\
 		<= MAX_MMAP_REGIONS,					\
 		assert_max_mmap_regions);
 
@@ -72,7 +72,7 @@ int marvell_io_is_toc_valid(void);
 /*
  * PSCI functionality
  */
-void psci_arch_init(int);
+void marvell_psci_arch_init(int idx);
 void plat_marvell_system_reset(void);
 
 /*

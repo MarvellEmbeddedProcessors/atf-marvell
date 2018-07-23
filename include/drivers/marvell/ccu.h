@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+/* CCU unit device driver for Marvell AP807, AP807 and AP810 SoCs */
 
 #ifndef _CCU_H_
 #define _CCU_H_
@@ -13,16 +15,20 @@
 #endif
 
 /* CCU registers definitions */
-#define CCU_WIN_CR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x0 + (0x10 * win))
+#define CCU_WIN_CR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x0 + \
+						(0x10 * win))
 #define CCU_TARGET_ID_OFFSET			(8)
 #define CCU_TARGET_ID_MASK			(0x7F)
 
-#define CCU_WIN_SCR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x4 + (0x10 * win))
+#define CCU_WIN_SCR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x4 + \
+						(0x10 * win))
 #define CCU_WIN_ENA_WRITE_SECURE		(0x1)
 #define CCU_WIN_ENA_READ_SECURE			(0x2)
 
-#define CCU_WIN_ALR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x8 + (0x10 * win))
-#define CCU_WIN_AHR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0xC + (0x10 * win))
+#define CCU_WIN_ALR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0x8 + \
+						(0x10 * win))
+#define CCU_WIN_AHR_OFFSET(ap, win)		(MVEBU_CCU_BASE(ap) + 0xC + \
+						(0x10 * win))
 
 #define CCU_WIN_GCR_OFFSET(ap)			(MVEBU_CCU_BASE(ap) + 0xD0)
 #define CCU_GCR_TARGET_OFFSET			(8)

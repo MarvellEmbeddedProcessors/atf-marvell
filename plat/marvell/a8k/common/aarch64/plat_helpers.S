@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <asm_macros.S>
 #include <platform_def.h>
 #include <marvell_pm.h>
@@ -38,11 +38,12 @@ endfunc plat_secondary_cold_boot_setup
 	 * ---------------------------------------------------------------------
 	 */
 func plat_get_my_entrypoint
-	mov_imm x0, PLAT_MARVELL_MAILBOX_BASE	/* Read first word and compare it with magic num */
+	/* Read first word and compare it with magic num */
+	mov_imm x0, PLAT_MARVELL_MAILBOX_BASE
 	ldr     x1, [x0]
 	mov_imm x2, MVEBU_MAILBOX_MAGIC_NUM
 	cmp     x1, x2
-	beq     warm_boot			/* If compare failed, return 0, i.e. cold boot */
+	beq     warm_boot  /* If compare failed, return 0, i.e. cold boot */
 	mov     x0, #0
 	ret
 warm_boot:

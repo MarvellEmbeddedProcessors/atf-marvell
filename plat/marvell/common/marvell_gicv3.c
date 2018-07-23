@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <debug.h>
 #include <gicv3.h>
 #include <interrupt_props.h>
@@ -121,7 +117,7 @@ void plat_marvell_gic_cpuif_disable(void)
 }
 
 /******************************************************************************
- * Marvell common helper to initialize the per-cpu redistributor interface in GICv3
+ * Marvell common helper to init. the per-cpu redistributor interface in GICv3
  *****************************************************************************/
 void plat_marvell_gic_pcpu_init(void)
 {
@@ -138,7 +134,7 @@ void plat_marvell_gic_irq_save(void)
 	 * If an ITS is available, save its context before
 	 * the Redistributor using:
 	 * gicv3_its_save_disable(gits_base, &its_ctx[i])
-	 * Additionnaly, an implementation-defined sequence may
+	 * Additionally, an implementation-defined sequence may
 	 * be required to save the whole ITS state.
 	 */
 

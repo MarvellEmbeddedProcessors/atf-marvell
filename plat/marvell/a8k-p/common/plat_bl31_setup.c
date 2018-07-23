@@ -5,14 +5,13 @@
  * https://spdx.org/licenses
  */
 
-#include <plat_marvell.h>
-#include <plat_private.h>
-
 #include <ap810_setup.h>
 #include <cache_llc.h>
 #include <cp110_setup.h>
 #include <debug.h>
 #include <marvell_pm.h>
+#include <marvell_plat_priv.h>
+#include <plat_marvell.h>
 
 #define CCU_ROUT_OPT_DIS(ap, stop)		(MVEBU_A2_BANKED_STOP_BASE(ap, stop) + 0x8)
 #define CCU_SFWD_UL_AC_EN_OFFSET		9

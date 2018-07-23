@@ -1,19 +1,18 @@
 /*
- * Copyright (C) 2017 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
 
-#include <plat_config.h>
-#include <plat_marvell.h>
-#include <plat_private.h>
-
+#include <armada_common.h>
 #include <ap810_setup.h>
 #include <debug.h>
 #include <delay_timer.h>
 #include <mci.h>
 #include <mmio.h>
+#include <marvell_plat_priv.h>
+#include <plat_marvell.h>
 
 /* MCI related defines */
 #define MVEBU_AP_SYSTEM_SOFT_RESET_REG(ap)	(MVEBU_AP_MISC_SOC_BASE(ap) + 0x54)

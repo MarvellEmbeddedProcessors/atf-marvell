@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
+/* AXI to M-Bridge decoding unit driver for Marvell Armada 8K and 8K+ SoCs */
+
+#include <armada_common.h>
 #include <debug.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -41,10 +43,10 @@ static void amb_check_win(struct addr_map_win *win, uint32_t win_num)
 
 	/* make sure the base address is in 16-bit range */
 	if (win->base_addr > AMB_BASE_ADDR_MASK) {
-		printf("Warning: Window %d: base address is too big 0x%llx\n",
+		WARN("Window %d: base address is too big 0x%llx\n",
 		       win_num, win->base_addr);
 		win->base_addr = AMB_BASE_ADDR_MASK;
-		printf("Set the base address to 0x%llx\n", win->base_addr);
+		WARN("Set the base address to 0x%llx\n", win->base_addr);
 	}
 
 	base_addr  = win->base_addr << AMB_BASE_OFFSET;
@@ -52,17 +54,17 @@ static void amb_check_win(struct addr_map_win *win, uint32_t win_num)
 	/* check if address is aligned to 1M */
 	if (IS_NOT_ALIGN(base_addr, AMB_WIN_ALIGNMENT_1M)) {
 		win->base_addr = ALIGN_UP(base_addr, AMB_WIN_ALIGNMENT_1M);
-		printf("Warning: Window %d: base address unaligned to 0x%x\n",
+		WARN("Window %d: base address unaligned to 0x%x\n",
 		       win_num, AMB_WIN_ALIGNMENT_1M);
-		printf("Align up the base address to 0x%llx\n", win->base_addr);
+		WARN("Align up the base address to 0x%llx\n", win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (!IS_POWER_OF_2(win->win_size)) {
-		printf("Warning: Window %d: window size is not power of 2 (0x%llx)\n",
+		WARN("Window %d: window size is not power of 2 (0x%llx)\n",
 		       win_num, win->win_size);
 		win->win_size = ROUND_UP_TO_POW_OF_2(win->win_size);
-		printf("Rounding size to 0x%llx\n", win->win_size);
+		WARN("Rounding size to 0x%llx\n", win->win_size);
 	}
 }
 
@@ -70,9 +72,12 @@ static void amb_enable_win(struct addr_map_win *win, uint32_t win_num)
 {
 	uint32_t ctrl, base, size;
 
-	size = (win->win_size / AMB_WIN_ALIGNMENT_64K) - 1; /* size is 64KB granularity.
-							     * The number of 1s specifies the size of the
-							     * window in 64 KB granularity. 0 is 64KB */
+	/*
+	 * size is 64KB granularity.
+	 * The number of ones specifies the size of the
+	 * window in 64 KB granularity. 0 is 64KB
+	 */
+	size = (win->win_size / AMB_WIN_ALIGNMENT_64K) - 1;
 	ctrl = (size << AMB_SIZE_OFFSET) | (win->target_id << AMB_ATTR_OFFSET);
 	base = win->base_addr << AMB_BASE_OFFSET;
 
@@ -91,8 +96,8 @@ static void dump_amb_adec(void)
 	uint32_t size, size_count;
 
 	/* Dump all AMB windows */
-	printf("bank  attribute     base          size\n");
-	printf("--------------------------------------------\n");
+	tf_printf("bank  attribute     base          size\n");
+	tf_printf("--------------------------------------------\n");
 	for (win_id = 0; win_id < AMB_MAX_WIN_ID; win_id++) {
 		ctrl = mmio_read_32(AMB_WIN_CR_OFFSET(win_id));
 		if (ctrl & WIN_ENABLE_BIT) {
@@ -100,11 +105,10 @@ static void dump_amb_adec(void)
 			attr = (ctrl >> AMB_ATTR_OFFSET) & AMB_ATTR_MASK;
 			size_count = (ctrl >> AMB_SIZE_OFFSET) & AMB_SIZE_MASK;
 			size = (size_count + 1) * AMB_WIN_ALIGNMENT_64K;
-			printf("amb   0x%04x        0x%08x    0x%08x\n", attr, base, size);
+			tf_printf("amb   0x%04x        0x%08x    0x%08x\n",
+				  attr, base, size);
 		}
 	}
-
-	return;
 }
 #endif
 

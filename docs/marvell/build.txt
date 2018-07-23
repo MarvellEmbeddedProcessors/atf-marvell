@@ -1,17 +1,17 @@
-ATF Build Instructions
+TF-A Build Instructions
 ======================
 
-This section describes how to compile the ARM Trusted Firmware (ATF) project for Marvell's platforms.
+This section describes how to compile the ARM Trusted Firmware (TF-A) project for Marvell's platforms.
 
 Build Instructions
 ------------------
 (1) Set the cross compiler::
 
-		> export CROSS_COMPILE=/path/to/toolchain/aarch64-marvell-linux-gnu-
+		> export CROSS_COMPILE=/path/to/toolchain/aarch64-linux-gnu-
 
 (2) Set path for FIP images:
 
-	Set U-Boot image path (relatively to ATF root or absolute path)::
+	Set U-Boot image path (relatively to TF-A root or absolute path)::
 
 		> export BL33=path/to/u-boot.bin
 
@@ -37,7 +37,7 @@ Build Instructions
 
 		> make distclean
 
-(5) Build ATF:
+(5) Build TF-A:
 
 	There are several build options:
 
@@ -46,14 +46,16 @@ Build Instructions
 	- LOG_LEVEL: defines the level of logging which will be purged to the default output port.
 
 		LOG_LEVEL_NONE		0
-		LOG_LEVEL_NOTICE	10
-		LOG_LEVEL_ERROR		20
+		LOG_LEVEL_ERROR		10
+		LOG_LEVEL_NOTICE	20
 		LOG_LEVEL_WARNING	30
 		LOG_LEVEL_INFO		40
 		LOG_LEVEL_VERBOSE	50
 
 	- USE_COHERENT_MEM: This flag determines whether to include the coherent memory region in the
-		BL memory map or not. It should be set to 0.
+		BL memory map or not.
+
+	- LLC_ENABLE: Flag defining the LLC (L3) cache state. The cache is enabled by default (LLC_ENABLE=1).
 
 	- MARVELL_SECURE_BOOT: build trusted(=1)/non trusted(=0) image, default is non trusted.
 
@@ -67,7 +69,7 @@ Build Instructions
 		Usage example: MV_DDR_PATH=path/to/mv_ddr
 		The parameter is optional for A7/8K, when this parameter is not set, the mv_ddr
 		sources are expected to be located at: drivers/marvell/mv_ddr. However, the parameter
-		is neccesary for A37x0.
+		is necessary for A37x0.
 
 	- DDR_TOPOLOGY: For Armada37x0 only, the DDR topology map index/name, default is 0.
 		Supported Options:
@@ -114,7 +116,7 @@ Build Instructions
 		suitable for a8xxY SoC, where "Y" is a number of connected CPs and "xx" is a number of CPU cores.
 		Valid values with CP_NUM is in a range of 0 to 8.
 		The CPs defined by this parameter are evenly distributed across interconnected APs that in turn
-		are dynamically detected. For instance, if the CP_NUM=6 and the ATF detects 2 interconnected
+		are dynamically detected. For instance, if the CP_NUM=6 and the TF-A detects 2 interconnected
 		APs, each AP assumed to have 3 attached CPs. With the same amount of APs and CP_NUM=3, the AP0
 		will have 2 CPs connected and AP1 - a just single CP.
 
@@ -143,26 +145,26 @@ Build Instructions
 
 Special Build Flags
 --------------------
-	- PALLADIUM: Enables building ATF for palladium target. This mainly involves changing the UART baud rate
+	- PALLADIUM: Enables building TF-A for palladium target. This mainly involves changing the UART baud rate
 		and the timer frequency to a lower values to match palladium's setup.
 	- PLAT_RECOVERY_IMAGE_ENABLE: When set this option to enable secondary recovery function when build
 		atf. In order to build uart recovery image this operation should be disabled for a70x0 and a80x0
-                because of hardware limitation(boot from secondary image can interrrupt uart recovery process).
+                because of hardware limitation(boot from secondary image can interrupt uart recovery process).
 		This MACRO definition is set in plat/marvell/a8k/common/include/platform_def.h file
 
-(for more information about build options, please refer to section 'Summary of build options' in  ATF user-guide:
+(for more information about build options, please refer to section 'Summary of build options' in  TF-A user-guide:
  https://github.com/ARM-software/arm-trusted-firmware/blob/master/docs/user-guide.md)
 
 
 Build output
 -------------
-Marvell's ATF compilation generates 7 files:
+Marvell's TF-A compilation generates 7 files:
 	- ble.bin		- BLe image
 	- bl1.bin		- BL1 image
 	- bl2.bin		- BL2 image
 	- bl31.bin		- BL31 image
 	- fip.bin		- FIP image (contains BL2, BL31 & BL33 (U-Boot) images)
-	- boot-image.bin	- ATF image (contains BL1 and FIP images)
+	- boot-image.bin	- TF-A image (contains BL1 and FIP images)
 	- flash-image.bin	- Image which contains boot-image.bin and SPL image; should be placed on the boot flash/device.
 
 

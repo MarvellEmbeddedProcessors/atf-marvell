@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #ifndef __MVEBU_A3700_PM_H__
 #define __MVEBU_A3700_PM_H__
 

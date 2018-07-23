@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <arch_helpers.h>
 #include <assert.h>
 #include <psci.h>
@@ -17,11 +13,12 @@
 /* Standard ARM platforms are expected to export plat_arm_psci_pm_ops */
 extern const plat_psci_ops_t plat_arm_psci_pm_ops;
 
-/*******************************************************************************
+/*****************************************************************************
  * Private function to program the mailbox for a cpu before it is released
  * from reset. This function assumes that the mail box base is within
  * the MARVELL_SHARED_RAM region
- ******************************************************************************/
+ *****************************************************************************
+ */
 void marvell_program_mailbox(uintptr_t address)
 {
 	uintptr_t *mailbox = (void *)PLAT_MARVELL_MAILBOX_BASE;
@@ -45,10 +42,11 @@ void marvell_program_mailbox(uintptr_t address)
 #endif
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * The ARM Standard platform definition of platform porting API
  * `plat_setup_psci_ops`.
- ******************************************************************************/
+ *****************************************************************************
+ */
 int plat_setup_psci_ops(uintptr_t sec_entrypoint,
 			const plat_psci_ops_t **psci_ops)
 {

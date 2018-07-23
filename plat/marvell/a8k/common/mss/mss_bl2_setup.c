@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+#include <armada_common.h>
 #include <bl_common.h>
 #include <ccu.h>
 #include <cp110_setup.h>
 #include <debug.h>
+#include <marvell_plat_priv.h> /* timer functionality */
 #include <mmio.h>
-#include <plat_config.h>
 #include <platform_def.h>
-#include <plat_private.h> /* timer functionality */
 
 #include "mss_scp_bootloader.h"
 
@@ -53,7 +54,7 @@ static int bl2_plat_mmap_init(void)
 {
 	int cfg_num, win_id, cfg_idx;
 
-	cfg_num =  sizeof(ccu_mem_map) / sizeof(ccu_mem_map[0]);
+	cfg_num =  ARRAY_SIZE(ccu_mem_map);
 
 	/* CCU window-0 should not be counted - it's already used */
 	if (cfg_num > (MVEBU_CCU_MAX_WINS - 1)) {
@@ -77,10 +78,11 @@ static int bl2_plat_mmap_init(void)
 	return 0;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Transfer SCP_BL2 from Trusted RAM using the SCP Download protocol.
  * Return 0 on success, -1 otherwise.
- ******************************************************************************/
+ *****************************************************************************
+ */
 int bl2_plat_handle_scp_bl2(image_info_t *scp_bl2_image_info)
 {
 	int ret;
@@ -122,7 +124,8 @@ uint32_t bl2_plat_get_cp_count(int ap_idx)
 	/* A8040: two CPs.
 	 * A7040: one CP.
 	 */
-	if (revision == MVEBU_80X0_DEV_ID || revision == MVEBU_80X0_CP115_DEV_ID)
+	if (revision == MVEBU_80X0_DEV_ID ||
+	    revision == MVEBU_80X0_CP115_DEV_ID)
 		return 2;
 	else
 		return 1;

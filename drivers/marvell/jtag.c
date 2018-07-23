@@ -5,9 +5,9 @@
  * https://spdx.org/licenses
  */
 
-#include <plat_def.h>
-#include <mmio.h>
 #include <delay_timer.h>
+#include <mmio.h>
+#include <mvebu_def.h>
 
 #define MPP_CTRL_REG	0xEC6f4000
 #define GPIO_DATA_EN	0xEC6f5044

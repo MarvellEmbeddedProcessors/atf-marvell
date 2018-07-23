@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #ifndef __PLAT_MARVELL_H__
 #define __PLAT_MARVELL_H__
 
@@ -49,7 +50,7 @@ int marvell_check_mpidr(u_register_t mpidr);
 
 /* BLE utility functions */
 int ble_plat_setup(int *skip);
-void plat_dram_update_topology(void);
+void plat_marvell_dram_update_topology(void);
 void ble_plat_pcie_ep_setup(void);
 struct pci_hw_cfg *plat_get_pcie_hw_data(void);
 
@@ -73,13 +74,13 @@ void marvell_bl31_plat_runtime_setup(void);
 void marvell_bl31_plat_arch_setup(void);
 
 /* Power management config to power off the SoC */
-void *plat_get_pm_cfg(void);
+void *plat_marvell_get_pm_cfg(void);
 
 /* Check if MSS AP CM3 firmware contains PM support */
 _Bool is_pm_fw_running(void);
 
 /* Bootrom image recovery utility functions */
-void *plat_get_skip_image_data(void);
+void *plat_marvell_get_skip_image_data(void);
 
 /* FIP TOC validity check */
 int marvell_io_is_toc_valid(void);
@@ -87,7 +88,7 @@ int marvell_io_is_toc_valid(void);
 /*
  * PSCI functionality
  */
-void psci_arch_init(int);
+void marvell_psci_arch_init(int ap_idx);
 void plat_marvell_system_reset(void);
 
 /*
@@ -105,8 +106,8 @@ void marvell_bl1_setup_mpps(void);
 #endif
 
 const mmap_region_t *plat_marvell_get_mmap(void);
-void ble_prepare_exit(void);
-void exit_bootrom(uintptr_t);
+void marvell_ble_prepare_exit(void);
+void marvell_exit_bootrom(uintptr_t base);
 
 int plat_marvell_early_cpu_powerdown(void);
 #endif /* __PLAT_MARVELL_H__ */

@@ -7,16 +7,16 @@
 #include <debug.h>
 #include <gicv3.h>
 #include <mmio.h>
+#include <marvell_plat_priv.h>
 #include <platform.h>
 #include <plat_marvell.h>
-#include <plat_private.h>
 
-#define MVEBU_CCU_RVBAR(ap, clus, cpu)		(MVEBU_REGS_BASE_AP(ap) + 0x1800 +	\
-						(0x400 * clus) + 0x240 + (cpu * 0x4))
-#define MVEBU_CCU_PRCR(ap, clus, cpu)		(MVEBU_REGS_BASE_AP(ap) + 0x1800 +	\
-						(0x400 * clus) + 0x250 + (cpu * 0x4))
+#define MVEBU_CCU_RVBAR(ap, clus, cpu)	(MVEBU_REGS_BASE_AP(ap) + 0x1800 + \
+					(0x400 * clus) + 0x240 + (cpu * 0x4))
+#define MVEBU_CCU_PRCR(ap, clus, cpu)	(MVEBU_REGS_BASE_AP(ap) + 0x1800 + \
+					(0x400 * clus) + 0x250 + (cpu * 0x4))
 
-#define MVEBU_RFU_GLOBL_SW_RST			0x184
+#define MVEBU_RFU_GLOBL_SW_RST		0x184
 
 int ap_init_status[PLAT_MARVELL_NORTHB_COUNT];
 
@@ -37,7 +37,8 @@ static int plat_marvell_cpu_on(u_register_t mpidr)
 	cpu_id =  MPIDR_CPU_ID_GET(mpidr);
 
 	/* Set the cpu start address to BL1 entry point (align to 0x10000) */
-	mmio_write_32(MVEBU_CCU_RVBAR(ap_id, clust_id, cpu_id), PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
+	mmio_write_32(MVEBU_CCU_RVBAR(ap_id, clust_id, cpu_id),
+		      PLAT_MARVELL_CPU_ENTRY_ADDR >> 16);
 
 	/* Get the cpu out of reset */
 	mmio_write_32(MVEBU_CCU_PRCR(ap_id, clust_id, cpu_id), 0x10001);
@@ -165,7 +166,7 @@ static void a8kp_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	}
 
 	/* arch specific configuration */
-	psci_arch_init(ap_id);
+	marvell_psci_arch_init(ap_id);
 
 	/* Per-CPU interrupt initialization */
 	plat_marvell_gic_pcpu_init();
@@ -180,7 +181,8 @@ static void a8kp_pwr_domain_on_finish(const psci_power_state_t *target_state)
  * context. Need to implement a separate suspend finisher.
  *****************************************************************************
  */
-static void a8kp_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
+static void a8kp_pwr_domain_suspend_finish(const psci_power_state_t
+					   *target_state)
 {
 	ERROR("%s: needs to be implemented\n", __func__);
 	panic();
@@ -207,9 +209,6 @@ void a8kp_get_sys_suspend_power_state(psci_power_state_t *req_state)
 static void __dead2 a8kp_system_off(void)
 {
 	ERROR("%s:  needs to be implemented\n", __func__);
-	panic();
-	wfi();
-	ERROR("%s: operation not handled.\n", __func__);
 	panic();
 }
 

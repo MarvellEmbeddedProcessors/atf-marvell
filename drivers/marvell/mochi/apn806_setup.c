@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
+/* AP806 Marvell SoC driver */
+
 #include <ap_setup.h>
 #include <ccu.h>
 #include <cache_llc.h>
@@ -12,18 +14,21 @@
 #include <io_win.h>
 #include <mci.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define SMMU_sACR				(MVEBU_SMMU_BASE + 0x10)
 #define SMMU_sACR_PG_64K			(1 << 16)
 
-#define CCU_GSPMU_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x3F0)
+#define CCU_GSPMU_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + \
+							0x3F0)
 #define GSPMU_CPU_CONTROL			(0x1 << 0)
 
-#define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x200)
+#define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + \
+							0x200)
 #define CCU_SET_POC_OFFSET			5
 
-#define CCU_RGF(win)				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x90 + 4 * (win))
+#define CCU_RGF(win)				(MVEBU_CCU_BASE(MVEBU_AP0) + \
+							0x90 + 4 * (win))
 
 #define DSS_CR0					(MVEBU_RFU_BASE + 0x100)
 #define DVM_48BIT_VA_ENABLE			(1 << 21)
@@ -53,7 +58,8 @@
 
 /* Used for Units of AP-806 (e.g. SDIO and etc) */
 #define MVEBU_AXI_ATTR_BASE			(MVEBU_REGS_BASE + 0x6F4580)
-#define MVEBU_AXI_ATTR_REG(index)		(MVEBU_AXI_ATTR_BASE + 0x4 * index)
+#define MVEBU_AXI_ATTR_REG(index)		(MVEBU_AXI_ATTR_BASE + \
+							0x4 * index)
 
 enum axi_attr {
 	AXI_SDIO_ATTR = 0,
@@ -71,9 +77,11 @@ static void apn_sec_masters_access_en(uint32_t enable)
 	 */
 	reg = mmio_read_32(SEC_MOCHI_IN_ACC_REG);
 	if (enable)
-		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg | SEC_IN_ACCESS_ENA_ALL_MASTERS);
+		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg |
+			      SEC_IN_ACCESS_ENA_ALL_MASTERS);
 	else
-		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg & ~SEC_IN_ACCESS_ENA_ALL_MASTERS);
+		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg &
+			      ~SEC_IN_ACCESS_ENA_ALL_MASTERS);
 }
 
 static void setup_smmu(void)
@@ -102,7 +110,7 @@ static void ap806_generic_timer_init(void)
 static void apn806_errata_wa_init(void)
 {
 	/*
-	 * EERATA ID: RES-3033912 - Internal Address Space Init state causes
+	 * ERRATA ID: RES-3033912 - Internal Address Space Init state causes
 	 * a hang upon accesses to [0xf070_0000, 0xf07f_ffff]
 	 * Workaround: Boot Firmware (ATF) should configure CCU_RGF_WIN(4) to
 	 * split [0x6e_0000, 0xff_ffff] to values [0x6e_0000, 0x6f_ffff] and
@@ -150,7 +158,8 @@ static void mci_remap_indirect_access_base(void)
 
 	for (mci = 0; mci < MCI_MAX_UNIT_ID; mci++)
 		mmio_write_32(MCIX4_REG_START_ADDRESS_REG(mci),
-			      MVEBU_MCI_REG_BASE_REMAP(mci) >> MCI_REMAP_OFF_SHIFT);
+			      MVEBU_MCI_REG_BASE_REMAP(mci) >>
+			      MCI_REMAP_OFF_SHIFT);
 }
 
 static void apn806_axi_attr_init(void)
@@ -168,27 +177,32 @@ static void apn806_axi_attr_init(void)
 		case AXI_DFX_ATTR:
 			continue;
 		default:
-			/* Set Ax-Cache as cacheable, no allocate, modifiable, bufferable
-			 * The values are different because Read & Write definition
-			 * is different in Ax-Cache
+			/* Set Ax-Cache as cacheable, no allocate, modifiable,
+			 * bufferable
+			 * The values are different because Read & Write
+			 * definition is different in Ax-Cache
 			 */
 			data = mmio_read_32(MVEBU_AXI_ATTR_REG(index));
 			data &= ~MVEBU_AXI_ATTR_ARCACHE_MASK;
-			data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-				<< MVEBU_AXI_ATTR_ARCACHE_OFFSET;
+			data |= (CACHE_ATTR_WRITE_ALLOC |
+				 CACHE_ATTR_CACHEABLE   |
+				 CACHE_ATTR_BUFFERABLE) <<
+				 MVEBU_AXI_ATTR_ARCACHE_OFFSET;
 			data &= ~MVEBU_AXI_ATTR_AWCACHE_MASK;
-			data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-				<< MVEBU_AXI_ATTR_AWCACHE_OFFSET;
+			data |= (CACHE_ATTR_READ_ALLOC |
+				 CACHE_ATTR_CACHEABLE  |
+				 CACHE_ATTR_BUFFERABLE) <<
+				 MVEBU_AXI_ATTR_AWCACHE_OFFSET;
 			/* Set Ax-Domain as Outer domain */
 			data &= ~MVEBU_AXI_ATTR_ARDOMAIN_MASK;
-			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_ARDOMAIN_OFFSET;
+			data |= DOMAIN_OUTER_SHAREABLE <<
+				MVEBU_AXI_ATTR_ARDOMAIN_OFFSET;
 			data &= ~MVEBU_AXI_ATTR_AWDOMAIN_MASK;
-			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_AWDOMAIN_OFFSET;
+			data |= DOMAIN_OUTER_SHAREABLE <<
+				MVEBU_AXI_ATTR_AWDOMAIN_OFFSET;
 			mmio_write_32(MVEBU_AXI_ATTR_REG(index), data);
 		}
 	}
-
-	return;
 }
 
 static void dss_setup(void)
@@ -202,7 +216,7 @@ void misc_soc_configurations(void)
 	uint32_t reg;
 
 	/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
-	 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
+	 * Otherwise, upon WD timeout, the WD reset signal won't trigger reset
 	 */
 	reg = mmio_read_32(MVEBU_SYSRST_OUT_CONFIG_REG);
 	reg &= ~(WD_MASK_SYS_RST_OUT);
@@ -239,8 +253,10 @@ void ap_init(void)
 	misc_soc_configurations();
 
 #if PALLADIUM
-	/* This code required to Palladium run only, BootROM init the generic timer
-	   and BootROM isn't running for Palladium */
+	/* This code required to Palladium run only,
+	 * BootROM init the generic timer
+	 * and BootROM isn't running for Palladium
+	 */
 	ap806_generic_timer_init();
 #endif
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
@@ -11,9 +11,9 @@
 
 #define PTE_NON_EXEC_OFF	54	/* XN - eXecute Never bit offset - see VMSAv8-64 */
 
-	.globl ble_prepare_exit
+	.globl marvell_ble_prepare_exit
 
-func ble_prepare_exit
+func marvell_ble_prepare_exit
 	/*
 	 * Read the page table base and set the first page to be executable.
 	 * This is required for jumping to DRAM for further execution.
@@ -27,4 +27,4 @@ func ble_prepare_exit
 	dsb	sy
 	isb
 	ret
-endfunc ble_prepare_exit
+endfunc marvell_ble_prepare_exit

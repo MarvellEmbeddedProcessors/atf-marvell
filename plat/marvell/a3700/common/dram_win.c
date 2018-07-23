@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
@@ -134,7 +134,8 @@ void dram_win_map_build(struct dram_win_map *win_map)
 	memset(win_map, 0, sizeof(struct dram_win_map));
 	for (win_id = 0; win_id < DRAM_WIN_MAP_NUM_MAX; win_id++) {
 		ctrl_reg = mmio_read_32(CPU_DEC_WIN_CTRL_REG(win_id));
-		target = (ctrl_reg & CPU_DEC_CR_WIN_TARGET_MASK) >> CPU_DEC_CR_WIN_TARGET_OFFS;
+		target = (ctrl_reg & CPU_DEC_CR_WIN_TARGET_MASK) >>
+			  CPU_DEC_CR_WIN_TARGET_OFFS;
 		enabled = ctrl_reg & CPU_DEC_CR_WIN_ENABLE;
 		/* Ignore invalid and non-dram windows*/
 		if ((enabled == 0) || (target != DRAM_CPU_DEC_TARGET_NUM))
@@ -144,15 +145,19 @@ void dram_win_map_build(struct dram_win_map *win_map)
 		base_reg = mmio_read_32(CPU_DEC_WIN_BASE_REG(win_id));
 		size_reg = mmio_read_32(CPU_DEC_WIN_SIZE_REG(win_id));
 		/* Base reg [15:0] corresponds to transaction address [39:16] */
-		win->base_addr = (base_reg & CPU_DEC_BR_BASE_MASK) >> CPU_DEC_BR_BASE_OFFS;
+		win->base_addr = (base_reg & CPU_DEC_BR_BASE_MASK) >>
+				  CPU_DEC_BR_BASE_OFFS;
 		win->base_addr *= CPU_DEC_CR_WIN_SIZE_ALIGNMENT;
 		/*
-		 * Size reg [15:0] is programmed from LSB to MSB as a sequence of 1s followed by a sequence of 0s,
-		 * and the number of 1s specifies the size of the window in 64 KB granularity,
+		 * Size reg [15:0] is programmed from LSB to MSB as a sequence
+		 * of 1s followed by a sequence of 0s and the number of 1s
+		 * specifies the size of the window in 64 KB granularity,
 		 * for example, a value of 00FFh specifies 256 x 64 KB = 16 MB
 		 */
-		win->win_size = (size_reg & CPU_DEC_CR_WIN_SIZE_MASK) >> CPU_DEC_CR_WIN_SIZE_OFFS;
-		win->win_size = (win->win_size + 1) * CPU_DEC_CR_WIN_SIZE_ALIGNMENT;
+		win->win_size = (size_reg & CPU_DEC_CR_WIN_SIZE_MASK) >>
+				 CPU_DEC_CR_WIN_SIZE_OFFS;
+		win->win_size = (win->win_size + 1) *
+				 CPU_DEC_CR_WIN_SIZE_ALIGNMENT;
 
 		win_map->dram_win_num++;
 	}
@@ -174,13 +179,17 @@ static void cpu_win_set(uint32_t win_id, struct cpu_win_configuration *win_cfg)
 		return;
 
 	/* Set Base Register */
-	base_reg = (uint32_t)(win_cfg->base_addr / CPU_DEC_CR_WIN_SIZE_ALIGNMENT);
+	base_reg = (uint32_t)(win_cfg->base_addr /
+		   CPU_DEC_CR_WIN_SIZE_ALIGNMENT);
 	base_reg <<= CPU_DEC_BR_BASE_OFFS;
 	base_reg &= CPU_DEC_BR_BASE_MASK;
 	mmio_write_32(CPU_DEC_WIN_BASE_REG(win_id), base_reg);
 
-	/* Set Remap Register with the same value as the <Base> field in Base Register */
-	remap_reg = (uint32_t)(win_cfg->remap_addr / CPU_DEC_CR_WIN_SIZE_ALIGNMENT);
+	/* Set Remap Register with the same value
+	 * as the <Base> field in Base Register
+	 */
+	remap_reg = (uint32_t)(win_cfg->remap_addr /
+		    CPU_DEC_CR_WIN_SIZE_ALIGNMENT);
 	remap_reg <<= CPU_DEC_RLR_REMAP_LOW_OFFS;
 	remap_reg &= CPU_DEC_RLR_REMAP_LOW_MASK;
 	mmio_write_32(CPU_DEC_REMAP_LOW_REG(win_id), remap_reg);
@@ -200,10 +209,12 @@ static void cpu_win_set(uint32_t win_id, struct cpu_win_configuration *win_cfg)
 
 void cpu_wins_init(void)
 {
-	uint32_t cfg_idx, win_id, cs_id, base_low, base_high, size_mbytes, total_mbytes = 0;
+	uint32_t cfg_idx, win_id, cs_id;
+	uint32_t base_low, base_high, size_mbytes, total_mbytes = 0;
 
 	for (cs_id = 0; cs_id < MVEBU_MAX_CS_MMAP_NUM; cs_id++)
-		if (!marvell_get_dram_cs_base_size(cs_id, &base_low, &base_high, &size_mbytes))
+		if (!marvell_get_dram_cs_base_size(cs_id, &base_low,
+						   &base_high, &size_mbytes))
 			total_mbytes += size_mbytes;
 
 	if (total_mbytes <= 2048)
@@ -211,7 +222,9 @@ void cpu_wins_init(void)
 	else
 		cfg_idx = CPU_WIN_CONFIG_DRAM_4GB;
 
-	/* Window 0 is configured always for DRAM in tim header already, no need to configure it again here */
+	/* Window 0 is configured always for DRAM in tim header
+	 * already, no need to configure it again here
+	 */
 	for (win_id = 1; win_id < MV_CPU_WIN_NUM; win_id++)
 		cpu_win_set(win_id, &mv_cpu_wins[cfg_idx][win_id]);
 }

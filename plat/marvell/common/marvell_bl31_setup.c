@@ -1,21 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <arch.h>
 #include <assert.h>
 #include <console.h>
 #include <debug.h>
 #include <marvell_def.h>
+#include <marvell_plat_priv.h>
 #include <plat_marvell.h>
-#include <plat_private.h>
 #include <platform.h>
 
 #ifdef USE_CCI
@@ -45,12 +41,13 @@ static entry_point_info_t bl33_image_ep_info;
 #pragma weak bl31_plat_get_next_image_ep_info
 #pragma weak plat_get_syscnt_freq2
 
-/*******************************************************************************
+/*****************************************************************************
  * Return a pointer to the 'entry_point_info' structure of the next image for
  * the security state specified. BL33 corresponds to the non-secure image type
  * while BL32 corresponds to the secure image type. A NULL pointer is returned
  * if the image does not exist.
- ******************************************************************************/
+ *****************************************************************************
+ */
 entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
 	entry_point_info_t *next_image_info;
@@ -62,14 +59,15 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 	return next_image_info;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Perform any BL31 early platform setup common to ARM standard platforms.
  * Here is an opportunity to copy parameters passed by the calling EL (S-EL1
  * in BL2 & S-EL3 in BL1) before they are lost (potentially). This needs to be
  * done before the MMU is initialized so that the memory layout can be used
  * while creating page tables. BL2 has flushed this information to memory, so
  * we are guaranteed to pick up good data.
- ******************************************************************************/
+ *****************************************************************************
+ */
 void marvell_bl31_early_platform_setup(bl31_params_t *from_bl2,
 				void *plat_params_from_bl2)
 {
@@ -153,9 +151,10 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 #endif
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Perform any BL31 platform setup common to ARM standard platforms
- ******************************************************************************/
+ *****************************************************************************
+ */
 void marvell_bl31_platform_setup(void)
 {
 	/* Initialize the GIC driver, cpu and distributor interfaces */
@@ -163,17 +162,18 @@ void marvell_bl31_platform_setup(void)
 	plat_marvell_gic_init();
 
 	/* For Armada-8k-plus family, the SoC includes more than
-	** a single AP die, but the default die that boots is AP #0.
-	** For other families there is only one die (#0).
-	** Initialize psci arch from die 0
-	** */
-	psci_arch_init(0);
+	 * a single AP die, but the default die that boots is AP #0.
+	 * For other families there is only one die (#0).
+	 * Initialize psci arch from die 0
+	 */
+	marvell_psci_arch_init(0);
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Perform any BL31 platform runtime setup prior to BL31 exit common to ARM
  * standard platforms
- ******************************************************************************/
+ *****************************************************************************
+ */
 void marvell_bl31_plat_runtime_setup(void)
 {
 	/* Initialize the runtime console */
@@ -192,12 +192,13 @@ void bl31_plat_runtime_setup(void)
 	marvell_bl31_plat_runtime_setup();
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Perform the very early platform specific architectural setup shared between
  * ARM standard platforms. This only does basic initialization. Later
  * architectural setup (bl31_arch_setup()) does not do anything platform
  * specific.
- ******************************************************************************/
+ *****************************************************************************
+ */
 void marvell_bl31_plat_arch_setup(void)
 {
 	marvell_setup_page_tables(BL31_BASE,
@@ -210,7 +211,7 @@ void marvell_bl31_plat_arch_setup(void)
 				, BL_COHERENT_RAM_BASE,
 				  BL_COHERENT_RAM_END
 #endif
-			      );
+			);
 
 #if BL31_CACHE_DISABLE
 	enable_mmu_el3(DISABLE_DCACHE);

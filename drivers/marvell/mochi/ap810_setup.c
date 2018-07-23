@@ -8,7 +8,7 @@
 #include <ap810_setup.h>
 #include <debug.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define CCU_B_GIDACR(ap, stop)			(MVEBU_A2_BANKED_STOP_BASE(ap, stop) + 0x34)
 

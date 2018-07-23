@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2017 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+/* Driver for thermal unit located in Marvell ARMADA 8K and compatible SoCs */
 
 #ifndef _THERMAL_H
 #define _THERMAL_H
@@ -17,8 +19,8 @@ struct tsen_config {
 	int tsen_ready;
 	void *regs_base;
 	/* thermal functionality */
-	int (*ptr_tsen_probe)(struct tsen_config *);
-	int (*ptr_tsen_read)(struct tsen_config *, int *);
+	int (*ptr_tsen_probe)(struct tsen_config *cfg);
+	int (*ptr_tsen_read)(struct tsen_config *cfg, int *temp);
 };
 
 /* Thermal driver APIs */

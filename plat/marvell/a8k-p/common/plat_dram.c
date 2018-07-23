@@ -4,6 +4,7 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #include <addr_map.h>
 #include <a8k_i2c.h>
 #include <ap810_setup.h>
@@ -13,7 +14,7 @@
 #include <gwin.h>
 #include <mmio.h>
 #include <mv_ddr_if.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <plat_dram.h>
 
 #define CCU_RGF_WIN0_REG(ap)		(MVEBU_CCU_BASE(ap) + 0x90)
@@ -45,7 +46,8 @@
 #define REMAP_ENABLE_MASK		0x1
 
 /* iface is 0 or 1 */
-#define DSS_SCR_REG(ap, iface)         (MVEBU_AR_RFU_BASE(ap) + 0x208 + ((iface) * 0x4))
+#define DSS_SCR_REG(ap, iface)		(MVEBU_AR_RFU_BASE(ap) + 0x208 + \
+					((iface) * 0x4))
 #define DSS_PPROT_OFFS			4
 #define DSS_PPROT_MASK			0x7
 #define DSS_PPROT_PRIV_SECURE_DATA	0x1
@@ -58,7 +60,8 @@ extern struct mv_ddr_iface *ptr_iface;
 /* Use global varibale to check if i2c initialization done */
 int i2c_init_done = 0;
 
-static int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces, uint32_t *size)
+static int plat_dram_ap_ifaces_get(int ap_id, struct mv_ddr_iface **ifaces,
+				   uint32_t *size)
 {
 	/* For now support DRAM on AP0/AP1 - TODO: add support for all APs */
 	if (ap_id == 0) {
@@ -110,8 +113,8 @@ static void mpp_config(void)
 	uint32_t val;
 
 	/*
-	 * The Ax0x0 A0 DB boards are using the AP0 i2c channel (MPP18 and MPP19)
-	 * for accessing all DIMM SPDs available on board.
+	 * The Ax0x0 A0 DB boards are using the AP0 i2c channel
+	 * (MPP18 and MPP19) for accessing all DIMM SPDs available on board.
 	 */
 	reg = MVEBU_AP_MPP_CTRL16_23_REG;
 	val = mmio_read_32(reg);
@@ -143,7 +146,8 @@ void plat_dram_freq_update(enum ddr_freq freq_option)
  * based on information received from SPD or bootloader
  * configuration located on non volatile storage
  */
-static void plat_dram_update_topology(uint32_t ap_id, struct mv_ddr_iface *iface)
+static void plat_dram_update_topology(uint32_t ap_id,
+				      struct mv_ddr_iface *iface)
 {
 	struct mv_ddr_topology_map *tm = &iface->tm;
 	int ret;
@@ -195,13 +199,15 @@ static void plat_dram_phy_access_config(uint32_t ap_id, uint32_t iface_id)
 	/* Update PHY destination in RGF window */
 	reg_val = mmio_read_32(CCU_RGF_WIN0_REG(ap_id));
 	reg_val &= ~(CCU_RGF_WIN_UNIT_ID_MASK << CCU_RGF_WIN_UNIT_ID_OFFS);
-	reg_val |= ((dram_target & CCU_RGF_WIN_UNIT_ID_MASK) << CCU_RGF_WIN_UNIT_ID_OFFS);
+	reg_val |= ((dram_target & CCU_RGF_WIN_UNIT_ID_MASK) <<
+		    CCU_RGF_WIN_UNIT_ID_OFFS);
 	mmio_write_32(CCU_RGF_WIN0_REG(ap_id), reg_val);
 
 	/* Update DSS port access permission to DSS_PHY */
 	reg_val = mmio_read_32(DSS_SCR_REG(ap_id, iface_id));
 	reg_val &= ~(DSS_PPROT_MASK << DSS_PPROT_OFFS);
-	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) << DSS_PPROT_OFFS);
+	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) <<
+		    DSS_PPROT_OFFS);
 	mmio_write_32(DSS_SCR_REG(ap_id, iface_id), reg_val);
 
 	debug_exit();
@@ -223,8 +229,9 @@ static void plat_dram_rar_mode_set(uint32_t ap_id)
 	mmio_write_32(CCU_MC_ITR_OFFSET(ap_id, DRAM_1_TID),
 		      interleave);
 	/* Configure RAR registers:
-	 * For RAR 0: mask = interleave, value = 0x0, target = 0x3, enable =0x1.
-	 * For RAR 1: mask = interleave, value = interleave, target = 0x8, enable =0x1
+	 * For RAR 0: mask = interleave, value = 0x0, target = 0x3, enable = 0x1
+	 * For RAR 1: mask = interleave, value = interleave, target = 0x8,
+	 * enable =0x1
 	 */
 	val = interleave << MC_RAR_ADDR_MASK_OFFSET;
 	val |= (DRAM_0_TID << MC_RAR_TID_OFFSET) | MC_RAR_ENABLE;
@@ -238,8 +245,9 @@ static void plat_dram_rar_mode_set(uint32_t ap_id)
 	debug_exit();
 }
 
-/* Remap Physical address range to Memory Controller addrress range (PA->MCA) */
-void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to, uint64_t size)
+/* Remap Physical address range to Memory Controller address range (PA->MCA) */
+void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from,
+			 uint64_t to, uint64_t size)
 {
 	int dram_if[] = { -1, -1 };
 	int if_idx;
@@ -276,14 +284,18 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 		/* set mc remap source base to the top of dram */
 		val = (from & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
 		VERBOSE("AP-%d DRAM%d RSBR(0x%x) <== 0x%x\n",
-			ap_index, if_idx, CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]), val);
-		mmio_write_32(CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]), val);
+			ap_index, if_idx, CCU_MC_RSBR_OFFSET(ap_index,
+			dram_if[if_idx]), val);
+		mmio_write_32(CCU_MC_RSBR_OFFSET(ap_index, dram_if[if_idx]),
+			      val);
 
 		/* set mc remap target base to the overlapped dram region */
 		val = (to & REMAP_ADDR_MASK) << REMAP_ADDR_OFFSET;
 		VERBOSE("AP-%d DRAM%d RTBR(0x%x) <== 0x%x\n",
-			ap_index, if_idx, CCU_MC_RTBR_OFFSET(ap_index, dram_if[if_idx]), val);
-		mmio_write_32(CCU_MC_RTBR_OFFSET(ap_index, dram_if[if_idx]), val);
+			ap_index, if_idx, CCU_MC_RTBR_OFFSET(ap_index,
+			dram_if[if_idx]), val);
+		mmio_write_32(CCU_MC_RTBR_OFFSET(ap_index,
+			      dram_if[if_idx]), val);
 
 		/* set mc remap size to the size of the overlapped dram region */
 		/* up to 4GB region for remapping */
@@ -291,8 +303,10 @@ void plat_dram_mca_remap(int ap_index, int dram_tgt, uint64_t from, uint64_t to,
 		/* enable remapping */
 		val |= REMAP_ENABLE_MASK;
 		VERBOSE("AP-%d DRAM%d RCR(0x%x) <== 0x%x\n",
-			ap_index, if_idx, CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]), val);
-		mmio_write_32(CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]), val);
+			ap_index, if_idx, CCU_MC_RCR_OFFSET(ap_index,
+			dram_if[if_idx]), val);
+		mmio_write_32(CCU_MC_RCR_OFFSET(ap_index, dram_if[if_idx]),
+			      val);
 	}
 
 	debug_exit();
@@ -324,14 +338,18 @@ static void plat_dram_interfaces_update(void)
 			/* Initialize iface mode with single interface */
 			iface->iface_mode = MV_DDR_RAR_DIS;
 			/* Update base address of interface */
-			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
+			iface->iface_base_addr = AP_DRAM_BASE_ADDR(ap_id,
+								   ap_cnt);
 			/* Count number of interfaces are ready */
-			VERBOSE("Found DRAM on interface %d AP-%d\n", iface->id, ap_id);
+			VERBOSE("Found DRAM on interface %d AP-%d\n",
+				iface->id, ap_id);
 			iface_cnt++;
 		}
-		if (iface_cnt < ifaces_size)
-			NOTICE("\n\tFound %d out of %d DRAM interface in AP %d. Performance may be degraded!!\n",
+		if (iface_cnt < ifaces_size) {
+			NOTICE("\n\tFound %d out of %d DRAM interface in AP %d",
 				iface_cnt, ifaces_size, ap_id);
+			NOTICE(" Performance may be degraded!!\n");
+		}
 	}
 }
 
@@ -345,8 +363,8 @@ static void plat_dram_temp_addr_decode_cfg(uint32_t ap_id,
 	/* Add a single GWIN entry from AP1 to AP0 enabling remote AP access
 	 * Also add a CCU widow which will pass all transactions to SRAM
 	 * through the GWIN window.
-	 * These widows are needed for DRAM scrubbing and DRAM validation purpose
-	 * both using XOR which saves descriptors on SRAM located in AP0
+	 * These widows are needed for DRAM scrubbing and DRAM validation
+	 * purpose both using XOR which saves descriptors on SRAM located in AP0
 	 */
 	if (ap_id != 0) {
 		ccu_temp_win->base_addr = AP_DRAM_BASE_ADDR(0, ap_cnt);
@@ -424,24 +442,33 @@ int plat_dram_init(void)
 			 * 1. open relevant CCU widow for each interface
 			 *    according to dram size and ap base address
 			 *    for validation\scrubbing purpose
-			 * 2. remap dram widow to end of dram size for ap 0 interfaces.
-			 *    the remapping here is per interface according to the
-			 *    DRAM size of the current interface for DRAM training purpose.
+			 * 2. remap dram widow to end of dram size for ap 0
+			 *    interfaces. The remapping here is per interface
+			 *    according to the DRAM size of the current
+			 *    interface for DRAM training purpose.
 			 */
-			plat_dram_temp_addr_decode_cfg(ap_id, ap_cnt, iface, &gwin_temp_win,
-						       &ccu_dram_win, &ccu_temp_win);
-			if ((ap_id == 0) && (dram_iface_mem_sz_get() > (3 * _1GB_)))
+			plat_dram_temp_addr_decode_cfg(ap_id, ap_cnt,
+						       iface, &gwin_temp_win,
+						       &ccu_dram_win,
+						       &ccu_temp_win);
+			if ((ap_id == 0) &&
+			    (dram_iface_mem_sz_get() > (3 * _1GB_)))
 				plat_dram_mca_remap(0, ccu_dram_win.target_id,
-						    dram_iface_mem_sz_get(), 3 * _1GB_, _1GB_);
+						    dram_iface_mem_sz_get(),
+						    3 * _1GB_, _1GB_);
 
 			/* Call DRAM init per interface */
 			ret = dram_init();
 			if (ret) {
-				ERROR("DRAM interface %d on AP-%d failed\n", i, ap_id);
+				ERROR("DRAM interface %d on AP-%d failed\n",
+				      i, ap_id);
 				return ret;
 			}
-			/* Remove the temporary GWIN and CCU windows configured before DRAM training */
-			plat_dram_temp_addr_decode_remove(ap_id, &gwin_temp_win, &ccu_temp_win);
+			/* Remove the temporary GWIN and CCU windows configured
+			 * before DRAM training
+			 */
+			plat_dram_temp_addr_decode_remove(ap_id, &gwin_temp_win,
+							  &ccu_temp_win);
 
 			iface_cnt++;
 			/* Update status of interface */
@@ -452,19 +479,22 @@ int plat_dram_init(void)
 		plat_dram_ap_ifaces_get(ap_id, &iface, &ifaces_size);
 		for (i = 0; i < iface_cnt; i++, iface++) {
 			plat_dram_iface_set(iface);
-			/* If the number of interfaces equal to MAX (enable RAR) */
+			/* If the number of interfaces == MAX (enable RAR) */
 			if (iface_cnt == DDR_MAX_UNIT_PER_AP) {
-				VERBOSE("AP-%d set DRAM%d into RAR mode\n", ap_id, i);
+				VERBOSE("AP-%d set DRAM%d into RAR mode\n",
+					ap_id, i);
 				ap_dram_tgt = RAR_TID;
 				/* If the base address not 0x0, need to divide
-				** the base address, the dram region will be
-				** splitted into dual DRAMs
-				** */
+				 * the base address, the dram region will be
+				 * splitted into dual DRAMs
+				 */
 				iface->iface_base_addr >>= 1;
-				if (ap810_rev_id_get(ap_id) == MVEBU_AP810_REV_ID_A0)
+				if (ap810_rev_id_get(ap_id) ==
+				    MVEBU_AP810_REV_ID_A0)
 					/* TODO: add ERRATA */
 					if (iface->id == 1)
-						iface->iface_base_addr |= 1UL << 43;
+						iface->iface_base_addr |=
+								1UL << 43;
 			} else {
 				if (iface->id == 1)
 					ap_dram_tgt = DRAM_1_TID;
@@ -477,22 +507,29 @@ int plat_dram_init(void)
 
 		INFO("AP-%d DRAM size is 0x%lx (%lldGB)\n",
 		     ap_id, ap_dram_size, ap_dram_size/_1GB_);
-		/* Remap the physical memory shadowed by the internal registers configuration
-		 * address space to the top of the detected memory area.
-		 * Only the AP0 overlaps this configuration area with the DRAM, so only its memory
-		 * controller has to remap the overlapped region to the upper memory.
-		 * With less than 3GB of DRAM the internal registers space remapping is not needed
-		 * since there is no overlap between DRAM and the configuration address spaces
-		 * The remapping here is for AP0 total DRAM size for operational mode purpose
+		/* Remap the physical memory shadowed by the internal registers
+		 * configuration address space to the top of the detected memory
+		 * area.
+		 * Only the AP0 overlaps this configuration area with the DRAM,
+		 * so only its memory controller has to remap the overlapped
+		 * region to the upper memory.
+		 * With less than 3GB of DRAM the internal registers space
+		 * remapping is not needed since there is no overlap between
+		 * DRAM and the configuration address spaces
+		 * The remapping here is for AP0 total DRAM size for
+		 * operational mode purpose
 		 */
 		if ((ap_id == 0)  && (ap_dram_size > (3 * _1GB_)))
-			plat_dram_mca_remap(0, ap_dram_tgt, ap_dram_size, 3 * _1GB_, _1GB_);
+			plat_dram_mca_remap(0, ap_dram_tgt, ap_dram_size,
+					    3 * _1GB_, _1GB_);
 
 		if (ap_dram_tgt == RAR_TID)
 			plat_dram_rar_mode_set(ap_id);
 
-		/* Restore the original DRAM size before returning to the BootROM.
-		 * The correct DRAM size will be set back by init_ccu() at later stage.
+		/* Restore the original DRAM size before returning to the
+		 * BootROM.
+		 * The correct DRAM size will be set back by init_ccu() at
+		 * later stage.
 		 */
 		ccu_dram_win.base_addr = AP_DRAM_BASE_ADDR(ap_id, ap_cnt);
 		ccu_dram_win.win_size = AP0_BOOTROM_DRAM_SIZE;

@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <platform.h>
 #include <arch_helpers.h>
 #include <mmio.h>
@@ -16,7 +16,7 @@
 #define MVEBU_IO_AFFINITY		(0xF00)
 
 
-void plat_enable_affinity(void)
+static void plat_enable_affinity(void)
 {
 	int cluster_id;
 	int affinity;
@@ -27,10 +27,10 @@ void plat_enable_affinity(void)
 	mmio_write_32(CCU_HTC_ASET, affinity);
 
 	/* set barier */
-	__asm__ volatile("isb");
+	isb();
 }
 
-void psci_arch_init(int die_index)
+void marvell_psci_arch_init(int die_index)
 {
 #if LLC_ENABLE
 	/* check if LLC is in exclusive mode

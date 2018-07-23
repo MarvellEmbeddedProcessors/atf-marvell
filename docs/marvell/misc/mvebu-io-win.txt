@@ -1,6 +1,8 @@
 Marvell IO WIN address decoding bindings
 =====================================
 
+IO Window configration driver (2nd stage address translation) for Marvell Armada 8K and 8K+ SoCs.
+
 The IO WIN includes a description of the address decoding configuration.
 
 Transactions that are decoded by CCU windows as IO peripheral, have an additional

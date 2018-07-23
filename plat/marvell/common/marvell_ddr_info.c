@@ -18,7 +18,8 @@
 #define DRAM_AREA_LENGTH_OFFS			16
 #define DRAM_AREA_LENGTH_MASK			(0x1f << DRAM_AREA_LENGTH_OFFS)
 #define DRAM_START_ADDRESS_L_OFFS		23
-#define DRAM_START_ADDRESS_L_MASK		(0x1ff << DRAM_START_ADDRESS_L_OFFS)
+#define DRAM_START_ADDRESS_L_MASK		\
+					(0x1ff << DRAM_START_ADDRESS_L_OFFS)
 #define DRAM_START_ADDR_HTOL_OFFS		32
 
 #define DRAM_MAX_CS_NUM				2
@@ -84,15 +85,21 @@ uint64_t mvebu_get_dram_size(uint64_t ap_base_addr)
 			if (!DRAM_CS_ENABLED(iface, cs, ap_base_addr))
 				break;
 
-			/* Decode area length for current CS from register value */
-			region_code = GET_DRAM_REGION_SIZE_CODE(iface, cs, ap_base_addr);
+			/* Decode area length for current CS
+			 * from register value
+			 */
+			region_code =
+				GET_DRAM_REGION_SIZE_CODE(iface, cs,
+							  ap_base_addr);
 
 			if (DRAM_REGION_SIZE_EVEN(region_code)) {
-				mem_size += GET_DRAM_REGION_SIZE_EVEN(region_code);
+				mem_size +=
+					GET_DRAM_REGION_SIZE_EVEN(region_code);
 			} else if (DRAM_REGION_SIZE_ODD(region_code)) {
-				mem_size += GET_DRAM_REGION_SIZE_ODD(region_code);
+				mem_size +=
+					GET_DRAM_REGION_SIZE_ODD(region_code);
 			} else {
-				WARN("%s: Invalid memory region code (0x%x) for CS#%d\n",
+				WARN("%s: Invalid mem region (0x%x) CS#%d\n",
 				      __func__, region_code, cs);
 				return 0;
 			}

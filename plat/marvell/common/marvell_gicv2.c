@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <gicv2.h>
 #include <plat_marvell.h>
 #include <platform.h>
@@ -46,7 +42,7 @@ static gicv2_driver_data_t marvell_gic_data = {
 	.target_masks_num = ARRAY_SIZE(target_mask_array),
 };
 
-/*/
+/*
  * ARM common helper to initialize the GICv2 only driver.
  */
 void plat_marvell_gic_driver_init(void)

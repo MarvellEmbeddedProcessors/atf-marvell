@@ -4,8 +4,9 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-#include <plat_def.h>
+
 #include <mmio.h>
+#include <mvebu_def.h>
 
 #define PCIE_CFG_VENDOR			0x0
 #define PCIE_CFG_DEVICE			0x2

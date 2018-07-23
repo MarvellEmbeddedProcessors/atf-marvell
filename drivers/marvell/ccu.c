@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
+/* CCU unit device driver for Marvell AP807, AP807 and AP810 SoCs */
+#include <armada_common.h>
 #include <ccu.h>
 #include <debug.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -38,24 +39,26 @@ static void dump_ccu(int ap_index)
 	uint64_t start, end;
 
 	/* Dump all AP windows */
-	printf("\tbank  target     start              end\n");
-	printf("\t----------------------------------------------------\n");
+	tf_printf("\tbank  target     start              end\n");
+	tf_printf("\t----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		win_cr = mmio_read_32(CCU_WIN_CR_OFFSET(ap_index, win_id));
 		if (win_cr & WIN_ENABLE_BIT) {
-			target_id = (win_cr >> CCU_TARGET_ID_OFFSET) & CCU_TARGET_ID_MASK;
-			alr = mmio_read_32(CCU_WIN_ALR_OFFSET(ap_index, win_id));
-			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_index, win_id));
+			target_id = (win_cr >> CCU_TARGET_ID_OFFSET) &
+				     CCU_TARGET_ID_MASK;
+			alr = mmio_read_32(CCU_WIN_ALR_OFFSET(ap_index,
+							      win_id));
+			ahr = mmio_read_32(CCU_WIN_AHR_OFFSET(ap_index,
+							      win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
-			printf("\tccu    %02x     0x%016llx 0x%016llx\n", target_id, start, end);
+			tf_printf("\tccu    %02x     0x%016llx 0x%016llx\n",
+				  target_id, start, end);
 		}
 	}
 	win_cr = mmio_read_32(CCU_WIN_GCR_OFFSET(ap_index));
 	target_id = (win_cr >> CCU_GCR_TARGET_OFFSET) & CCU_GCR_TARGET_MASK;
-	printf("\tccu   GCR %d - all other transactions\n", target_id);
-
-	return;
+	tf_printf("\tccu   GCR %d - all other transactions\n", target_id);
 }
 #endif
 
@@ -64,13 +67,15 @@ void ccu_win_check(struct addr_map_win *win)
 	/* check if address is aligned to 1M */
 	if (IS_NOT_ALIGN(win->base_addr, CCU_WIN_ALIGNMENT)) {
 		win->base_addr = ALIGN_UP(win->base_addr, CCU_WIN_ALIGNMENT);
-		NOTICE("%s: Align up the base address to 0x%llx\n", __func__, win->base_addr);
+		NOTICE("%s: Align up the base address to 0x%llx\n",
+		       __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, CCU_WIN_ALIGNMENT)) {
 		win->win_size = ALIGN_UP(win->win_size, CCU_WIN_ALIGNMENT);
-		NOTICE("%s: Aligning size to 0x%llx\n", __func__, win->win_size);
+		NOTICE("%s: Aligning size to 0x%llx\n",
+		       __func__, win->win_size);
 	}
 }
 
@@ -93,7 +98,8 @@ void ccu_enable_win(int ap_index, struct addr_map_win *win, uint32_t win_id)
 	mmio_write_32(CCU_WIN_AHR_OFFSET(ap_index, win_id), ahr);
 
 	ccu_win_reg = WIN_ENABLE_BIT;
-	ccu_win_reg |= (win->target_id & CCU_TARGET_ID_MASK) << CCU_TARGET_ID_OFFSET;
+	ccu_win_reg |= (win->target_id & CCU_TARGET_ID_MASK)
+			<< CCU_TARGET_ID_OFFSET;
 	mmio_write_32(CCU_WIN_CR_OFFSET(ap_index, win_id), ccu_win_reg);
 }
 
@@ -142,6 +148,7 @@ void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 	for (int i = 0; i < size; i++) {
 		uint64_t base;
 		uint32_t target;
+
 		win_id = MVEBU_CCU_MAX_WINS - 1 - i;
 
 		target = mmio_read_32(CCU_WIN_CR_OFFSET(ap_index, win_id));
@@ -152,7 +159,8 @@ void ccu_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 		base <<= ADDRESS_SHIFT;
 
 		if ((win->target_id != target) || (win->base_addr != base)) {
-			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
+			ERROR("%s: Trying to remove bad window-%d!\n",
+			      __func__, win_id);
 			continue;
 		}
 		ccu_disable_win(ap_index, win_id);
@@ -175,7 +183,8 @@ static uint32_t ccu_dram_target_get(int ap_index)
 
 	/* On BLE stage the AP0 DRAM window is opened by the BootROM at index 2.
 	 * All the rest of detected APs will use window at index 1.
-	 * The AP0 DRAM window is moved from index 2 to 1 during init_ccu() execution.
+	 * The AP0 DRAM window is moved from index 2 to 1 during
+	 * init_ccu() execution.
 	 */
 	const uint32_t win_id = (ap_index == 0) ? 2 : 1;
 	uint32_t target;
@@ -191,7 +200,8 @@ void ccu_dram_target_set(int ap_index, uint32_t target)
 {
 	/* On BLE stage the AP0 DRAM window is opened by the BootROM at index 2.
 	 * All the rest of detected APs will use window at index 1.
-	 * The AP0 DRAM window is moved from index 2 to 1 during init_ccu() execution.
+	 * The AP0 DRAM window is moved from index 2 to 1
+	 * during init_ccu() execution.
 	 */
 	const uint32_t win_id = (ap_index == 0) ? 2 : 1;
 	uint32_t dram_cr;
@@ -212,24 +222,25 @@ void ccu_dram_win_config(int ap_index, struct addr_map_win *win)
 	 */
 	const uint32_t win_id = (ap_index == 0) ? 2 : 1;
 #else /* end of BLE */
-	/* At the ccu_init() execution stage, DRAM windows of all APs are arranged at index 1.
-	 * The AP0 still has the old window BootROM DRAM at index 2, so the window-1 can be safely
-	 * disabled without breaking the DRAM access.
+	/* At the ccu_init() execution stage, DRAM windows of all APs
+	 * are arranged at index 1.
+	 * The AP0 still has the old window BootROM DRAM at index 2, so
+	 * the window-1 can be safely disabled without breaking the DRAM access.
 	 */
 	const uint32_t win_id = 1;
 #endif
 
 	ccu_disable_win(ap_index, win_id);
 	/* enable write secure (and clear read secure) */
-	mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id), CCU_WIN_ENA_WRITE_SECURE);
+	mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id),
+		      CCU_WIN_ENA_WRITE_SECURE);
 	ccu_win_check(win);
 	ccu_enable_win(ap_index, win, win_id);
-
-	return;
 }
 
 /* Save content of CCU window + GCR */
-static void ccu_save_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+static void ccu_save_win_range(int ap_id, int win_first,
+			       int win_last, uint32_t *buffer)
 {
 	int win_id, idx;
 	/* Save CCU */
@@ -243,7 +254,8 @@ static void ccu_save_win_range(int ap_id, int win_first, int win_last, uint32_t 
 }
 
 /* Restore content of CCU window + GCR */
-static void ccu_restore_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+static void ccu_restore_win_range(int ap_id, int win_first,
+				  int win_last, uint32_t *buffer)
 {
 	int win_id, idx;
 	/* Restore CCU */
@@ -288,25 +300,27 @@ int init_ccu(int ap_index)
 	if (win_count <= 0) {
 		INFO("No windows configurations found\n");
 	} else if (win_count > (MVEBU_CCU_MAX_WINS - 1)) {
-		ERROR("CCU memory map array greater than max available windows, set win_count to max %d\n",
+		ERROR("CCU mem map array > than max available windows (%d)\n",
 				MVEBU_CCU_MAX_WINS);
 		win_count = MVEBU_CCU_MAX_WINS;
 	}
 
-	/* Need to set GCR to DRAM before all CCU windows are disabled for securing the normal access
-	 * to DRAM location, which the ATF is running from. Once all CCU windows are set, which have to
-	 * include the dedicated DRAM window as well, the GCR can be switched to the target defined
-	 * by the platform configuration.
+	/* Need to set GCR to DRAM before all CCU windows are disabled for
+	 * securing the normal access to DRAM location, which the ATF is running
+	 * from. Once all CCU windows are set, which have to include the
+	 * dedicated DRAM window as well, the GCR can be switched to the target
+	 * defined by the platform configuration.
 	 */
 	dram_target = ccu_dram_target_get(ap_index);
 	win_reg = (dram_target & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_index), win_reg);
 
 	/* If the DRAM window was already configured at the BLE stage,
-	 * only the window target considered valid, the address range should be updated
-	 * according to the platform configuration.
+	 * only the window target considered valid, the address range should be
+	 * updated according to the platform configuration.
 	 */
-	for (dram_win = win, array_id = 0; array_id < win_count; array_id++, dram_win++) {
+	for (dram_win = win, array_id = 0; array_id < win_count;
+	     array_id++, dram_win++) {
 		if (IS_DRAM_TARGET(dram_win->target_id)) {
 			dram_win->target_id = dram_target;
 			break;
@@ -320,14 +334,16 @@ int init_ccu(int ap_index)
 	for (win_id = win_start; win_id < MVEBU_CCU_MAX_WINS; win_id++) {
 		ccu_disable_win(ap_index, win_id);
 		/* enable write secure (and clear read secure) */
-		mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id), CCU_WIN_ENA_WRITE_SECURE);
+		mmio_write_32(CCU_WIN_SCR_OFFSET(ap_index, win_id),
+			      CCU_WIN_ENA_WRITE_SECURE);
 	}
 
 	/* win_id is the index of the current ccu window
 	 * array_id is the index of the current memory map window entry
 	 */
 	for (win_id = win_start, array_id = 0;
-	    ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count)); win_id++) {
+	    ((win_id < MVEBU_CCU_MAX_WINS) && (array_id < win_count));
+	    win_id++) {
 		ccu_win_check(win);
 		ccu_enable_win(ap_index, win, win_id);
 		win++;
@@ -335,7 +351,8 @@ int init_ccu(int ap_index)
 	}
 
 	/* Get & set the default target according to board topology */
-	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK) << CCU_GCR_TARGET_OFFSET;
+	win_reg = (marvell_get_ccu_gcr_target(ap_index) & CCU_GCR_TARGET_MASK)
+		   << CCU_GCR_TARGET_OFFSET;
 	mmio_write_32(CCU_WIN_GCR_OFFSET(ap_index), win_reg);
 
 #ifdef DEBUG_ADDR_MAP

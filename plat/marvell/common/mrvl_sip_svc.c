@@ -8,10 +8,10 @@
 #include <ap_setup.h>
 #include <cache_llc.h>
 #include <debug.h>
+#include <marvell_plat_priv.h>
 #include <runtime_svc.h>
 #include <smcc.h>
 #include "comphy/phy-comphy-cp110.h"
-#include <plat_private.h>
 
 /* #define DEBUG_COMPHY */
 #ifdef DEBUG_COMPHY
@@ -45,8 +45,8 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 			       u_register_t x2,
 			       u_register_t x3,
 			       u_register_t x4,
-			      void *cookie,
-			      void *handle,
+			       void *cookie,
+			       void *handle,
 			       u_register_t flags)
 {
 	u_register_t ret;
@@ -63,12 +63,14 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 			x1 = (x1 & ~0xffffff) + MVEBU_COMPHY_OFFSET;
 
 		if ((x1 & 0xffffff) != MVEBU_COMPHY_OFFSET) {
-			ERROR("%s: Wrong smc (0x%x) address: %lx\n",  __func__, smc_fid, x1);
+			ERROR("%s: Wrong smc (0x%x) address: %lx\n",
+			      __func__, smc_fid, x1);
 			SMC_RET1(handle, SMC_UNK);
 		}
 
 		if (x2 >= MAX_LANE_NR) {
-			ERROR("%s: Wrong smc (0x%x) lane nr: %lx\n",  __func__, smc_fid, x2);
+			ERROR("%s: Wrong smc (0x%x) lane nr: %lx\n",
+			      __func__, smc_fid, x2);
 			SMC_RET1(handle, SMC_UNK);
 		}
 	}

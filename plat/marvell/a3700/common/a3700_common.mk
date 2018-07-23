@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 Marvell International Ltd.
+# Copyright (C) 2018 Marvell International Ltd.
 #
 # SPDX-License-Identifier:	BSD-3-Clause
 # https://spdx.org/licenses
@@ -36,16 +36,19 @@ endif #MARVELL_SECURE_BOOT
 TIMBUILD		:= $(DOIMAGEPATH)/script/buildtim.sh
 TIM2IMG			:= $(DOIMAGEPATH)/script/tim2img.pl
 
-# WTMI_IMG is used to specify the customized RTOS image runing over CM3 processor. By default, it
-# points to a baremetal binary of fuse programming in A3700_utils.
+# WTMI_IMG is used to specify the customized RTOS image runing over
+# Service CPU (CM3 processor). By the default, it points to a
+# baremetal binary of fuse programming in A3700_utils.
 WTMI_IMG		:= $(DOIMAGEPATH)/wtmi/fuse/build/fuse.bin
 
-# WTMI_SYSINIT_IMG is used for the system early initialization, such as AVS settings, clock-tree
-# setup and dynamic DDR PHY training. After the initialization is done, this image will be wiped out
+# WTMI_SYSINIT_IMG is used for the system early initialization,
+# such as AVS settings, clock-tree setup and dynamic DDR PHY training.
+# After the initialization is done, this image will be wiped out
 # from the memory and CM3 will continue with RTOS image or other application.
 WTMI_SYSINIT_IMG	:= $(DOIMAGEPATH)/wtmi/sys_init/build/sys_init.bin
 
-# WTMI_MULTI_IMG is composed of CM3 RTOS image (WTMI_IMG) and sys-init image (WTMI_SYSINIT_IMG).
+# WTMI_MULTI_IMG is composed of CM3 RTOS image (WTMI_IMG)
+# and sys-init image (WTMI_SYSINIT_IMG).
 WTMI_MULTI_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi.bin
 
 WTMI_ENC_IMG		:= $(DOIMAGEPATH)/wtmi/build/wtmi-enc.bin
@@ -84,31 +87,31 @@ MARVELL_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
 ATF_INCLUDES		:=	-Iinclude/common/tbbr		\
 				-Iinclude/drivers
 
-PLAT_INCLUDES		:=	-I$(PLAT_FAMILY_BASE)/$(PLAT)			\
-				-I$(PLAT_COMMON_BASE)/include			\
-				-I$(PLAT_INCLUDE_BASE)/common			\
-				-I$(MARVELL_DRV_BASE)/uart			\
-				-I$/drivers/arm/gic/common/			\
+PLAT_INCLUDES		:=	-I$(PLAT_FAMILY_BASE)/$(PLAT)		\
+				-I$(PLAT_COMMON_BASE)/include		\
+				-I$(PLAT_INCLUDE_BASE)/common		\
+				-I$(MARVELL_DRV_BASE)/uart		\
+				-I$/drivers/arm/gic/common/		\
 				$(ATF_INCLUDES)
 
-PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a3700_common.c	\
-				drivers/console/aarch64/console.S		\
-				plat/marvell/common/marvell_cci.c		\
+PLAT_BL_COMMON_SOURCES	:=	$(PLAT_COMMON_BASE)/aarch64/a3700_common.c \
+				drivers/console/aarch64/console.S	   \
+				plat/marvell/common/marvell_cci.c	   \
 				$(MARVELL_DRV_BASE)/uart/a3700_console.S
 
-BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S	\
+BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 				lib/cpus/aarch64/cortex_a53.S
 
 BL31_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/pm_src.c
 
 BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
-				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S	\
+				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 				$(PLAT_COMMON_BASE)/plat_pm.c		\
 				$(PLAT_COMMON_BASE)/a3700_dram_cs.c	\
 				$(PLAT_COMMON_BASE)/dram_win.c		\
 				$(PLAT_COMMON_BASE)/io_addr_dec.c	\
-				$(PLAT_COMMON_BASE)/marvell_plat_config.c	\
-				$(PLAT_FAMILY_BASE)/$(PLAT)/plat_bl31_setup.c	\
+				$(PLAT_COMMON_BASE)/marvell_plat_config.c     \
+				$(PLAT_FAMILY_BASE)/$(PLAT)/plat_bl31_setup.c \
 				plat/marvell/common/sys_info.c		\
 				plat/marvell/common/marvell_gicv3.c	\
 				$(MARVELL_GIC_SOURCES)			\
@@ -154,11 +157,13 @@ ifeq ($(MARVELL_SECURE_BOOT),1)
 	@echo -e "\t  Secure boot. Encrypting wtmi and boot-image \n";
 	@echo -e "\t=======================================================\n";
 	@truncate -s %16 $(WTMI_MULTI_IMG)
-	@openssl enc -aes-256-cbc -e -in $(WTMI_MULTI_IMG) -out $(WTMI_ENC_IMG) \
+	@openssl enc -aes-256-cbc -e -in $(WTMI_MULTI_IMG) \
+	-out $(WTMI_ENC_IMG) \
 	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
 	-iv `cat $(IMAGESPATH)/iv.txt` -p
 	@truncate -s %16 $(BUILD_PLAT)/$(BOOT_IMAGE);
-	@openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) -out $(BUILD_PLAT)/$(BOOT_ENC_IMAGE) \
+	@openssl enc -aes-256-cbc -e -in $(BUILD_PLAT)/$(BOOT_IMAGE) \
+	-out $(BUILD_PLAT)/$(BOOT_ENC_IMAGE) \
 	-K `cat $(IMAGESPATH)/aes-256.txt` -k 0 -nosalt \
 	-iv `cat $(IMAGESPATH)/iv.txt` -p
 endif

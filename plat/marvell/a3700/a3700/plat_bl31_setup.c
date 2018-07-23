@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #include <a3700_dram_cs.h>
+#include <armada_common.h>
 #include <dram_win.h>
 #include <io_addr_dec.h>
 #include <mmio.h>
-#include <plat_config.h>
+#include <marvell_plat_priv.h>
 #include <plat_marvell.h>
-#include <plat_private.h>
 #include <sys_info.h>
 
 /* This function passes DRAM cpu decode window information in ATF to sys info */
@@ -47,7 +48,8 @@ static void marvell_bl31_mpp_init(void)
 	 * And anyway, this bit value should be 1 in all modes,
 	 * so here we does not judge boot mode and set this bit to 1 always.
 	 */
-	mmio_setbits_32(MVEBU_NB_GPIO_OUTPUT_EN_HIGH_REG, 1 << MVEBU_GPIO_NB_SPI_PIN_MODE_OFF);
+	mmio_setbits_32(MVEBU_NB_GPIO_OUTPUT_EN_HIGH_REG,
+			1 << MVEBU_GPIO_NB_SPI_PIN_MODE_OFF);
 }
 
 /* This function overruns the same function in marvell_bl31_setup.c */

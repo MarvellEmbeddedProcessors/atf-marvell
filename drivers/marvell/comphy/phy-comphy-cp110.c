@@ -5,12 +5,14 @@
  * https://spdx.org/licenses
  */
 
+/* Marvell CP110 SoC COMPHY unit driver */
+
 #include <ap_setup.h>
 #include <debug.h>
 #include <delay_timer.h>
 #include <errno.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <spinlock.h>
 #include "mvebu.h"
 #include "comphy-cp110.h"
@@ -41,35 +43,45 @@
 
 #define COMPHY_INVERT_OFFSET	0
 #define COMPHY_INVERT_LEN	2
-#define COMPHY_INVERT_MASK	COMPHY_MASK(COMPHY_INVERT_OFFSET, COMPHY_INVERT_LEN)
+#define COMPHY_INVERT_MASK	COMPHY_MASK(COMPHY_INVERT_OFFSET, \
+						COMPHY_INVERT_LEN)
 #define COMPHY_SPEED_OFFSET	(COMPHY_INVERT_OFFSET + COMPHY_INVERT_LEN)
 #define COMPHY_SPEED_LEN	6
-#define COMPHY_SPEED_MASK	COMPHY_MASK(COMPHY_SPEED_OFFSET, COMPHY_SPEED_LEN)
+#define COMPHY_SPEED_MASK	COMPHY_MASK(COMPHY_SPEED_OFFSET, \
+						COMPHY_SPEED_LEN)
 #define COMPHY_UNIT_ID_OFFSET	(COMPHY_SPEED_OFFSET + COMPHY_SPEED_LEN)
 #define COMPHY_UNIT_ID_LEN	4
-#define COMPHY_UNIT_ID_MASK	COMPHY_MASK(COMPHY_UNIT_ID_OFFSET, COMPHY_UNIT_ID_LEN)
+#define COMPHY_UNIT_ID_MASK	COMPHY_MASK(COMPHY_UNIT_ID_OFFSET, \
+						COMPHY_UNIT_ID_LEN)
 #define COMPHY_MODE_OFFSET	(COMPHY_UNIT_ID_OFFSET + COMPHY_UNIT_ID_LEN)
 #define COMPHY_MODE_LEN		5
 #define COMPHY_MODE_MASK	COMPHY_MASK(COMPHY_MODE_OFFSET, COMPHY_MODE_LEN)
 #define COMPHY_CLK_SRC_OFFSET	(COMPHY_MODE_OFFSET + COMPHY_MODE_LEN)
 #define COMPHY_CLK_SRC_LEN	1
-#define COMPHY_CLK_SRC_MASK	COMPHY_MASK(COMPHY_CLK_SRC_OFFSET, COMPHY_CLK_SRC_LEN)
+#define COMPHY_CLK_SRC_MASK	COMPHY_MASK(COMPHY_CLK_SRC_OFFSET, \
+						COMPHY_CLK_SRC_LEN)
 #define COMPHY_PCI_WIDTH_OFFSET	(COMPHY_CLK_SRC_OFFSET + COMPHY_CLK_SRC_LEN)
 #define COMPHY_PCI_WIDTH_LEN	3
-#define COMPHY_PCI_WIDTH_MASK	COMPHY_MASK(COMPHY_PCI_WIDTH_OFFSET, COMPHY_PCI_WIDTH_LEN)
+#define COMPHY_PCI_WIDTH_MASK	COMPHY_MASK(COMPHY_PCI_WIDTH_OFFSET, \
+						COMPHY_PCI_WIDTH_LEN)
 
 #define COMPHY_MASK(offset, len)	(((1 << (len)) - 1) << (offset))
 
 /* Macro which extracts mode from lane description */
-#define COMPHY_GET_MODE(x)		(((x) & COMPHY_MODE_MASK) >> COMPHY_MODE_OFFSET)
+#define COMPHY_GET_MODE(x)		(((x) & COMPHY_MODE_MASK) >> \
+						COMPHY_MODE_OFFSET)
 /* Macro which extracts unit index from lane description */
-#define COMPHY_GET_ID(x)		(((x) & COMPHY_UNIT_ID_MASK) >> COMPHY_UNIT_ID_OFFSET)
+#define COMPHY_GET_ID(x)		(((x) & COMPHY_UNIT_ID_MASK) >> \
+						COMPHY_UNIT_ID_OFFSET)
 /* Macro which extracts speed from lane description */
-#define COMPHY_GET_SPEED(x)		(((x) & COMPHY_SPEED_MASK) >> COMPHY_SPEED_OFFSET)
+#define COMPHY_GET_SPEED(x)		(((x) & COMPHY_SPEED_MASK) >> \
+						COMPHY_SPEED_OFFSET)
 /* Macro which extracts clock source indication from lane description */
-#define COMPHY_GET_CLK_SRC(x)		(((x) & COMPHY_CLK_SRC_MASK) >> COMPHY_CLK_SRC_OFFSET)
+#define COMPHY_GET_CLK_SRC(x)		(((x) & COMPHY_CLK_SRC_MASK) >> \
+						COMPHY_CLK_SRC_OFFSET)
 /* Macro which extracts pcie width indication from lane description */
-#define COMPHY_GET_PCIE_WIDTH(x)	(((x) & COMPHY_PCI_WIDTH_MASK) >> COMPHY_PCI_WIDTH_OFFSET)
+#define COMPHY_GET_PCIE_WIDTH(x)	(((x) & COMPHY_PCI_WIDTH_MASK) >> \
+						COMPHY_PCI_WIDTH_OFFSET)
 
 #define COMPHY_SATA_MODE	0x1
 #define COMPHY_SGMII_MODE	0x2	/* SGMII 1G */
@@ -101,7 +113,7 @@
 
 #define COMPHY_PIPE_FROM_COMPHY_ADDR(x)	((x & ~0xffffff) + 0x120000)
 
-/* System controler registers */
+/* System controller registers */
 #define PCIE_MAC_RESET_MASK_PORT0	BIT(13)
 #define PCIE_MAC_RESET_MASK_PORT1	BIT(11)
 #define PCIE_MAC_RESET_MASK_PORT2	BIT(12)
@@ -110,9 +122,11 @@
 
 /* DFX register spaces */
 #define SAR_RST_PCIE0_CLOCK_CONFIG_CP1_OFFSET	(0)
-#define SAR_RST_PCIE0_CLOCK_CONFIG_CP1_MASK	(0x1 << SAR_RST_PCIE0_CLOCK_CONFIG_CP1_OFFSET)
+#define SAR_RST_PCIE0_CLOCK_CONFIG_CP1_MASK	(0x1 << \
+					SAR_RST_PCIE0_CLOCK_CONFIG_CP1_OFFSET)
 #define SAR_RST_PCIE1_CLOCK_CONFIG_CP1_OFFSET	(1)
-#define SAR_RST_PCIE1_CLOCK_CONFIG_CP1_MASK	(0x1 << SAR_RST_PCIE1_CLOCK_CONFIG_CP1_OFFSET)
+#define SAR_RST_PCIE1_CLOCK_CONFIG_CP1_MASK	(0x1 << \
+					SAR_RST_PCIE1_CLOCK_CONFIG_CP1_OFFSET)
 #define SAR_STATUS_0_REG			200
 #define DFX_FROM_COMPHY_ADDR(x)			((x & ~0xffffff) + DFX_BASE)
 
@@ -170,8 +184,11 @@ static void mvebu_cp110_get_ap_and_cp_nr(uint8_t *ap_nr, uint8_t *cp_nr, uint64_
 	       (unsigned long)MVEBU_CP_OFFSET);
 }
 
-static inline uint32_t polling_with_timeout(uintptr_t addr, uint32_t val,
-		  uint32_t mask, uint32_t usec_timout, enum reg_width_type type)
+static inline uint32_t polling_with_timeout(uintptr_t addr,
+					    uint32_t val,
+					    uint32_t mask,
+					    uint32_t usec_timeout,
+					    enum reg_width_type type)
 {
 	uint32_t data;
 
@@ -181,9 +198,9 @@ static inline uint32_t polling_with_timeout(uintptr_t addr, uint32_t val,
 			data = mmio_read_16(addr) & mask;
 		else
 			data = mmio_read_32(addr) & mask;
-	} while (data != val  && --usec_timout > 0);
+	} while (data != val  && --usec_timeout > 0);
 
-	if (usec_timout == 0)
+	if (usec_timeout == 0)
 		return data;
 
 	return 0;
@@ -191,7 +208,7 @@ static inline uint32_t polling_with_timeout(uintptr_t addr, uint32_t val,
 
 static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
 {
-	debug("<atf>: Write to address = %#010lx, data = %#010x (mask = %#010x) - ",
+	debug("<atf>: WR to addr = %#010lx, data = %#010x (mask = %#010x) - ",
 	      addr, data, mask);
 	debug("old value = %#010x ==> ", mmio_read_32(addr));
 	mmio_clrsetbits_32(addr, mask, data);
@@ -200,10 +217,12 @@ static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
 }
 
 /* Clear PIPE selector - avoid collision with previous configuration */
-static void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t comphy_index)
+static void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base,
+						 uint8_t comphy_index)
 {
 	uint32_t reg, mask, field;
-	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+	uint32_t comphy_offset =
+			COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
 
 	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
 	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET);
@@ -211,15 +230,18 @@ static void mvebu_cp110_comphy_clr_pipe_selector(uint64_t comphy_base, uint8_t c
 
 	if (field) {
 		reg &= ~mask;
-		mmio_write_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET, reg);
+		mmio_write_32(comphy_base + COMMON_SELECTOR_PIPE_REG_OFFSET,
+			     reg);
 	}
 }
 
 /* Clear PHY selector - avoid collision with previous configuration */
-static void mvebu_cp110_comphy_clr_phy_selector(uint64_t comphy_base, uint8_t comphy_index)
+static void mvebu_cp110_comphy_clr_phy_selector(uint64_t comphy_base,
+						uint8_t comphy_index)
 {
 	uint32_t reg, mask, field;
-	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+	uint32_t comphy_offset =
+			COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
 
 	mask = COMMON_SELECTOR_COMPHY_MASK << comphy_offset;
 	reg = mmio_read_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET);
@@ -232,7 +254,8 @@ static void mvebu_cp110_comphy_clr_phy_selector(uint64_t comphy_base, uint8_t co
 	 */
 	if (field) {
 		reg &= ~mask;
-		mmio_write_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET, reg);
+		mmio_write_32(comphy_base + COMMON_SELECTOR_PHY_REG_OFFSET,
+			      reg);
 	}
 }
 
@@ -241,7 +264,8 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 				     uint8_t comphy_index, uint32_t comphy_mode)
 {
 	uint32_t reg, mask;
-	uint32_t comphy_offset = COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
+	uint32_t comphy_offset =
+			COMMON_SELECTOR_COMPHYN_FIELD_WIDTH * comphy_index;
 	int mode;
 
 	/* If phy selector is used the pipe selector should be marked as
@@ -270,7 +294,8 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 			/* For comphy 0,1, and 2:
 			 * Network selector value is always 1.
 			 */
-			reg |= COMMON_SELECTOR_COMPHY0_1_2_NETWORK << comphy_offset;
+			reg |= COMMON_SELECTOR_COMPHY0_1_2_NETWORK <<
+				comphy_offset;
 			break;
 		case(3):
 			/* For comphy 3:
@@ -278,28 +303,35 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 			 * 0x2 = SGMII/HS-SGMII Port1
 			 */
 			if (mode == COMPHY_RXAUI_MODE)
-				reg |= COMMON_SELECTOR_COMPHY3_RXAUI << comphy_offset;
+				reg |= COMMON_SELECTOR_COMPHY3_RXAUI <<
+					comphy_offset;
 			else
-				reg |= COMMON_SELECTOR_COMPHY3_SGMII << comphy_offset;
+				reg |= COMMON_SELECTOR_COMPHY3_SGMII <<
+					comphy_offset;
 			break;
 		case(4):
 			 /* For comphy 4:
 			  * 0x1 = SGMII/HS-SGMII Port1, XFI1/SFI1
 			  * 0x2 = SGMII/HS-SGMII Port0: XFI0/SFI0, RXAUI_Lane0
 			  *
-			  * We want to check if SGMII1/HS_SGMII1 is the requested mode in order to
-			  * determine which value should be set (all other modes use the same value)
-			  * so we need to strip the mode, and check the ID because we might handle
-			  * SGMII0/HS_SGMII0 too.
+			  * We want to check if SGMII1/HS_SGMII1 is the
+			  * requested mode in order to determine which value
+			  * should be set (all other modes use the same value)
+			  * so we need to strip the mode, and check the ID
+			  * because we might handle SGMII0/HS_SGMII0 too.
 			  */
-			  /* TODO: need to diffrenciate between CP110 and CP115 as SFI1/XFI1
-			   * availalbe only for CP115.
+			  /* TODO: need to distinguish between CP110 and CP115
+			   * as SFI1/XFI1 available only for CP115.
 			   */
-			if ((mode == COMPHY_SGMII_MODE || mode == COMPHY_HS_SGMII_MODE ||
-			    mode == COMPHY_SFI_MODE) && COMPHY_GET_ID(comphy_mode) == 1)
-				reg |= COMMON_SELECTOR_COMPHY4_PORT1 << comphy_offset;
+			if ((mode == COMPHY_SGMII_MODE ||
+			    mode == COMPHY_HS_SGMII_MODE ||
+			    mode == COMPHY_SFI_MODE) &&
+			    COMPHY_GET_ID(comphy_mode) == 1)
+				reg |= COMMON_SELECTOR_COMPHY4_PORT1 <<
+					comphy_offset;
 			else
-				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS << comphy_offset;
+				reg |= COMMON_SELECTOR_COMPHY4_ALL_OTHERS <<
+					comphy_offset;
 			break;
 		case(5):
 			/* For comphy 5:
@@ -307,9 +339,11 @@ static void mvebu_cp110_comphy_set_phy_selector(uint64_t comphy_base,
 			 * 0x2 = RXAUI Lane1
 			 */
 			if (mode == COMPHY_RXAUI_MODE)
-				reg |= COMMON_SELECTOR_COMPHY5_RXAUI << comphy_offset;
+				reg |= COMMON_SELECTOR_COMPHY5_RXAUI <<
+					comphy_offset;
 			else
-				reg |= COMMON_SELECTOR_COMPHY5_SGMII << comphy_offset;
+				reg |= COMMON_SELECTOR_COMPHY5_SGMII <<
+					comphy_offset;
 			break;
 		}
 	}
@@ -378,13 +412,15 @@ int mvebu_cp110_comphy_is_pll_locked(uint64_t comphy_base, uint8_t comphy_index)
 
 	debug_enter();
 
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 
 	addr = sd_ip_addr + SD_EXTERNAL_STATUS0_REG;
 	data = SD_EXTERNAL_STATUS0_PLL_TX_MASK &
 		SD_EXTERNAL_STATUS0_PLL_RX_MASK;
 	mask = data;
-	data = polling_with_timeout(addr, data, mask, PLL_LOCK_TIMEOUT, REG_32BIT);
+	data = polling_with_timeout(addr, data, mask,
+				    PLL_LOCK_TIMEOUT, REG_32BIT);
 	if (data != 0) {
 		if (data & SD_EXTERNAL_STATUS0_PLL_RX_MASK)
 			ERROR("RX PLL is not locked\n");
@@ -422,10 +458,13 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 
 	/* configure phy selector for SATA */
-	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
+	mvebu_cp110_comphy_set_phy_selector(comphy_base,
+					    comphy_index, comphy_mode);
 
-	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+				comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 	comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
 
 	debug(" add hpipe 0x%lx, sd 0x%lx, comphy 0x%lx\n",
@@ -444,7 +483,8 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* Set select data  width 40Bit - SATA mode only */
 	reg_set(comphy_addr + COMMON_PHY_CFG6_REG,
-		0x1 << COMMON_PHY_CFG6_IF_40_SEL_OFFSET, COMMON_PHY_CFG6_IF_40_SEL_MASK);
+		0x1 << COMMON_PHY_CFG6_IF_40_SEL_OFFSET,
+		COMMON_PHY_CFG6_IF_40_SEL_MASK);
 
 	/* release from hard reset in SD external */
 	mask = SD_EXTERNAL_CONFIG1_RESET_IN_MASK;
@@ -460,7 +500,8 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 	/* Start comphy Configuration */
 	/* Set reference clock to comes from group 1 - choose 25Mhz */
 	reg_set(hpipe_addr + HPIPE_MISC_REG,
-		0x0 << HPIPE_MISC_REFCLK_SEL_OFFSET, HPIPE_MISC_REFCLK_SEL_MASK);
+		0x0 << HPIPE_MISC_REFCLK_SEL_OFFSET,
+		HPIPE_MISC_REFCLK_SEL_MASK);
 	/* Reference frequency select set 1 (for SATA = 25Mhz) */
 	mask = HPIPE_PWR_PLL_REF_FREQ_MASK;
 	data = 0x1 << HPIPE_PWR_PLL_REF_FREQ_OFFSET;
@@ -470,7 +511,8 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 	reg_set(hpipe_addr + HPIPE_PWR_PLL_REG, data, mask);
 	/* Set max PHY generation setting - 6Gbps */
 	reg_set(hpipe_addr + HPIPE_INTERFACE_REG,
-		0x2 << HPIPE_INTERFACE_GEN_MAX_OFFSET, HPIPE_INTERFACE_GEN_MAX_MASK);
+		0x2 << HPIPE_INTERFACE_GEN_MAX_OFFSET,
+		HPIPE_INTERFACE_GEN_MAX_MASK);
 	/* Set select data  width 40Bit (SEL_BITS[2:0]) */
 	reg_set(hpipe_addr + HPIPE_LOOPBACK_REG,
 		0x2 << HPIPE_LOOPBACK_SEL_OFFSET, HPIPE_LOOPBACK_SEL_MASK);
@@ -671,14 +713,18 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	/* DFE reset sequence */
 	reg_set(hpipe_addr + HPIPE_PWR_CTR_REG,
-		0x1 << HPIPE_PWR_CTR_RST_DFE_OFFSET, HPIPE_PWR_CTR_RST_DFE_MASK);
+		0x1 << HPIPE_PWR_CTR_RST_DFE_OFFSET,
+		HPIPE_PWR_CTR_RST_DFE_MASK);
 	reg_set(hpipe_addr + HPIPE_PWR_CTR_REG,
-		0x0 << HPIPE_PWR_CTR_RST_DFE_OFFSET, HPIPE_PWR_CTR_RST_DFE_MASK);
+		0x0 << HPIPE_PWR_CTR_RST_DFE_OFFSET,
+		HPIPE_PWR_CTR_RST_DFE_MASK);
 	/* SW reset for interrupt logic */
 	reg_set(hpipe_addr + HPIPE_PWR_CTR_REG,
-		0x1 << HPIPE_PWR_CTR_SFT_RST_OFFSET, HPIPE_PWR_CTR_SFT_RST_MASK);
+		0x1 << HPIPE_PWR_CTR_SFT_RST_OFFSET,
+		HPIPE_PWR_CTR_SFT_RST_MASK);
 	reg_set(hpipe_addr + HPIPE_PWR_CTR_REG,
-		0x0 << HPIPE_PWR_CTR_SFT_RST_OFFSET, HPIPE_PWR_CTR_SFT_RST_MASK);
+		0x0 << HPIPE_PWR_CTR_SFT_RST_OFFSET,
+		HPIPE_PWR_CTR_SFT_RST_MASK);
 
 	debug_exit();
 
@@ -694,12 +740,15 @@ static int mvebu_cp110_comphy_sgmii_power_on(uint64_t comphy_base,
 
 	debug_enter();
 
-	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+				comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 	comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
 
 	/* configure phy selector for SGMII */
-	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
+	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index,
+					    comphy_mode);
 
 	/* Confiugre the lane */
 	debug("stage: RFU configurations - hard reset comphy\n");
@@ -795,7 +844,8 @@ static int mvebu_cp110_comphy_sgmii_power_on(uint64_t comphy_base,
 	debug("stage: Analog parameters from ETP(HW)\n");
 
 	reg_set(hpipe_addr + HPIPE_G1_SET_0_REG,
-		0x1 << HPIPE_G1_SET_0_G1_TX_EMPH1_OFFSET, HPIPE_G1_SET_0_G1_TX_EMPH1_MASK);
+		0x1 << HPIPE_G1_SET_0_G1_TX_EMPH1_OFFSET,
+		HPIPE_G1_SET_0_G1_TX_EMPH1_MASK);
 
 	debug("stage: RFU configurations- Power Up PLL,Tx,Rx\n");
 	/* SERDES External Configuration */
@@ -883,12 +933,15 @@ static int mvebu_cp110_comphy_xfi_power_on(uint64_t comphy_base,
 		return -EINVAL;
 	}
 
-	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+				comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 	comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
 
 	/* configure phy selector for XFI/SFI */
-	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
+	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index,
+					    comphy_mode);
 
 	debug("stage: RFU configurations - hard reset comphy\n");
 	/* RFU configurations - hard reset comphy */
@@ -1181,9 +1234,11 @@ static int mvebu_cp110_comphy_xfi_power_on(uint64_t comphy_base,
 
 	/* check PLL rx & tx ready */
 	addr = sd_ip_addr + SD_EXTERNAL_STATUS0_REG;
-	data = SD_EXTERNAL_STATUS0_PLL_RX_MASK | SD_EXTERNAL_STATUS0_PLL_TX_MASK;
+	data = SD_EXTERNAL_STATUS0_PLL_RX_MASK |
+	       SD_EXTERNAL_STATUS0_PLL_TX_MASK;
 	mask = data;
-	data = polling_with_timeout(addr, data, mask, PLL_LOCK_TIMEOUT, REG_32BIT);
+	data = polling_with_timeout(addr, data, mask,
+				    PLL_LOCK_TIMEOUT, REG_32BIT);
 	if (data != 0) {
 		if (data & SD_EXTERNAL_STATUS0_PLL_RX_MASK)
 			ERROR("RX PLL is not locked\n");
@@ -1240,7 +1295,7 @@ static int mvebu_cp110_comphy_pcie_power_on(uint64_t comphy_base,
 	spin_lock(&cp110_mac_reset_lock);
 
 	reg = mmio_read_32(SYS_CTRL_FROM_COMPHY_ADDR(comphy_base) +
-						 SYS_CTRL_UINIT_SOFT_RESET_REG);
+						SYS_CTRL_UINIT_SOFT_RESET_REG);
 	switch (comphy_index) {
 	case COMPHY_LANE0:
 		reg |= PCIE_MAC_RESET_MASK_PORT0;
@@ -1259,7 +1314,7 @@ static int mvebu_cp110_comphy_pcie_power_on(uint64_t comphy_base,
 
 	/* Configure PIPE selector for PCIE */
 	mvebu_cp110_comphy_set_pipe_selector(comphy_base, comphy_index,
-								   comphy_mode);
+					     comphy_mode);
 
 	/*
 	 * Read SAR (Sample-At-Reset) configuration for the PCIe clock
@@ -1388,7 +1443,7 @@ static int mvebu_cp110_comphy_pcie_power_on(uint64_t comphy_base,
 		mask |= HPIPE_MISC_CLK100M_125M_MASK;
 		data |= 0x1 << HPIPE_MISC_CLK100M_125M_OFFSET;
 	}
-	/* Set PIN_TXDCLK_2X Clock Frequency Selection for outputs 500MHz clock */
+	/* Set PIN_TXDCLK_2X Clock Freq. Selection for outputs 500MHz clock */
 	mask |= HPIPE_MISC_TXDCLK_2X_MASK;
 	data |= 0x0 << HPIPE_MISC_TXDCLK_2X_OFFSET;
 	/* Enable 500MHz Clock */
@@ -1634,9 +1689,10 @@ static int mvebu_cp110_comphy_pcie_power_on(uint64_t comphy_base,
 			/* Release from PIPE soft reset
 			 * For PCIe by4 or by2:
 			 * release from soft reset all lanes - can't use
-			 *read modify write
+			 * read modify write
 			 */
-			reg_set(HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), 0) +
+			reg_set(HPIPE_ADDR(
+				COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), 0) +
 				HPIPE_RST_CLK_CTRL_REG, 0x24, 0xffffffff);
 		} else {
 			start_lane = comphy_index;
@@ -1677,7 +1733,8 @@ static int mvebu_cp110_comphy_pcie_power_on(uint64_t comphy_base,
 		debug("stage: Check PLL\n");
 		/* Read lane status */
 		for (i = start_lane; i < end_lane; i++) {
-			addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), i) +
+			addr = HPIPE_ADDR(
+				COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), i) +
 				HPIPE_LANE_STATUS1_REG;
 			data = HPIPE_LANE_STATUS1_PCLK_EN_MASK;
 			mask = data;
@@ -1706,10 +1763,12 @@ static int mvebu_cp110_comphy_rxaui_power_on(uint64_t comphy_base,
 	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
 				comphy_index);
 	comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 
 	/* configure phy selector for RXAUI */
-	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index, comphy_mode);
+	mvebu_cp110_comphy_set_phy_selector(comphy_base, comphy_index,
+					    comphy_mode);
 
 	/* RFU configurations - hard reset comphy */
 	mask = COMMON_PHY_CFG1_PWR_UP_MASK;
@@ -1790,8 +1849,8 @@ static int mvebu_cp110_comphy_rxaui_power_on(uint64_t comphy_base,
 		0x0 << HPIPE_PWR_CTR_DTL_FLOOP_EN_OFFSET,
 		HPIPE_PWR_CTR_DTL_FLOOP_EN_MASK);
 
-	/* Set analog paramters from ETP(HW) */
-	debug("stage: Analog paramters from ETP(HW)\n");
+	/* Set analog parameters from ETP(HW) */
+	debug("stage: Analog parameters from ETP(HW)\n");
 	/* SERDES External Configuration 2 */
 	reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG2_REG,
 		0x1 << SD_EXTERNAL_CONFIG2_PIN_DFE_EN_OFFSET,
@@ -1843,7 +1902,7 @@ static int mvebu_cp110_comphy_rxaui_power_on(uint64_t comphy_base,
 	if (data != 0) {
 		debug("Read from reg = %lx - value = 0x%x\n",
 		      sd_ip_addr + SD_EXTERNAL_STATUS0_REG, data);
-		ERROR("SD_EXTERNAL_STATUS0_PLL_RX is %d, SD_EXTERNAL_STATUS0_PLL_TX is %d\n",
+		ERROR("SD_EXTERNAL_STATUS0_PLL_RX is %d, -\"-_PLL_TX is %d\n",
 		      (data & SD_EXTERNAL_STATUS0_PLL_RX_MASK),
 		      (data & SD_EXTERNAL_STATUS0_PLL_TX_MASK));
 		ret = -ETIMEDOUT;
@@ -1890,7 +1949,7 @@ static int mvebu_cp110_comphy_usb3_power_on(uint64_t comphy_base,
 
 	/* Configure PIPE selector for USB3 */
 	mvebu_cp110_comphy_set_pipe_selector(comphy_base, comphy_index,
-								   comphy_mode);
+					     comphy_mode);
 
 	hpipe_addr = HPIPE_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
 				comphy_index);
@@ -2265,7 +2324,8 @@ static int mvebu_cp110_comphy_ap_power_on(uint64_t comphy_base,
 					  uint8_t comphy_index)
 {
 	uint32_t mask, data;
-	uintptr_t comphy_addr = comphy_addr = COMPHY_ADDR(comphy_base, comphy_index);
+	uintptr_t comphy_addr = comphy_addr =
+				COMPHY_ADDR(comphy_base, comphy_index);
 
 	debug_enter();
 	debug("stage: RFU configurations - hard reset comphy\n");
@@ -2292,7 +2352,8 @@ int mvebu_cp110_comphy_digital_reset(uint64_t comphy_base,
 	uintptr_t sd_ip_addr;
 	uint32_t mask, data;
 
-	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base), comphy_index);
+	sd_ip_addr = SD_ADDR(COMPHY_PIPE_FROM_COMPHY_ADDR(comphy_base),
+			     comphy_index);
 
 	switch (mode) {
 	case (COMPHY_SGMII_MODE):
@@ -2306,7 +2367,7 @@ int mvebu_cp110_comphy_digital_reset(uint64_t comphy_base,
 		reg_set(sd_ip_addr + SD_EXTERNAL_CONFIG1_REG, data, mask);
 		break;
 	default:
-		ERROR("comphy%d: COMPHY_COMMAND_DIGITAL_PWR_ON/OFF is not supported\n",
+		ERROR("comphy%d: Digital PWR ON/OFF is not supported\n",
 			comphy_index);
 			return -EINVAL;
 	}
@@ -2323,25 +2384,37 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint8_t comphy_index, uint
 
 	switch (mode) {
 	case(COMPHY_SATA_MODE):
-		err = mvebu_cp110_comphy_sata_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_sata_power_on(comphy_base,
+						       comphy_index,
+						       comphy_mode);
 		break;
 	case(COMPHY_SGMII_MODE):
 	case(COMPHY_HS_SGMII_MODE):
-		err = mvebu_cp110_comphy_sgmii_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_sgmii_power_on(comphy_base,
+							comphy_index,
+							comphy_mode);
 		break;
 	/* From comphy perspective, XFI and SFI are the same */
 	case (COMPHY_XFI_MODE):
 	case (COMPHY_SFI_MODE):
-		err = mvebu_cp110_comphy_xfi_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_xfi_power_on(comphy_base,
+						      comphy_index,
+						      comphy_mode);
 		break;
 	case (COMPHY_PCIE_MODE):
-		err = mvebu_cp110_comphy_pcie_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_pcie_power_on(comphy_base,
+						       comphy_index,
+						       comphy_mode);
 		break;
 	case (COMPHY_RXAUI_MODE):
-		err = mvebu_cp110_comphy_rxaui_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_rxaui_power_on(comphy_base,
+							comphy_index,
+							comphy_mode);
 	case (COMPHY_USB3H_MODE):
 	case (COMPHY_USB3D_MODE):
-		err = mvebu_cp110_comphy_usb3_power_on(comphy_base, comphy_index, comphy_mode);
+		err = mvebu_cp110_comphy_usb3_power_on(comphy_base,
+						       comphy_index,
+						       comphy_mode);
 		break;
 	case (COMPHY_AP_MODE):
 		err = mvebu_cp110_comphy_ap_power_on(comphy_base, comphy_index);

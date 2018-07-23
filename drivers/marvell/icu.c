@@ -7,7 +7,7 @@
 
 #include <icu.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define ICU_SET_SPI_AL(x)	(0x10 + (0x10 * x))
 #define ICU_SET_SPI_AH(x)	(0x14 + (0x10 * x))

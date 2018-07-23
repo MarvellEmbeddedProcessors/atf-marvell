@@ -11,8 +11,8 @@
 #include <a8kp_plat_def.h>
 #include <debug.h>
 #include <mmio.h>
+#include <mvebu_def.h>
 #include <plat_marvell.h>
-#include <plat_def.h>
 #include <plat_dram.h>
 
 /* Read Frequency Value from MPPS 15-17 and save

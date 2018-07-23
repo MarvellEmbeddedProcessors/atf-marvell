@@ -8,7 +8,7 @@
 #include <ap810_setup.h>
 #include <delay_timer.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define ARO_REG_BASE_ADDR(ap)			(MVEBU_DFX_SR_BASE(ap) + (0xD00))
 #define ARO_CLUSTER_REG0_ADDR(cluster, ap)	(ARO_REG_BASE_ADDR(ap) + 0x48 + ((cluster) * 0x8))
