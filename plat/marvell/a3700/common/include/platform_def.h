@@ -8,7 +8,7 @@
 #define __PLATFORM_DEF_H__
 
 #include <board_marvell_def.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #ifndef __ASSEMBLY__
 #include <stdio.h>
 #endif /* __ASSEMBLY__ */
@@ -94,9 +94,9 @@ Trusted SRAM section 0x4000000..0x4200000:
 #define PLAT_MARVELL_CPU_ENTRY_ADDR		BL1_RO_BASE
 
 /* GIC related definitions */
-#define PLAT_MARVELL_GICD_BASE			(MVEBU_REGS_BASE + MVEBU_GICD_BASE)
-#define PLAT_MARVELL_GICR_BASE			(MVEBU_REGS_BASE + MVEBU_GICR_BASE)
-#define PLAT_MARVELL_GICC_BASE			(MVEBU_REGS_BASE + MVEBU_GICC_BASE)
+#define PLAT_MARVELL_GICD_BASE		(MVEBU_REGS_BASE + MVEBU_GICD_BASE)
+#define PLAT_MARVELL_GICR_BASE		(MVEBU_REGS_BASE + MVEBU_GICR_BASE)
+#define PLAT_MARVELL_GICC_BASE		(MVEBU_REGS_BASE + MVEBU_GICC_BASE)
 
 #define PLAT_MARVELL_G0_IRQ_PROPS(grp) \
 	INTR_PROP_DESC(MARVELL_IRQ_SEC_SGI_0, GIC_HIGHEST_SEC_PRIORITY, grp, \

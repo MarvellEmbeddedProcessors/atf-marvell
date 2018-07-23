@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
@@ -8,22 +8,27 @@
 #include <debug.h>
 #include <delay_timer.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <thermal.h>
 
 #define THERMAL_TIMEOUT					1200
 
 #define THERMAL_SEN_CTRL_LSB_STRT_OFFSET		0
-#define THERMAL_SEN_CTRL_LSB_STRT_MASK			(0x1 << THERMAL_SEN_CTRL_LSB_STRT_OFFSET)
+#define THERMAL_SEN_CTRL_LSB_STRT_MASK			\
+				(0x1 << THERMAL_SEN_CTRL_LSB_STRT_OFFSET)
 #define THERMAL_SEN_CTRL_LSB_RST_OFFSET			1
-#define THERMAL_SEN_CTRL_LSB_RST_MASK			(0x1 << THERMAL_SEN_CTRL_LSB_RST_OFFSET)
+#define THERMAL_SEN_CTRL_LSB_RST_MASK			\
+				(0x1 << THERMAL_SEN_CTRL_LSB_RST_OFFSET)
 #define THERMAL_SEN_CTRL_LSB_EN_OFFSET			2
-#define THERMAL_SEN_CTRL_LSB_EN_MASK			(0x1 << THERMAL_SEN_CTRL_LSB_EN_OFFSET)
+#define THERMAL_SEN_CTRL_LSB_EN_MASK			\
+				(0x1 << THERMAL_SEN_CTRL_LSB_EN_OFFSET)
 
 #define THERMAL_SEN_CTRL_STATS_VALID_OFFSET		16
-#define THERMAL_SEN_CTRL_STATS_VALID_MASK		(0x1 << THERMAL_SEN_CTRL_STATS_VALID_OFFSET)
+#define THERMAL_SEN_CTRL_STATS_VALID_MASK		\
+				(0x1 << THERMAL_SEN_CTRL_STATS_VALID_OFFSET)
 #define THERMAL_SEN_CTRL_STATS_TEMP_OUT_OFFSET		0
-#define THERMAL_SEN_CTRL_STATS_TEMP_OUT_MASK		(0x3FF << THERMAL_SEN_CTRL_STATS_TEMP_OUT_OFFSET)
+#define THERMAL_SEN_CTRL_STATS_TEMP_OUT_MASK		\
+			(0x3FF << THERMAL_SEN_CTRL_STATS_TEMP_OUT_OFFSET)
 
 #define THERMAL_SEN_OUTPUT_MSB				512
 #define THERMAL_SEN_OUTPUT_COMP				1024
@@ -55,7 +60,8 @@ static int ext_tsen_probe(struct tsen_config *tsen_cfg)
 	mmio_write_32((uintptr_t)&base->ext_tsen_ctrl_lsb, reg);
 
 	reg = mmio_read_32((uintptr_t)&base->ext_tsen_status);
-	while ((reg & THERMAL_SEN_CTRL_STATS_VALID_MASK) == 0 && timeout < THERMAL_TIMEOUT) {
+	while ((reg & THERMAL_SEN_CTRL_STATS_VALID_MASK) == 0 &&
+	       timeout < THERMAL_TIMEOUT) {
 		udelay(100);
 		reg = mmio_read_32((uintptr_t)&base->ext_tsen_status);
 		timeout++;
@@ -68,7 +74,7 @@ static int ext_tsen_probe(struct tsen_config *tsen_cfg)
 
 	tsen_cfg->tsen_ready = 1;
 
-	INFO("thermal sensor was initialized\n");
+	VERBOSE("thermal sensor was initialized\n");
 
 	return 0;
 }
@@ -85,7 +91,8 @@ static int ext_tsen_read(struct tsen_config *tsen_cfg, int *temp)
 	base = (struct tsen_regs *)tsen_cfg->regs_base;
 
 	reg = mmio_read_32((uintptr_t)&base->ext_tsen_status);
-	reg = ((reg & THERMAL_SEN_CTRL_STATS_TEMP_OUT_MASK) >> THERMAL_SEN_CTRL_STATS_TEMP_OUT_OFFSET);
+	reg = ((reg & THERMAL_SEN_CTRL_STATS_TEMP_OUT_MASK) >>
+		THERMAL_SEN_CTRL_STATS_TEMP_OUT_OFFSET);
 
 	/*
 	 * TSEN output format is signed as a 2s complement number

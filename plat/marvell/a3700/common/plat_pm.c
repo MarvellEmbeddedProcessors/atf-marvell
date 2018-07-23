@@ -1,22 +1,23 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+#include <a3700_pm.h>
 #include <arch_helpers.h>
-#include <plat_marvell.h>
-#include <plat_private.h>
-#include <plat_def.h>
-#include <psci.h>
+#include <armada_common.h>
 #include <debug.h>
+#include <dram_win.h>
+#include <io_addr_dec.h>
 #include <mmio.h>
 #include <mvebu.h>
+#include <mvebu_def.h>
+#include <marvell_plat_priv.h>
 #include <platform.h>
-#include <a3700_pm.h>
-#include <io_addr_dec.h>
-#include <plat_config.h>
-#include <dram_win.h>
+#include <plat_marvell.h>
+#include <psci.h>
 #ifdef USE_CCI
 #include <cci.h>
 #endif
@@ -39,22 +40,36 @@
 
 /* IRQ register */
 #define MVEBU_NB_IRQ_STATUS_1_REG		(MVEBU_NB_SB_IRQ_REG_BASE)
-#define MVEBU_NB_IRQ_STATUS_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0x10)
-#define MVEBU_NB_IRQ_MASK_2_REG			(MVEBU_NB_SB_IRQ_REG_BASE + 0x18)
-#define MVEBU_SB_IRQ_STATUS_1_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0x40)
-#define MVEBU_SB_IRQ_STATUS_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0x50)
-#define MVEBU_NB_GPIO_IRQ_MASK_1_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0xC8)
-#define MVEBU_NB_GPIO_IRQ_MASK_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0xD8)
-#define MVEBU_SB_GPIO_IRQ_MASK_REG		(MVEBU_NB_SB_IRQ_REG_BASE + 0xE8)
+#define MVEBU_NB_IRQ_STATUS_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0x10)
+#define MVEBU_NB_IRQ_MASK_2_REG			(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0x18)
+#define MVEBU_SB_IRQ_STATUS_1_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0x40)
+#define MVEBU_SB_IRQ_STATUS_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0x50)
+#define MVEBU_NB_GPIO_IRQ_MASK_1_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0xC8)
+#define MVEBU_NB_GPIO_IRQ_MASK_2_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0xD8)
+#define MVEBU_SB_GPIO_IRQ_MASK_REG		(MVEBU_NB_SB_IRQ_REG_BASE + \
+						0xE8)
 #define MVEBU_NB_GPIO_IRQ_EN_LOW_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE)
-#define MVEBU_NB_GPIO_IRQ_EN_HIGH_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + 0x04)
-#define MVEBU_NB_GPIO_IRQ_STATUS_LOW_REG	(MVEBU_NB_GPIO_IRQ_REG_BASE + 0x10)
-#define MVEBU_NB_GPIO_IRQ_STATUS_HIGH_REG	(MVEBU_NB_GPIO_IRQ_REG_BASE + 0x14)
-#define MVEBU_NB_GPIO_IRQ_WK_LOW_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + 0x18)
-#define MVEBU_NB_GPIO_IRQ_WK_HIGH_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + 0x1C)
+#define MVEBU_NB_GPIO_IRQ_EN_HIGH_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + \
+						0x04)
+#define MVEBU_NB_GPIO_IRQ_STATUS_LOW_REG	(MVEBU_NB_GPIO_IRQ_REG_BASE + \
+						0x10)
+#define MVEBU_NB_GPIO_IRQ_STATUS_HIGH_REG	(MVEBU_NB_GPIO_IRQ_REG_BASE + \
+						0x14)
+#define MVEBU_NB_GPIO_IRQ_WK_LOW_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + \
+						0x18)
+#define MVEBU_NB_GPIO_IRQ_WK_HIGH_REG		(MVEBU_NB_GPIO_IRQ_REG_BASE + \
+						0x1C)
 #define MVEBU_SB_GPIO_IRQ_EN_REG		(MVEBU_SB_GPIO_IRQ_REG_BASE)
-#define MVEBU_SB_GPIO_IRQ_STATUS_REG		(MVEBU_SB_GPIO_IRQ_REG_BASE + 0x10)
-#define MVEBU_SB_GPIO_IRQ_WK_REG		(MVEBU_SB_GPIO_IRQ_REG_BASE + 0x18)
+#define MVEBU_SB_GPIO_IRQ_STATUS_REG		(MVEBU_SB_GPIO_IRQ_REG_BASE + \
+						0x10)
+#define MVEBU_SB_GPIO_IRQ_WK_REG		(MVEBU_SB_GPIO_IRQ_REG_BASE + \
+						0x18)
 
 /* PMU registers */
 #define MVEBU_PM_NB_PWR_CTRL_REG	(MVEBU_PMSU_REG_BASE)
@@ -177,9 +192,8 @@ struct wake_up_src_func_map {
 	wake_up_src_func func;
 };
 
-void psci_arch_init(int die_index)
+void marvell_psci_arch_init(int die_index)
 {
-	return;
 }
 
 static void a3700_pm_ack_irq(void)
@@ -221,7 +235,7 @@ static void a3700_pm_ack_irq(void)
  *****************************************************************************
  */
 int a3700_validate_power_state(unsigned int power_state,
-			     psci_power_state_t *req_state)
+			       psci_power_state_t *req_state)
 {
 	ERROR("a3700_validate_power_state needs to be implemented\n");
 	panic();
@@ -248,7 +262,8 @@ int a3700_pwr_domain_on(u_register_t mpidr)
 	__asm__ volatile("dsb     sy");
 
 	/* Set the cpu start address to BL1 entry point */
-	mmio_write_32(MVEBU_CPU_1_RESET_VECTOR, PLAT_MARVELL_CPU_ENTRY_ADDR >> 2);
+	mmio_write_32(MVEBU_CPU_1_RESET_VECTOR,
+		      PLAT_MARVELL_CPU_ENTRY_ADDR >> 2);
 
 	/* Get the cpu out of reset */
 	mmio_clrbits_32(MVEBU_CPU_1_RESET_REG, BIT(MVEBU_CPU_1_RESET_BIT));
@@ -282,9 +297,12 @@ void a3700_pwr_domain_off(const psci_power_state_t *target_state)
 	 * Enable Core VDD OFF, core is supposed to be powered
 	 * off by PMU when WFI command is issued.
 	 */
-	mmio_setbits_32(MVEBU_PM_CPU_0_PWR_CTRL_REG + 4 * cpu_idx, MVEBU_PM_CORE_PD);
+	mmio_setbits_32(MVEBU_PM_CPU_0_PWR_CTRL_REG + 4 * cpu_idx,
+			MVEBU_PM_CORE_PD);
 
-	/* Core can not be powered down with pending IRQ, acknowledge all the pending IRQ */
+	/* Core can not be powered down with pending IRQ,
+	 * acknowledge all the pending IRQ
+	 */
 	a3700_pm_ack_irq();
 }
 
@@ -294,22 +312,22 @@ static void a3700_set_gen_pwr_off_option(void)
 	mmio_setbits_32(MVEBU_PM_NB_CPU_PWR_CTRL_REG, MVEBU_PM_L2_FLUSH_EN);
 
 	/*
-	 * North bridge cannot be VDD off (always ON). The NB state machine support low power
-	 * mode by its state machine.
-	 * This bit MUST be set for north bridge power down, e.g., OSC input cutoff(NOT TEST),
-	 * SRAM power down, PMIC, etc.
+	 * North bridge cannot be VDD off (always ON).
+	 * The NB state machine support low power mode by its state machine.
+	 * This bit MUST be set for north bridge power down, e.g.,
+	 * OSC input cutoff(NOT TEST), SRAM power down, PMIC, etc.
 	 * It is not related to CPU VDD OFF!!
 	 */
 	mmio_clrbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_CPU_VDDV_OFF_EN);
 
 	/*
 	 * MUST: Switch CPU/AXI clock to OSC
-	 * NB state machine clock is always connected to OSC (slow clock). But Core0/1/processor
-	 * state machine's clock are connected to AXI clock. Now, AXI clock takes the
-	 * TBG as clock source.
-	 * If using AXI clock, Core0/1/processor state machine may much faster than
-	 * NB state machine. It will cause problem in this case if cores are released
-	 * before north bridge gets ready.
+	 * NB state machine clock is always connected to OSC (slow clock).
+	 * But Core0/1/processor state machine's clock are connected to AXI
+	 *  clock. Now, AXI clock takes the TBG as clock source.
+	 * If using AXI clock, Core0/1/processor state machine may much faster
+	 * than NB state machine. It will cause problem in this case if cores
+	 * are released before north bridge gets ready.
 	 */
 	mmio_clrbits_32(MVEBU_NB_CLOCK_SEL_REG, MVEBU_A53_CPU_CLK_SEL);
 
@@ -328,9 +346,10 @@ static void a3700_set_gen_pwr_off_option(void)
 
 	/*
 	 * Idle AXI interface in order to get L2_WFI
-	 * L2 WFI is only asserted after CORE-0 and CORE-1 WFI asserted. (only both core-0/1
-	 * in WFI, L2 WFI will be issued by CORE.)
-	 * Once L2 WFI asserted, this bit is used for signalling assertion to AXI IO masters.
+	 * L2 WFI is only asserted after CORE-0 and CORE-1 WFI asserted.
+	 * (only both core-0/1in WFI, L2 WFI will be issued by CORE.)
+	 * Once L2 WFI asserted, this bit is used for signalling assertion
+	 * to AXI IO masters.
 	 */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_CTRL_REG, MVEBU_PM_INTERFACE_IDLE);
 
@@ -352,37 +371,47 @@ static void a3700_set_gen_pwr_off_option(void)
 static void a3700_en_ddr_self_refresh(void)
 {
 	/*
-	 * Both count is 16 bits and configurable. By default, osc stb cnt is 0xFFF for lower 12 bits.
+	 * Both count is 16 bits and configurable. By default, osc stb cnt
+	 * is 0xFFF for lower 12 bits.
 	 * Thus, powerdown count is smaller than osc count.
 	 * This count is used for exiting DDR SR mode on wakeup event.
 	 * The powerdown count also has impact on the following
 	 * state changes: idle -> count-down -> ... (power-down, vdd off, etc)
 	 * Here, make stable counter shorter
-	 * Use power down count value instead of osc_stb_cnt to speed up DDR self refresh exit
+	 * Use power down count value instead of osc_stb_cnt to speed up
+	 * DDR self refresh exit
 	 */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_CTRL_REG, MVEBU_PM_PWR_DN_CNT_SEL);
 
 	/*
 	 * Enable DDR SR mode => controlled by north bridge state machine
-	 * Therefore, we must powerdown north bridge to trigger the DDR SR mode switching.
+	 * Therefore, we must powerdown north bridge to trigger the DDR SR
+	 * mode switching.
 	 */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_DDR_SR_EN);
 	/* Disable DDR clock, otherwise DDR will not enter into SR mode. */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_DDR_CLK_DIS_EN);
 	/* Power down DDR PHY (PAD) */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_DDRPHY_PWRDWN_EN);
-	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_DDRPHY_PAD_PWRDWN_EN);
+	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG,
+			MVEBU_PM_DDRPHY_PAD_PWRDWN_EN);
 
 	/* Set wait time for DDR ready in ROM code */
-	mmio_write_32(MVEBU_PM_CPU_VDD_OFF_INFO_1_REG, MVEBU_PM_WAIT_DDR_RDY_VALUE);
+	mmio_write_32(MVEBU_PM_CPU_VDD_OFF_INFO_1_REG,
+		      MVEBU_PM_WAIT_DDR_RDY_VALUE);
 
 	/* DDR flush write buffer - mandatory */
-	mmio_write_32(MVEBU_DRAM_CMD_0_REG, MVEBU_DRAM_CH0_CMD0 | MVEBU_DRAM_CS_CMD0 | MVEBU_DRAM_WCB_DRAIN_REQ);
-	while ((mmio_read_32(MVEBU_DRAM_STATS_CH0_REG) & MVEBU_DRAM_WCP_EMPTY) != MVEBU_DRAM_WCP_EMPTY)
+	mmio_write_32(MVEBU_DRAM_CMD_0_REG, MVEBU_DRAM_CH0_CMD0 |
+		      MVEBU_DRAM_CS_CMD0 | MVEBU_DRAM_WCB_DRAIN_REQ);
+	while ((mmio_read_32(MVEBU_DRAM_STATS_CH0_REG) &
+			     MVEBU_DRAM_WCP_EMPTY) != MVEBU_DRAM_WCP_EMPTY)
 		;
 
-	/* Trigger PHY reset after ddr out of self refresh => supply reset pulse for DDR phy after wake up. */
-	mmio_setbits_32(MVEBU_DRAM_PWR_CTRL_REG, MVEBU_DRAM_PHY_CLK_GATING_EN | MVEBU_DRAM_PHY_AUTO_AC_OFF_EN);
+	/* Trigger PHY reset after ddr out of self refresh =>
+	 * supply reset pulse for DDR phy after wake up
+	 */
+	mmio_setbits_32(MVEBU_DRAM_PWR_CTRL_REG, MVEBU_DRAM_PHY_CLK_GATING_EN |
+						 MVEBU_DRAM_PHY_AUTO_AC_OFF_EN);
 }
 
 static void a3700_pwr_dn_avs(void)
@@ -443,7 +472,9 @@ static void a3700_set_pwr_off_option(void)
 	/* Power down TBG */
 	a3700_pwr_dn_tbg();
 
-	/* Power down south bridge, pay attention south bridge setting should be done before */
+	/* Power down south bridge, pay attention south bridge setting
+	 * should be done before
+	 */
 	a3700_pwr_dn_sb();
 }
 
@@ -456,7 +487,8 @@ static void a3700_set_wake_up_option(void)
 	mmio_setbits_32(MVEBU_PM_NB_WAKE_UP_EN_REG, MVEBU_PM_NB_WKP_EN);
 
 	 /* Enable both core0 and core1 wakeup on demand */
-	mmio_setbits_32(MVEBU_PM_CPU_WAKE_UP_CONF_REG, MVEBU_PM_CORE1_WAKEUP | MVEBU_PM_CORE0_WAKEUP);
+	mmio_setbits_32(MVEBU_PM_CPU_WAKE_UP_CONF_REG,
+			MVEBU_PM_CORE1_WAKEUP | MVEBU_PM_CORE0_WAKEUP);
 
 	/* Enable warm reset in low power mode */
 	mmio_setbits_32(MVEBU_PM_NB_PWR_OPTION_REG, MVEBU_PM_WARM_RESET_EN);
@@ -479,21 +511,27 @@ static void a3700_pm_en_nb_gpio(uint32_t gpio)
 		mmio_setbits_32(MVEBU_NB_GPIO_IRQ_EN_LOW_REG, BIT(gpio));
 	}
 
-	mmio_setbits_32(MVEBU_NB_STEP_DOWN_INT_EN_REG, MVEBU_NB_GPIO_INT_WAKE_WCPU_CLK);
+	mmio_setbits_32(MVEBU_NB_STEP_DOWN_INT_EN_REG,
+			MVEBU_NB_GPIO_INT_WAKE_WCPU_CLK);
 
-	/* Enable using GPIO as wakeup event (actually not only for north bridge) */
+	/* Enable using GPIO as wakeup event
+	 * (actually not only for north bridge)
+	 */
 	mmio_setbits_32(MVEBU_PM_NB_WAKE_UP_EN_REG, MVEBU_PM_NB_GPIO_WKP_EN |
-		MVEBU_PM_NB_WKP_EN | MVEBU_PM_CORE1_FIQ_IRQ_WKP_EN | MVEBU_PM_CORE0_FIQ_IRQ_WKP_EN);
+		MVEBU_PM_NB_WKP_EN | MVEBU_PM_CORE1_FIQ_IRQ_WKP_EN |
+		MVEBU_PM_CORE0_FIQ_IRQ_WKP_EN);
 }
 
 static void a3700_pm_en_sb_gpio(uint32_t gpio)
 {
 	/* Enable using GPIO as wakeup event */
 	mmio_setbits_32(MVEBU_PM_NB_WAKE_UP_EN_REG, MVEBU_PM_SB_WKP_NB_EN |
-		MVEBU_PM_NB_WKP_EN | MVEBU_PM_CORE1_FIQ_IRQ_WKP_EN | MVEBU_PM_CORE0_FIQ_IRQ_WKP_EN);
+		MVEBU_PM_NB_WKP_EN | MVEBU_PM_CORE1_FIQ_IRQ_WKP_EN |
+		MVEBU_PM_CORE0_FIQ_IRQ_WKP_EN);
 
 	/* SB GPIO Wake UP | South Bridge Wake Up Enable */
-	mmio_setbits_32(MVEBU_PM_SB_WK_EN_REG, MVEBU_PM_SB_GPIO_WKP_EN | MVEBU_PM_SB_GPIO_WKP_EN);
+	mmio_setbits_32(MVEBU_PM_SB_WK_EN_REG, MVEBU_PM_SB_GPIO_WKP_EN |
+			MVEBU_PM_SB_GPIO_WKP_EN);
 
 	/* GPIO int mask */
 	mmio_clrbits_32(MVEBU_SB_GPIO_IRQ_MASK_REG, BIT(gpio));
@@ -548,7 +586,8 @@ struct wake_up_src_func_map src_func_table[WAKE_UP_SRC_MAX] = {
 	{WAKE_UP_SRC_TIMER, NULL}
 };
 
-static wake_up_src_func a3700_get_wake_up_src_func(enum pm_wake_up_src_type type)
+static wake_up_src_func a3700_get_wake_up_src_func(
+						  enum pm_wake_up_src_type type)
 {
 	uint32_t loop;
 	for (loop = 0; loop < WAKE_UP_SRC_MAX; loop++) {
@@ -566,7 +605,8 @@ static void a3700_set_wake_up_source(void)
 
 	wake_up_src = mv_wake_up_src_config_get();
 	for (loop = 0; loop < wake_up_src->wake_up_src_num; loop++) {
-		src_func = a3700_get_wake_up_src_func(wake_up_src->wake_up_src[loop].wake_up_src_type);
+		src_func = a3700_get_wake_up_src_func(
+			   wake_up_src->wake_up_src[loop].wake_up_src_type);
 		if (src_func)
 			src_func(&(wake_up_src->wake_up_src[loop].wake_up_data));
 	}
@@ -577,19 +617,22 @@ static void a3700_set_wake_up_source(void)
 static void a3700_pm_save_lp_flag(void)
 {
 	/* Save the flag for enter the low power mode */
-	mmio_setbits_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG, MVEBU_PM_LOW_POWER_STATE);
+	mmio_setbits_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG,
+			MVEBU_PM_LOW_POWER_STATE);
 }
 
 static void a3700_pm_clear_lp_flag(void)
 {
 	/* Clear the flag for enter the low power mode */
-	mmio_clrbits_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG, MVEBU_PM_LOW_POWER_STATE);
+	mmio_clrbits_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG,
+			MVEBU_PM_LOW_POWER_STATE);
 }
 
 static uint32_t a3700_pm_get_lp_flag(void)
 {
 	/* Get the flag for enter the low power mode */
-	return mmio_read_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG) & MVEBU_PM_LOW_POWER_STATE;
+	return mmio_read_32(MVEBU_PM_CPU_VDD_OFF_INFO_2_REG) &
+			    MVEBU_PM_LOW_POWER_STATE;
 }
 
 /*****************************************************************************
@@ -634,7 +677,7 @@ void a3700_pwr_domain_suspend(const psci_power_state_t *target_state)
 void a3700_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	/* arch specific configuration */
-	psci_arch_init(0);
+	marvell_psci_arch_init(0);
 
 	/* Per-CPU interrupt initialization */
 	plat_marvell_gic_pcpu_init();
@@ -660,7 +703,7 @@ void a3700_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	struct dram_win_map dram_wins_map;
 
 	/* arch specific configuration */
-	psci_arch_init(0);
+	marvell_psci_arch_init(0);
 
 	/* Interrupt initialization */
 	plat_marvell_gic_init();
@@ -726,9 +769,6 @@ static void __dead2 a3700_system_off(void)
 {
 	ERROR("a3700_system_off needs to be implemented\n");
 	panic();
-	wfi();
-	ERROR("A3700 System Off: operation not handled.\n");
-	panic();
 }
 
 /*****************************************************************************
@@ -744,7 +784,8 @@ static void __dead2 a3700_system_reset(void)
 
 	/* Flush data cache if the mail box shared RAM is cached */
 #if PLAT_MARVELL_SHARED_RAM_CACHED
-	flush_dcache_range((uintptr_t)PLAT_MARVELL_MAILBOX_BASE, 2 * sizeof(uint64_t));
+	flush_dcache_range((uintptr_t)PLAT_MARVELL_MAILBOX_BASE,
+			   2 * sizeof(uint64_t));
 #endif
 
 	/* Trigger the warm reset */

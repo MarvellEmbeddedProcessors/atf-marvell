@@ -1,4 +1,4 @@
-# Copyright (C) 2016 - 2018 Marvell International Ltd.
+# Copyright (C) 2018 Marvell International Ltd.
 #
 # SPDX-License-Identifier:     BSD-3-Clause
 # https://spdx.org/licenses
@@ -20,8 +20,8 @@ $(eval $(call add_define,ARO_ENABLE))
 LLC_ENABLE			:= 1
 $(eval $(call add_define,LLC_ENABLE))
 
-PLAT_INCLUDES		+=	-I.	-Iinclude/common/tbbr		       \
-				-I$(MARVELL_PLAT_INCLUDE_BASE)/common	       \
+PLAT_INCLUDES		+=	-I. -Iinclude/common/tbbr		\
+				-I$(MARVELL_PLAT_INCLUDE_BASE)/common	\
 				-I$(MARVELL_PLAT_INCLUDE_BASE)/common/aarch64
 
 

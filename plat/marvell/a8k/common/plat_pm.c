@@ -5,6 +5,7 @@
  * https://spdx.org/licenses
  */
 
+#include <armada_common.h>
 #include <assert.h>
 #include <bakery_lock.h>
 #include <debug.h>
@@ -15,7 +16,6 @@
 #include <marvell_pm.h>
 #include <mmio.h>
 #include <mss_pm_ipc.h>
-#include <plat_config.h>
 #include <plat_marvell.h>
 #include <platform.h>
 #include <plat_pm_trace.h>
@@ -58,7 +58,7 @@
 DEFINE_BAKERY_LOCK(pm_sys_lock);
 
 /* Weak definitions may be overridden in specific board */
-#pragma weak plat_get_pm_cfg
+#pragma weak plat_marvell_get_pm_cfg
 
 /* AP806 CPU power down /power up definitions */
 enum CPU_ID {
@@ -70,9 +70,11 @@ enum CPU_ID {
 
 #define REG_WR_VALIDATE_TIMEOUT		(2000)
 
-#define FEATURE_DISABLE_STATUS_REG			(MVEBU_REGS_BASE + 0x6F8230)
+#define FEATURE_DISABLE_STATUS_REG			\
+			(MVEBU_REGS_BASE + 0x6F8230)
 #define FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET	4
-#define FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK		(0x1 << FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET)
+#define FEATURE_DISABLE_STATUS_CPU_CLUSTER_MASK		\
+			(0x1 << FEATURE_DISABLE_STATUS_CPU_CLUSTER_OFFSET)
 
 #ifdef MVEBU_SOC_AP807
 	#define PWRC_CPUN_CR_PWR_DN_RQ_OFFSET		1
@@ -82,21 +84,29 @@ enum CPU_ID {
 	#define PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET	31
 #endif
 
-#define PWRC_CPUN_CR_REG(cpu_id)		(MVEBU_REGS_BASE + 0x680000 + (cpu_id * 0x10))
-#define PWRC_CPUN_CR_PWR_DN_RQ_MASK		(0x1 << PWRC_CPUN_CR_PWR_DN_RQ_OFFSET)
+#define PWRC_CPUN_CR_REG(cpu_id)		\
+			(MVEBU_REGS_BASE + 0x680000 + (cpu_id * 0x10))
+#define PWRC_CPUN_CR_PWR_DN_RQ_MASK		\
+			(0x1 << PWRC_CPUN_CR_PWR_DN_RQ_OFFSET)
 #define PWRC_CPUN_CR_ISO_ENABLE_OFFSET		16
-#define PWRC_CPUN_CR_ISO_ENABLE_MASK		(0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)
-#define PWRC_CPUN_CR_LDO_BYPASS_RDY_MASK	(0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)
+#define PWRC_CPUN_CR_ISO_ENABLE_MASK		\
+			(0x1 << PWRC_CPUN_CR_ISO_ENABLE_OFFSET)
+#define PWRC_CPUN_CR_LDO_BYPASS_RDY_MASK	\
+			(0x1 << PWRC_CPUN_CR_LDO_BYPASS_RDY_OFFSET)
 
-#define CCU_B_PRCRN_REG(cpu_id)			(MVEBU_REGS_BASE + 0x1A50 + \
+#define CCU_B_PRCRN_REG(cpu_id)			\
+			(MVEBU_REGS_BASE + 0x1A50 + \
 						((cpu_id / 2) * (0x400)) + ((cpu_id % 2) * 4))
 #define CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET	0
-#define CCU_B_PRCRN_CPUPORESET_STATIC_MASK	(0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)
+#define CCU_B_PRCRN_CPUPORESET_STATIC_MASK	\
+			(0x1 << CCU_B_PRCRN_CPUPORESET_STATIC_OFFSET)
 
 /* power switch fingers */
-#define AP807_PWRC_LDO_CR0_REG			(MVEBU_REGS_BASE + 0x680000 + 0x100)
+#define AP807_PWRC_LDO_CR0_REG			\
+			(MVEBU_REGS_BASE + 0x680000 + 0x100)
 #define AP807_PWRC_LDO_CR0_OFFSET		16
-#define AP807_PWRC_LDO_CR0_MASK			(0xff << AP807_PWRC_LDO_CR0_OFFSET)
+#define AP807_PWRC_LDO_CR0_MASK			\
+			(0xff << AP807_PWRC_LDO_CR0_OFFSET)
 #define AP807_PWRC_LDO_CR0_VAL			0xfd
 
 /*
@@ -456,7 +466,7 @@ static void a8k_pwr_domain_off(const psci_power_state_t *target_state)
 }
 
 /* Get PM config to power off the SoC */
-void *plat_get_pm_cfg(void)
+void *plat_marvell_get_pm_cfg(void)
 {
 	return NULL;
 }
@@ -468,9 +478,9 @@ void *plat_get_pm_cfg(void)
  * the system recovery
  *
  */
-static void plat_exit_bootrom(void)
+static void plat_marvell_exit_bootrom(void)
 {
-	exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
+	marvell_exit_bootrom(PLAT_MARVELL_TRUSTED_ROM_BASE);
 }
 
 /*
@@ -607,12 +617,13 @@ static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 		gicv2_cpuif_disable();
 
 		mailbox[MBOX_IDX_SUSPEND_MAGIC] = MVEBU_MAILBOX_SUSPEND_STATE;
-		mailbox[MBOX_IDX_ROM_EXIT_ADDR] = (uintptr_t)&plat_exit_bootrom;
+		mailbox[MBOX_IDX_ROM_EXIT_ADDR] =
+					(uintptr_t)&plat_marvell_exit_bootrom;
 
 #if PLAT_MARVELL_SHARED_RAM_CACHED
 		flush_dcache_range(PLAT_MARVELL_MAILBOX_BASE +
-		MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
-		2 * sizeof(uintptr_t));
+				   MBOX_IDX_SUSPEND_MAGIC * sizeof(uintptr_t),
+				   2 * sizeof(uintptr_t));
 #endif
 		/* Flush and disable LLC before going off-power */
 		llc_disable(0);
@@ -636,7 +647,7 @@ static void a8k_pwr_domain_suspend(const psci_power_state_t *target_state)
 static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	/* arch specific configuration */
-	psci_arch_init(0);
+	marvell_psci_arch_init(0);
 
 	/* Interrupt initialization */
 	gicv2_pcpu_distif_init();
@@ -656,11 +667,12 @@ static void a8k_pwr_domain_on_finish(const psci_power_state_t *target_state)
  * context. Need to implement a separate suspend finisher.
  *****************************************************************************
  */
-static void a8k_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
+static void a8k_pwr_domain_suspend_finish(
+					const psci_power_state_t *target_state)
 {
 	if (is_pm_fw_running()) {
 		/* arch specific configuration */
-		psci_arch_init(0);
+		marvell_psci_arch_init(0);
 
 		/* Interrupt initialization */
 		gicv2_cpuif_enable();
@@ -714,7 +726,7 @@ static void
 __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 {
 	const struct power_off_method *pm_cfg =
-			(const struct power_off_method *)plat_get_pm_cfg();
+		(const struct power_off_method *)plat_marvell_get_pm_cfg();
 	unsigned int srcmd;
 	unsigned int sdram_reg;
 	register_t gpio_data = 0, gpio_addr = 0;
@@ -781,9 +793,6 @@ __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 static void __dead2 a8k_system_off(void)
 {
 	ERROR("%s:  needs to be implemented\n", __func__);
-	panic();
-	wfi();
-	ERROR("%s: operation not handled.\n", __func__);
 	panic();
 }
 

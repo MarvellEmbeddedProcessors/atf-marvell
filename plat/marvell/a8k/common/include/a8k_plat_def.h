@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
-#ifndef __MVEBU_A8K_DEF_H__
-#define __MVEBU_A8K_DEF_H__
+#ifndef __A8K_PLAT_DEF_H__
+#define __A8K_PLAT_DEF_H__
 
 #include <marvell_def.h>
 
@@ -55,9 +55,11 @@
 #define MVEBU_PM_MPP_REGS(cp_index, n)	(MVEBU_CP_REGS_BASE(cp_index) + \
 							0x440000 + ((n / 8) << 2))
 #define MVEBU_CP_GPIO_DATA_OUT(cp_index, n) \
-					(MVEBU_CP_REGS_BASE(cp_index) + 0x440100 + ((n > 32) ? 0x40 : 0x00))
+					(MVEBU_CP_REGS_BASE(cp_index) + \
+					0x440100 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_CP_GPIO_DATA_OUT_EN(cp_index, n) \
-					(MVEBU_CP_REGS_BASE(cp_index) + 0x440104 + ((n > 32) ? 0x40 : 0x00))
+					(MVEBU_CP_REGS_BASE(cp_index) + \
+					0x440104 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_CP_GPIO_DATA_IN(cp_index, n) (MVEBU_CP_REGS_BASE(cp_index) + \
 					0x440110 + ((n > 32) ? 0x40 : 0x00))
 #define MVEBU_AP_MPP_REGS(n)		(MVEBU_RFU_BASE + 0x4000 + ((n) << 2))
@@ -67,25 +69,30 @@
 #define MVEBU_CP0_I2C_BASE		(MVEBU_CP_REGS_BASE(0) + 0x701000)
 #define MVEBU_AP_EXT_TSEN_BASE		(MVEBU_RFU_BASE + 0x8084)
 
-#define MVEBU_AP_MC_TRUSTZONE_REG_LOW(ap, win)	(MVEBU_REGS_BASE_AP(ap) + 0x20080 + ((win) * 0x8))
-#define MVEBU_AP_MC_TRUSTZONE_REG_HIGH(ap, win)	(MVEBU_REGS_BASE_AP(ap) + 0x20084 + ((win) * 0x8))
+#define MVEBU_AP_MC_TRUSTZONE_REG_LOW(ap, win)	(MVEBU_REGS_BASE_AP(ap) + \
+							0x20080 + ((win) * 0x8))
+#define MVEBU_AP_MC_TRUSTZONE_REG_HIGH(ap, win)	(MVEBU_REGS_BASE_AP(ap) + \
+							0x20084 + ((win) * 0x8))
 
 /* MCI indirect access definitions */
 #define MCI_MAX_UNIT_ID				2
 /* SoC RFU / IHBx4 Control */
-#define MCIX4_REG_START_ADDRESS_REG(unit_id)	(MVEBU_RFU_BASE + 0x4218 + (unit_id * 0x20))
+#define MCIX4_REG_START_ADDRESS_REG(unit_id)	(MVEBU_RFU_BASE + \
+						0x4218 + (unit_id * 0x20))
 #define MCI_REMAP_OFF_SHIFT			8
 
-#define MVEBU_MCI_REG_BASE_REMAP(index)		(0xFD000000 + ((index) * 0x1000000))
+#define MVEBU_MCI_REG_BASE_REMAP(index)		(0xFD000000 + \
+						((index) * 0x1000000))
 
 #define MVEBU_PCIE_X4_MAC_BASE(x)	(MVEBU_CP_REGS_BASE(x) + 0x600000)
 #define MVEBU_COMPHY_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x441000)
 #define MVEBU_HPIPE_BASE(x)		(MVEBU_CP_REGS_BASE(x) + 0x120000)
 #define MVEBU_CP_DFX_OFFSET		(0x400200)
 
-/*******************************************************************************
+/*****************************************************************************
  * MVEBU memory map related constants
- ******************************************************************************/
+ *****************************************************************************
+ */
 /* Aggregate of all devices in the first GB */
 #define DEVICE0_BASE			MVEBU_REGS_BASE
 #define DEVICE0_SIZE			0x10000000
@@ -96,17 +103,19 @@
 #define PCIE_ECAM_BUS1_BASE		(PCIE_ECAM_BASE + PCIE_ECAM_BUS0_SIZE)
 #define PCIE_ECAM_BUS1_SIZE		(PCIE_ECAM_SIZE - PCIE_ECAM_BUS0_SIZE)
 
-/*******************************************************************************
+/*****************************************************************************
  * GIC-400 & interrupt handling related constants
- ******************************************************************************/
+ *****************************************************************************
+ */
 /* Base MVEBU compatible GIC memory map */
 #define MVEBU_GICD_BASE			0x210000
 #define MVEBU_GICC_BASE			0x220000
 
 
-/*******************************************************************************
+/*****************************************************************************
  * AXI Configuration
- ******************************************************************************/
+ *****************************************************************************
+ */
 #define MVEBU_AXI_ATTR_ARCACHE_OFFSET		4
 #define MVEBU_AXI_ATTR_ARCACHE_MASK		(0xF << \
 						 MVEBU_AXI_ATTR_ARCACHE_OFFSET)
@@ -139,9 +148,9 @@
 #define DOMAIN_OUTER_SHAREABLE			0x2
 #define DOMAIN_SYSTEM_SHAREABLE			0x3
 
-/*************************************************************************
+/************************************************************************
  * Required platform porting definitions common to all
- * Mangement Compute SubSystems (MSS)
+ * Management Compute SubSystems (MSS)
  ************************************************************************
  */
 /*

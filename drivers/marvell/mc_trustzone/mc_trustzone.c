@@ -8,7 +8,7 @@
 #include <addr_map.h>
 #include <debug.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include "mc_trustzone.h"
 
 #define TZ_SIZE(x)		((x) >> 13)

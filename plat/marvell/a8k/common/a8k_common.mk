@@ -13,6 +13,8 @@ PLAT_COMMON_BASE	:= $(PLAT_FAMILY_BASE)/common
 MARVELL_DRV_BASE	:= drivers/marvell
 MARVELL_COMMON_BASE	:= plat/marvell/common
 
+$(eval $(call add_define,PLAT_FAMILY))
+
 ERRATA_A72_859971	:= 1
 
 # Enable MSS support for a8k family
@@ -61,15 +63,15 @@ BLE_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/dram_port.c \
 
 MARVELL_MOCHI_DRV	+=	$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
 
-BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c		\
-				$(MARVELL_MOCHI_DRV)			       \
-				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	 	\
-				$(PLAT_COMMON_BASE)/plat_pm.c		 	\
-				$(MARVELL_DRV_BASE)/aro.c	         	\
-				$(MARVELL_DRV_BASE)/thermal.c			\
-				$(PLAT_COMMON_BASE)/plat_thermal.c		\
-				$(BLE_PORTING_SOURCES)				\
-				$(MARVELL_DRV_BASE)/ccu.c			\
+BLE_SOURCES		:=	$(PLAT_COMMON_BASE)/plat_ble_setup.c	\
+				$(MARVELL_MOCHI_DRV)			\
+				$(MARVELL_DRV_BASE)/i2c/a8k_i2c.c	\
+				$(PLAT_COMMON_BASE)/plat_pm.c		\
+				$(MARVELL_DRV_BASE)/aro.c		\
+				$(MARVELL_DRV_BASE)/thermal.c		\
+				$(PLAT_COMMON_BASE)/plat_thermal.c	\
+				$(BLE_PORTING_SOURCES)			\
+				$(MARVELL_DRV_BASE)/ccu.c		\
 				$(MARVELL_DRV_BASE)/io_win.c
 
 ifeq (${PCI_EP_SUPPORT}, 1)

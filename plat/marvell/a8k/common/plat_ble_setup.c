@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
 #include <ap_setup.h>
+#include <armada_common.h>
 #include <aro.h>
 #include <ccu.h>
 #include <cp110_setup.h>
 #include <debug.h>
 #include <io_win.h>
 #include <mv_ddr_if.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <plat_marvell.h>
 
 /* Register for skip image use */
@@ -84,18 +84,18 @@
 #define AP807_CPU_ARO_SEL_PLL_MASK	(0x1 << AP807_CPU_ARO_SEL_PLL_OFFSET)
 
 /*
- - AVS work points in the LD0 eFuse:
-	SVC1 work point:     LD0[88:81]
-	SVC2 work point:     LD0[96:89]
-	SVC3 work point:     LD0[104:97]
-	SVC4 work point:     LD0[112:105]
- - Identification information in the LD-0 eFuse:
-	DRO:           LD0[74:65] - Not used by the SW
-	Revision:      LD0[78:75] - Not used by the SW
-	Bin:           LD0[80:79] - Not used by the SW
-	SW Revision:   LD0[115:113]
-	Cluster 1 PWR: LD0[193] - if set to 1, power down CPU Cluster-1
-				  resulting in 2 CPUs active only (7020)
+ * - AVS work points in the LD0 eFuse:
+ *	SVC1 work point:     LD0[88:81]
+ *	SVC2 work point:     LD0[96:89]
+ *	SVC3 work point:     LD0[104:97]
+ *	SVC4 work point:     LD0[112:105]
+ * - Identification information in the LD-0 eFuse:
+ *	DRO:           LD0[74:65] - Not used by the SW
+ *	Revision:      LD0[78:75] - Not used by the SW
+ *	Bin:           LD0[80:79] - Not used by the SW
+ *	SW Revision:   LD0[115:113]
+ *	Cluster 1 PWR: LD0[193] - if set to 1, power down CPU Cluster-1
+ *				  resulting in 2 CPUs active only (7020)
 */
 #define MVEBU_AP_LD_EFUSE_BASE		(MVEBU_AP_GEN_MGMT_BASE + 0xF00)
 /* Bits [94:63] - 32 data bits total */
@@ -128,7 +128,8 @@ static unsigned int ble_get_ap_type(void)
 	unsigned int chip_rev_id;
 
 	chip_rev_id = mmio_read_32(MVEBU_CSS_GWD_CTRL_IIDR2_REG);
-	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >> GWD_IIDR2_CHIP_ID_OFFSET);
+	chip_rev_id = ((chip_rev_id & GWD_IIDR2_CHIP_ID_MASK) >>
+			GWD_IIDR2_CHIP_ID_OFFSET);
 
 	return chip_rev_id;
 }
@@ -136,15 +137,15 @@ static unsigned int ble_get_ap_type(void)
 /******************************************************************************
  * The routine allows to save the CCU and IO windows configuration during DRAM
  * setup and restore them afterwards before exiting the BLE stage.
- * Such window configuration is requred since not all default settings coming
- * from the HW and the BootROM allow access to periferals connected to
+ * Such window configuration is required since not all default settings coming
+ * from the HW and the BootROM allow access to peripherals connected to
  * all available CPn components.
  * For instance, when the boot device is located on CP0, the IO window to CP1
  * is not opened automatically by the HW and if the DRAM SPD is located on CP1
  * i2c channel, it cannot be read at BLE stage.
  * Therefore the DRAM init procedure have to provide access to all available
- * CPn periferals during the BLE stage by setting the CCU IO window to all CPn
- * addresses and by enabling the IO windows accordingly.
+ * CPn peripherals during the BLE stage by setting the CCU IO window to all
+ * CPnph addresses and by enabling the IO windows accordingly.
  * Additionally this function configures the CCU GCR to DRAM, which allows
  * usage or more than 4GB DRAM as it configured by the default CCU DRAM window.
  *
@@ -163,28 +164,30 @@ static void ble_plat_mmap_config(int restore)
 		/* Restore CCU */
 		iow_restore_win_all(MVEBU_AP0);
 		return;
-	} else {
+	}
+
 		/* Store original values */
 		ccu_save_win_all(MVEBU_AP0);
 		/* Save CCU */
 		iow_save_win_all(MVEBU_AP0);
-	}
 
 	init_ccu(MVEBU_AP0);
 	/* The configuration saved, now all the changes can be done */
 	init_io_win(MVEBU_AP0);
 }
 
-/******************************************************************************
+/****************************************************************************
  * Setup Adaptive Voltage Switching - this is required for some platforms
- *****************************************************************************/
+ ****************************************************************************
+ */
 static void ble_plat_avs_config(void)
 {
 	uint32_t reg_val, device_id;
 
 	/* Due to a bug in A3900 device_id we need a special handling here */
 	if (ble_get_ap_type() == CHIP_ID_AP807) {
-		VERBOSE("AVS: Setting AP807 AVS CTRL to 0x%x\n", AVS_A3900_CLK_VALUE);
+		VERBOSE("AVS: Setting AP807 AVS CTRL to 0x%x\n",
+			AVS_A3900_CLK_VALUE);
 		mmio_write_32(AVS_EN_CTRL_REG, AVS_A3900_CLK_VALUE);
 		return;
 	}
@@ -213,16 +216,18 @@ static void ble_plat_avs_config(void)
 	}
 }
 
-/******************************************************************************
+/****************************************************************************
  * SVC flow - v0.10
- * The feature is inteded  to configure AVS value according to eFuse values
+ * The feature is intended to configure AVS value according to eFuse values
  * that are burned individually for each SoC during the test process.
- * Primary AVS value is stored in HD efuse and processed on power on by the HW engine
+ * Primary AVS value is stored in HD efuse and processed on power on
+ * by the HW engine
  * Secondary AVS value is located in LD efuse and contains 4 work points for
  * various CPU frequencies.
  * The Secondary AVS value is only taken into account if the SW Revision stored
  * in the efuse is greater than 0 and the CPU is running in a certain speed.
- *****************************************************************************/
+ ****************************************************************************
+ */
 static void ble_plat_svc_config(void)
 {
 	uint32_t reg_val, avs_workpoint, freq_pidi_mode;
@@ -468,7 +473,7 @@ static int  ble_skip_current_image(void)
 	struct skip_image *skip_im;
 
 	/*fetching skip image info*/
-	skip_im = (struct skip_image *)plat_get_skip_image_data();
+	skip_im = (struct skip_image *)plat_marvell_get_skip_image_data();
 
 	if (skip_im == NULL)
 		return 0;
@@ -526,7 +531,7 @@ int ble_plat_setup(int *skip)
 	/*
 	 * Save the current CCU configuration and make required changes:
 	 * - Allow access to DRAM larger than 4GB
-	 * - Open memory access to all CPn periferals
+	 * - Open memory access to all CPn peripherals
 	 */
 	ble_plat_mmap_config(MMAP_SAVE_AND_CONFIG);
 
@@ -557,7 +562,7 @@ int ble_plat_setup(int *skip)
 	ap_ble_init();
 
 	/* Update DRAM topology (scan DIMM SPDs) */
-	plat_dram_update_topology();
+	plat_marvell_dram_update_topology();
 
 	/* Kick it in */
 	ret = dram_init();

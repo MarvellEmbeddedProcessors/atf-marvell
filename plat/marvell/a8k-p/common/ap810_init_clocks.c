@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <debug.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <stdio.h>
 
 /* PLL's registers with local base address since each AP has its own EAWG*/

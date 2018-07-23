@@ -4,11 +4,12 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+#include "comphy.h"
 #include <debug.h>
 #include <delay_timer.h>
 #include <mmio.h>
-#include <plat_def.h>
-#include "comphy.h"
+#include <mvebu_def.h>
 #include "pci_ep.h"
 
 #define SD_ADDR(base, lane)			(base + 0x1000 * lane)

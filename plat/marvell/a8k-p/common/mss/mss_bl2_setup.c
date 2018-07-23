@@ -10,8 +10,8 @@
 #include <debug.h>
 #include <mmio.h>
 #include "mss_scp_bootloader.h"
+#include <marvell_plat_priv.h>
 #include <platform_def.h>
-#include <plat_private.h> /* timer functionality */
 
 #define MSS_AP_REG_BASE			0x580000
 #define MSS_CP_REG_BASE			0x280000

@@ -15,7 +15,7 @@
  * based on information recieved from SPD or bootloader
  * configuration located on non volatile storage
  */
-void plat_dram_update_topology(void)
+void plat_marvell_dram_update_topology(void)
 {
 	NOTICE("Gathering DRAM information\n");
 }
@@ -53,9 +53,9 @@ struct mv_ddr_iface dram_iface_ap0 = {
 		MV_DDR_CFG_DEFAULT,		/* ddr configuration data source */
 		{ {0} },			/* raw spd data */
 		{0},				/* timing parameters */
-		{					/* electrical configuration */
-			{				/* memory electrical configuration */
-				MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
+		{	/* electrical configuration */
+			{	/* memory electrical configuration */
+				MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,  /* rtt_nom */
 				{
 					MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
 					MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
@@ -66,7 +66,7 @@ struct mv_ddr_iface dram_iface_ap0 = {
 				},
 				MV_DDR_DIC_RZQ_DIV7	/* dic */
 			},
-			{				/* phy electrical configuration */
+			{	/* phy electrical configuration */
 				MV_DDR_OHM_30,	/* data_drv_p */
 				MV_DDR_OHM_30,	/* data_drv_n */
 				MV_DDR_OHM_30,	/* ctrl_drv_p */
@@ -80,7 +80,7 @@ struct mv_ddr_iface dram_iface_ap0 = {
 					MV_DDR_OHM_120	/* odt_n 2cs */
 				},
 			},
-			{				/* mac electrical configuration */
+			{	/* mac electrical configuration */
 				MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
 				MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
 				MV_DDR_ODT_CFG_NORMAL	/* odtcfg_read */

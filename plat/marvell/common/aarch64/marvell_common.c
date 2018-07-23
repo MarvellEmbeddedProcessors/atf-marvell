@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
@@ -90,9 +86,10 @@ unsigned long plat_get_ns_image_entrypoint(void)
 	return PLAT_MARVELL_NS_IMAGE_OFFSET;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Gets SPSR for BL32 entry
- ******************************************************************************/
+ *****************************************************************************
+ */
 uint32_t marvell_get_spsr_for_bl32_entry(void)
 {
 	/*
@@ -102,9 +99,10 @@ uint32_t marvell_get_spsr_for_bl32_entry(void)
 	return 0;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Gets SPSR for BL33 entry
- ******************************************************************************/
+ *****************************************************************************
+ */
 uint32_t marvell_get_spsr_for_bl33_entry(void)
 {
 	unsigned long el_status;
@@ -126,9 +124,10 @@ uint32_t marvell_get_spsr_for_bl33_entry(void)
 	return spsr;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * Returns ARM platform specific memory map regions.
- ******************************************************************************/
+ *****************************************************************************
+ */
 const mmap_region_t *plat_marvell_get_mmap(void)
 {
 	return plat_marvell_mmap;

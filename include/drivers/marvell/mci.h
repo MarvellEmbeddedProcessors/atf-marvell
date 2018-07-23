@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
+/* MCI bus driver for Marvell ARMADA 8K and 8K+ SoCs */
+
 #ifndef _MCI_H_
 #define _MCI_H_
 

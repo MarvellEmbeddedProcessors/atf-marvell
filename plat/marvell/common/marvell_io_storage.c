@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <assert.h>
 #include <bl_common.h>		/* For ARRAY_SIZE */
 #include <debug.h>

@@ -1,14 +1,10 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #ifndef __BOARD_MARVELL_DEF_H__
 #define __BOARD_MARVELL_DEF_H__
 

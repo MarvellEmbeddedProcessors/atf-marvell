@@ -4,13 +4,14 @@
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+#include <armada_common.h>
 #include <aro.h>
 #include <debug.h>
 #include <delay_timer.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define CPU_ARO_CTRL_BASE		MVEBU_REGS_BASE + (0x6F8D00)
 #define SAR_REG_ADDR			MVEBU_REGS_BASE + 0x6f4400

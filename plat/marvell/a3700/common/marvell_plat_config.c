@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
-#include <types.h>
-#include <plat_def.h>
 #include <io_addr_dec.h>
+#include <mvebu_def.h>
+#include <types.h>
 
 struct dec_win_config io_dec_win_conf[] = {
 	/* dec_reg_base  win_attr  max_dram_win  max_remap  win_offset */

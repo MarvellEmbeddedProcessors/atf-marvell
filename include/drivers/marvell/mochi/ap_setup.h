@@ -1,9 +1,12 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+/* AP8xx Marvell SoC driver */
+
 #ifndef __AP_SETUP_H__
 #define __AP_SETUP_H__
 

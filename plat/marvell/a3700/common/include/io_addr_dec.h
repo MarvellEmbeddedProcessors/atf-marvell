@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #ifndef _IO_ADDR_DEC_H_
 #define _IO_ADDR_DEC_H_
 
@@ -23,10 +24,15 @@
 */
 struct dec_win_config {
 	uint32_t dec_reg_base; /* IO address decoder register base address */
-	uint32_t win_attr;     /* IO address decoder windows attributes */
-	uint32_t max_dram_win; /* How many configurable dram decoder windows that this unit has; */
-	uint32_t max_remap;    /* The decoder windows number including remapping that this unit has */
-	uint32_t win_offset;   /* The offset between continuous decode windows within the same unit, typically 0x10 */
+	uint32_t win_attr;	/* IO address decoder windows attributes */
+	/* How many configurable dram decoder windows that this unit has; */
+	uint32_t max_dram_win;
+	/* The decoder windows number including remapping that this unit has */
+	uint32_t max_remap;
+	/* The offset between continuous decode windows
+	 * within the same unit, typically 0x10
+	 */
+	uint32_t win_offset;
 };
 
 struct dram_win {
@@ -53,7 +59,9 @@ struct  dram_win_map {
  *
  * @return:  0 on success and others on failure
  */
-int init_io_addr_dec(struct dram_win_map *dram_wins_map, struct dec_win_config *io_dec_config, uint32_t io_unit_num);
+int init_io_addr_dec(struct dram_win_map *dram_wins_map,
+		     struct dec_win_config *io_dec_config,
+		     uint32_t io_unit_num);
 
 #endif /* _IO_ADDR_DEC_H_ */
 

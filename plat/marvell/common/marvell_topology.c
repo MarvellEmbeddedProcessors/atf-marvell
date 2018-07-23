@@ -1,23 +1,20 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <plat_marvell.h>
 
 /* The power domain tree descriptor */
 unsigned char marvell_power_domain_tree_desc[PLAT_MARVELL_CLUSTER_COUNT + 1];
 
-/*******************************************************************************
+/*****************************************************************************
  * This function dynamically constructs the topology according to
  * PLAT_MARVELL_CLUSTER_COUNT and returns it.
- ******************************************************************************/
+ *****************************************************************************
+ */
 const unsigned char *plat_get_power_domain_tree_desc(void)
 {
 	int i;
@@ -38,18 +35,20 @@ const unsigned char *plat_get_power_domain_tree_desc(void)
 	return marvell_power_domain_tree_desc;
 }
 
-/*******************************************************************************
+/*****************************************************************************
  * This function validates an MPIDR by checking whether it falls within the
  * acceptable bounds. An error code (-1) is returned if an incorrect mpidr
  * is passed.
- ******************************************************************************/
+ *****************************************************************************
+ */
 int marvell_check_mpidr(u_register_t mpidr)
 {
 	unsigned int nb_id, cluster_id, cpu_id;
 
 	mpidr &= MPIDR_AFFINITY_MASK;
 
-	if (mpidr & ~(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK | MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))
+	if (mpidr & ~(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK |
+	    MPIDR_AFFLVL_MASK << MPIDR_AFF2_SHIFT))
 		return -1;
 
 	/* Get north bridge ID */
@@ -69,12 +68,13 @@ int marvell_check_mpidr(u_register_t mpidr)
 	return 0;
 }
 
-/*******************************************************************************
- * This function implements a part of the critical interface between the psci
+/*****************************************************************************
+ * This function implements a part of the critical interface between the PSCI
  * generic layer and the platform that allows the former to query the platform
  * to convert an MPIDR to a unique linear index. An error code (-1) is returned
  * in case the MPIDR is invalid.
- ******************************************************************************/
+ *****************************************************************************
+ */
 int plat_core_pos_by_mpidr(u_register_t mpidr)
 {
 	if (marvell_check_mpidr(mpidr) == -1)

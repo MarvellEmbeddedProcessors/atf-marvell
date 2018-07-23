@@ -1,16 +1,19 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
-#ifndef __PLAT_PRIVATE_H__
-#define __PLAT_PRIVATE_H__
 
-/*******************************************************************************
+#ifndef __MARVELL_PLAT_PRIV_H__
+#define __MARVELL_PLAT_PRIV_H__
+
+#include <utils.h>
+
+/*****************************************************************************
  * Function and variable prototypes
- ******************************************************************************/
+ *****************************************************************************
+ */
 void plat_delay_timer_init(void);
 
 uint64_t mvebu_get_dram_size(uint64_t ap_base_addr);
@@ -28,4 +31,4 @@ void plat_marvell_gic_irq_restore(void);
 void plat_marvell_gic_irq_pcpu_save(void);
 void plat_marvell_gic_irq_pcpu_restore(void);
 
-#endif /* __PLAT_PRIVATE_H__ */
+#endif /* __MARVELL_PLAT_PRIV_H__ */

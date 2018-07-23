@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #ifndef __PLAT_PM_TRACE_H
 #define __PLAT_PM_TRACE_H
 
@@ -80,7 +81,7 @@ typedef void (*core_trace_func)(unsigned int);
 
 extern core_trace_func funcTbl[PLATFORM_CORE_COUNT];
 
-#define PM_TRACE(trace) funcTbl[plat_my_core_pos()](trace);
+#define PM_TRACE(trace) funcTbl[plat_my_core_pos()](trace)
 
 #else
 

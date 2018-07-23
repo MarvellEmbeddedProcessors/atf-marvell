@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-#ifndef __BOARD_CONFIG_H__
-#define __BOARD_CONFIG_H__
+
+#ifndef __ARMADA_COMMON_H__
+#define __ARMADA_COMMON_H__
 
 #include <amb_adec.h>
 #include <io_win.h>
 #include <iob.h>
 #include <ccu.h>
-#include <pci_ep.h>
 
 /*
  * This struct supports skip image request
@@ -64,17 +64,22 @@ struct skip_image {
  * type: the method used to power off the SoC
  * cfg:
  *	PMIC_GPIO:
- *		pin_count: current GPIO pin number used for toggling the GPIO to notify PMIC
- *		info: hold the GPIOs information, CP GPIO should be used and the GPIOs should be within
- *		       same GPIO register
- *		step_count: current step number to toggle the GPIO for PMIC
- *		seq: GPIO toggling values in sequence, each bit represents a GPIO
- *		       for exmaple, bit0 represents first GPIO used for toggling the GPIO
- *		       the last step is used to trigger the power off finnally
- *		delay_ms: transition interval for the GPIO setting to take effect in unit of ms
+ *	pin_count: current GPIO pin number used for toggling the signal for
+ *		   notifying external PMIC
+ *	info:	   holds the GPIOs information, CP GPIO should be used and
+ *		   all GPIOs should be within same GPIO config. register
+ *	step_count: current step number to toggle the GPIO for PMIC
+ *	seq:       GPIO toggling values in sequence, each bit represents a GPIO.
+ *		   For example, bit0 represents first GPIO used for toggling
+ *		   the GPIO the last step is used to trigger the power off
+ *		   signal
+ *	delay_ms:  transition interval for the GPIO setting to take effect
+ *		   in unit of ms
  */
-#define PMIC_GPIO_MAX_NUMBER		8 /* Max GPIO number used to notify PMIC to power off the SoC */
-#define PMIC_GPIO_MAX_TOGGLE_STEP	8 /* Max GPIO toggling steps in sequence to power off the SoC */
+/* Max GPIO number used to notify PMIC to power off the SoC */
+#define PMIC_GPIO_MAX_NUMBER		8
+/* Max GPIO toggling steps in sequence to power off the SoC */
+#define PMIC_GPIO_MAX_TOGGLE_STEP	8
 
 enum gpio_output_state {
 	GPIO_LOW = 0,
@@ -103,17 +108,21 @@ struct power_off_method {
 };
 
 int marvell_gpio_config(void);
-uint32_t marvell_get_io_win_gcr_target(int);
-uint32_t marvell_get_ccu_gcr_target(int);
+uint32_t marvell_get_io_win_gcr_target(int ap_idx);
+uint32_t marvell_get_ccu_gcr_target(int ap_idx);
 
 
 /*
  * The functions below are defined as Weak and may be overridden
  * in specific Marvell standard platform
  */
-int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base);
-int marvell_get_io_win_memory_map(int, struct addr_map_win **win, uint32_t *size);
-int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base);
-int marvell_get_ccu_memory_map(int, struct addr_map_win **win, uint32_t *size);
+int marvell_get_amb_memory_map(struct addr_map_win **win,
+			       uint32_t *size, uintptr_t base);
+int marvell_get_io_win_memory_map(int ap_idx, struct addr_map_win **win,
+				  uint32_t *size);
+int marvell_get_iob_memory_map(struct addr_map_win **win,
+			       uint32_t *size, uintptr_t base);
+int marvell_get_ccu_memory_map(int ap_idx, struct addr_map_win **win,
+			       uint32_t *size);
 
-#endif /* __BOARD_CONFIG_H__ */
+#endif /* __ARMADA_COMMON_H__ */

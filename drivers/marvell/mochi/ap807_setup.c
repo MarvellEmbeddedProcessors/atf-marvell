@@ -5,6 +5,8 @@
  * https://spdx.org/licenses
  */
 
+/* AP807 Marvell SoC driver */
+
 #include <ap_setup.h>
 #include <cache_llc.h>
 #include <ccu.h>
@@ -12,15 +14,17 @@
 #include <io_win.h>
 #include <mci.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define SMMU_sACR				(MVEBU_SMMU_BASE + 0x10)
 #define SMMU_sACR_PG_64K			(1 << 16)
 
-#define CCU_GSPMU_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x3F0)
+#define CCU_GSPMU_CR				(MVEBU_CCU_BASE(MVEBU_AP0) \
+								+ 0x3F0)
 #define GSPMU_CPU_CONTROL			(0x1 << 0)
 
-#define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) + 0x200)
+#define CCU_HTC_CR				(MVEBU_CCU_BASE(MVEBU_AP0) \
+								+ 0x200)
 #define CCU_SET_POC_OFFSET			5
 
 #define DSS_CR0					(MVEBU_RFU_BASE + 0x100)
@@ -49,7 +53,8 @@
 
 /* Used for Units of AP-807 (e.g. SDIO and etc) */
 #define MVEBU_AXI_ATTR_BASE			(MVEBU_REGS_BASE + 0x6F4580)
-#define MVEBU_AXI_ATTR_REG(index)		(MVEBU_AXI_ATTR_BASE + 0x4 * index)
+#define MVEBU_AXI_ATTR_REG(index)		(MVEBU_AXI_ATTR_BASE + \
+							0x4 * index)
 
 enum axi_attr {
 	AXI_SDIO_ATTR = 0,
@@ -67,9 +72,11 @@ static void ap_sec_masters_access_en(uint32_t enable)
 	 */
 	reg = mmio_read_32(SEC_MOCHI_IN_ACC_REG);
 	if (enable)
-		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg | SEC_IN_ACCESS_ENA_ALL_MASTERS);
+		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg |
+			      SEC_IN_ACCESS_ENA_ALL_MASTERS);
 	else
-		mmio_write_32(SEC_MOCHI_IN_ACC_REG, reg & ~SEC_IN_ACCESS_ENA_ALL_MASTERS);
+		mmio_write_32(SEC_MOCHI_IN_ACC_REG,
+			      reg & ~SEC_IN_ACCESS_ENA_ALL_MASTERS);
 }
 
 static void setup_smmu(void)
@@ -117,7 +124,8 @@ static void mci_remap_indirect_access_base(void)
 
 	for (mci = 0; mci < MCI_MAX_UNIT_ID; mci++)
 		mmio_write_32(MCIX4_REG_START_ADDRESS_REG(mci),
-				  MVEBU_MCI_REG_BASE_REMAP(mci) >> MCI_REMAP_OFF_SHIFT);
+				  MVEBU_MCI_REG_BASE_REMAP(mci) >>
+				  MCI_REMAP_OFF_SHIFT);
 }
 
 static void ap807_axi_attr_init(void)
@@ -134,27 +142,32 @@ static void ap807_axi_attr_init(void)
 		case AXI_DFX_ATTR:
 			continue;
 		default:
-			/* Set Ax-Cache as cacheable, no allocate, modifiable, bufferable
-			 * The values are different because Read & Write definition
-			 * is different in Ax-Cache
+			/* Set Ax-Cache as cacheable, no allocate, modifiable,
+			 * bufferable.
+			 * The values are different because Read & Write
+			 * definition is different in Ax-Cache
 			 */
 			data = mmio_read_32(MVEBU_AXI_ATTR_REG(index));
 			data &= ~MVEBU_AXI_ATTR_ARCACHE_MASK;
-			data |= (CACHE_ATTR_WRITE_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-				<< MVEBU_AXI_ATTR_ARCACHE_OFFSET;
+			data |= (CACHE_ATTR_WRITE_ALLOC |
+				 CACHE_ATTR_CACHEABLE   |
+				 CACHE_ATTR_BUFFERABLE) <<
+				 MVEBU_AXI_ATTR_ARCACHE_OFFSET;
 			data &= ~MVEBU_AXI_ATTR_AWCACHE_MASK;
-			data |= (CACHE_ATTR_READ_ALLOC | CACHE_ATTR_CACHEABLE | CACHE_ATTR_BUFFERABLE)
-				<< MVEBU_AXI_ATTR_AWCACHE_OFFSET;
+			data |= (CACHE_ATTR_READ_ALLOC |
+				 CACHE_ATTR_CACHEABLE  |
+				 CACHE_ATTR_BUFFERABLE) <<
+				 MVEBU_AXI_ATTR_AWCACHE_OFFSET;
 			/* Set Ax-Domain as Outer domain */
 			data &= ~MVEBU_AXI_ATTR_ARDOMAIN_MASK;
-			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_ARDOMAIN_OFFSET;
+			data |= DOMAIN_OUTER_SHAREABLE <<
+				MVEBU_AXI_ATTR_ARDOMAIN_OFFSET;
 			data &= ~MVEBU_AXI_ATTR_AWDOMAIN_MASK;
-			data |= DOMAIN_OUTER_SHAREABLE << MVEBU_AXI_ATTR_AWDOMAIN_OFFSET;
+			data |= DOMAIN_OUTER_SHAREABLE <<
+				MVEBU_AXI_ATTR_AWDOMAIN_OFFSET;
 			mmio_write_32(MVEBU_AXI_ATTR_REG(index), data);
 		}
 	}
-
-	return;
 }
 
 static void misc_soc_configurations(void)
@@ -165,7 +178,7 @@ static void misc_soc_configurations(void)
 	mmio_setbits_32(DSS_CR0, DVM_48BIT_VA_ENABLE);
 
 	/* Un-mask Watchdog reset from influencing the SYSRST_OUTn.
-	 * Otherwise, upon WD timeout, the WD reset singal won't trigger reset
+	 * Otherwise, upon WD timeout, the WD reset signal won't trigger reset
 	 */
 	reg = mmio_read_32(MVEBU_SYSRST_OUT_CONFIG_REG);
 	reg &= ~(WD_MASK_SYS_RST_OUT);
@@ -205,7 +218,8 @@ static void ap807_dram_phy_access_config(void)
 	/* Update DSS port access permission to DSS_PHY */
 	reg_val = mmio_read_32(DSS_SCR_REG);
 	reg_val &= ~(DSS_PPROT_MASK << DSS_PPROT_OFFS);
-	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) << DSS_PPROT_OFFS);
+	reg_val |= ((DSS_PPROT_PRIV_SECURE_DATA & DSS_PPROT_MASK) <<
+		    DSS_PPROT_OFFS);
 	mmio_write_32(DSS_SCR_REG, reg_val);
 }
 

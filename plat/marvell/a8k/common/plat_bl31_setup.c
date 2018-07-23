@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
  
+#include <armada_common.h>
 #include <ap_setup.h>
 #include <cp110_setup.h>
 #include <debug.h>
+#include <marvell_plat_priv.h>
 #include <marvell_pm.h>
 #include <mmio.h>
 #include <mci.h>
-#include <plat_config.h>
 #include <plat_marvell.h>
-#include <plat_private.h>
 #include <mc_trustzone/mc_trustzone.h>
 
 #include <mss_ipc_drv.h>
@@ -57,7 +57,7 @@ void marvell_bl31_mss_init(void)
 			(struct mss_pm_ctrl_block *)MSS_SRAM_PM_CONTROL_BASE;
 
 	/* Check that the image was loaded successfully */
-	if (mss_pm_crtl->handshake != HOST_ACKNOWLEDGEMENT) {
+	if (mss_pm_crtl->handshake != HOST_ACKNOWLEDGMENT) {
 		NOTICE("MSS PM is not supported in this build\n");
 		return;
 	}

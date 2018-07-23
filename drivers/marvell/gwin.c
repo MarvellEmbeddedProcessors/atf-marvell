@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2017, 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
+/* GWIN unit device driver for Marvell AP810 SoC */
+
+#include <armada_common.h>
 #include <debug.h>
 #include <gwin.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -20,7 +22,8 @@
 #define WIN_ENABLE_BIT			(0x1)
 #define WIN_TARGET_MASK			(0xF)
 #define WIN_TARGET_SHIFT		(0x8)
-#define WIN_TARGET(tgt)			(((tgt) & WIN_TARGET_MASK) << WIN_TARGET_SHIFT)
+#define WIN_TARGET(tgt)			(((tgt) & WIN_TARGET_MASK) \
+					<< WIN_TARGET_SHIFT)
 
 /* Bits[43:26] of the physical address are the window base,
  * which is aligned to 64MB
@@ -30,9 +33,12 @@
 #define GWIN_ALIGNMENT_64M		(0x4000000)
 
 /* AP registers */
-#define GWIN_CR_OFFSET(ap, win)		(MVEBU_GWIN_BASE(ap) + 0x0 + (0x10 * (win)))
-#define GWIN_ALR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0x8 + (0x10 * (win)))
-#define GWIN_AHR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0xc + (0x10 * (win)))
+#define GWIN_CR_OFFSET(ap, win)		(MVEBU_GWIN_BASE(ap) + 0x0 + \
+						(0x10 * (win)))
+#define GWIN_ALR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0x8 + \
+						(0x10 * (win)))
+#define GWIN_AHR_OFFSET(ap, win)	(MVEBU_GWIN_BASE(ap) + 0xc + \
+						(0x10 * (win)))
 
 #define CCU_GRU_CR_OFFSET(ap)		(MVEBU_CCU_GRU_BASE(ap))
 #define CCR_GRU_CR_GWIN_MBYPASS		(1 << 1)
@@ -42,17 +48,20 @@ static void gwin_check(struct addr_map_win *win)
 	/* The base is always 64M aligned */
 	if (IS_NOT_ALIGN(win->base_addr, GWIN_ALIGNMENT_64M)) {
 		win->base_addr &= ~(GWIN_ALIGNMENT_64M - 1);
-		NOTICE("%s: Align the base address to 0x%llx\n", __func__, win->base_addr);
+		NOTICE("%s: Align the base address to 0x%llx\n",
+		       __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, GWIN_ALIGNMENT_64M)) {
 		win->win_size = ALIGN_UP(win->win_size, GWIN_ALIGNMENT_64M);
-		NOTICE("%s: Aligning window size to 0x%llx\n", __func__, win->win_size);
+		NOTICE("%s: Aligning window size to 0x%llx\n",
+		       __func__, win->win_size);
 	}
 }
 
-static void gwin_enable_window(int ap_index, struct addr_map_win *win, uint32_t win_num)
+static void gwin_enable_window(int ap_index, struct addr_map_win *win,
+			       uint32_t win_num)
 {
 	uint32_t alr, ahr;
 	uint64_t end_addr;
@@ -117,6 +126,7 @@ void gwin_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 	for (int i = 0; i < size; i++) {
 		uint64_t base;
 		uint32_t target;
+
 		win_id = MVEBU_GWIN_MAX_WINS - i - 1;
 
 		target = mmio_read_32(GWIN_CR_OFFSET(ap_index, win_id));
@@ -128,7 +138,8 @@ void gwin_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 		base <<= ADDRESS_RSHIFT;
 
 		if (win->target_id != target) {
-			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
+			ERROR("%s: Trying to remove bad window-%d!\n",
+			      __func__, win_id);
 			continue;
 		}
 		gwin_disable_window(ap_index, win_id);
@@ -142,8 +153,8 @@ static void dump_gwin(int ap_index)
 	uint32_t win_num;
 
 	/* Dump all GWIN windows */
-	printf("\tbank  target     start              end\n");
-	printf("\t----------------------------------------------------\n");
+	tf_printf("\tbank  target     start              end\n");
+	tf_printf("\t----------------------------------------------------\n");
 	for (win_num = 0; win_num < MVEBU_GWIN_MAX_WINS; win_num++) {
 		uint32_t cr;
 		uint64_t alr, ahr;
@@ -155,10 +166,10 @@ static void dump_gwin(int ap_index)
 			alr = (alr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
 			ahr = mmio_read_32(GWIN_AHR_OFFSET(ap_index, win_num));
 			ahr = (ahr >> ADDRESS_LSHIFT) << ADDRESS_RSHIFT;
-			printf("\tgwin   %d     0x%016llx 0x%016llx\n", (cr >> 8) & 0xF, alr, ahr);
+			tf_printf("\tgwin   %d     0x%016llx 0x%016llx\n",
+				  (cr >> 8) & 0xF, alr, ahr);
 		}
 	}
-	return;
 }
 #endif
 
@@ -179,7 +190,8 @@ int init_gwin(int ap_index)
 	}
 
 	if (win_count > MVEBU_GWIN_MAX_WINS) {
-		ERROR("number of windows is bigger than %d\n", MVEBU_GWIN_MAX_WINS);
+		ERROR("number of windows is bigger than %d\n",
+		      MVEBU_GWIN_MAX_WINS);
 		return 0;
 	}
 

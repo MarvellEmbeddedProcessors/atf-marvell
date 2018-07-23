@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
@@ -101,19 +101,19 @@ struct mss_pm_ipc_ch {
 int mv_pm_ipc_init(unsigned long ipc_control_addr);
 
 /*****************************************************************************
-* mv_pm_ipc_msg_rx
-*
-* DESCRIPTION: Retrieve message from IPC channel
-******************************************************************************
-*/
+ * mv_pm_ipc_msg_rx
+ *
+ * DESCRIPTION: Retrieve message from IPC channel
+ *****************************************************************************
+ */
 int mv_pm_ipc_msg_rx(unsigned int channel_id, struct mss_pm_ipc_msg *msg);
 
 /*****************************************************************************
-* mv_pm_ipc_msg_tx
-*
-* DESCRIPTION: Send message via IPC channel
-******************************************************************************
-*/
+ * mv_pm_ipc_msg_tx
+ *
+ * DESCRIPTION: Send message via IPC channel
+ *****************************************************************************
+ */
 int mv_pm_ipc_msg_tx(unsigned int channel_id, unsigned int msg_id,
 			unsigned int cluster_power_state);
 

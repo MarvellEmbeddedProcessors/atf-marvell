@@ -1,17 +1,13 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-/*
- * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+
 #include <arch_helpers.h>
 #include <delay_timer.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define SYS_COUNTER_FREQ_IN_MHZ	(COUNTER_FREQUENCY/1000000)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
@@ -86,7 +86,7 @@ int marvell_io_is_toc_valid(void);
 /*
  * PSCI functionality
  */
-void psci_arch_init(int);
+void marvell_psci_arch_init(int idx);
 void plat_marvell_system_reset(void);
 
 /*
@@ -105,7 +105,7 @@ void marvell_bl1_setup_mpps(void);
 #endif
 
 const mmap_region_t *plat_marvell_get_mmap(void);
-void ble_prepare_exit(void);
+void marvell_ble_prepare_exit(void);
 int jtag_init_ihb_dual_ap(void);
 int gic600_multi_chip_init(void);
 

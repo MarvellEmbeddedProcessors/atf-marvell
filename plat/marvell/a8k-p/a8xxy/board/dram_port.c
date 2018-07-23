@@ -4,8 +4,9 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #include <mv_ddr_if.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #include <plat_marvell.h>
 
 /* DB-88F8160-MODULAR has 4 DIMMs on board that are connected to
@@ -16,7 +17,8 @@
  * AP1 DIMM1 - 0x56
  */
 #define I2C_SPD_BASE_ADDR		0x53
-#define I2C_SPD_DATA_ADDR(ap_id, iface)	(I2C_SPD_BASE_ADDR + (ap_id * DDR_MAX_UNIT_PER_AP) + (iface))
+#define I2C_SPD_DATA_ADDR(ap_id, iface)	(I2C_SPD_BASE_ADDR + \
+					(ap_id * DDR_MAX_UNIT_PER_AP) + (iface))
 #define I2C_SPD_P0_SEL_ADDR		0x36	/* Select SPD data page 0 */
 
 #define MC_RAR_INTERLEAVE_SZ		(128) /* Also possible to set to 4Kb */

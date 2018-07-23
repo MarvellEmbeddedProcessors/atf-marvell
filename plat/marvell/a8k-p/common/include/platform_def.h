@@ -11,7 +11,7 @@
 #include <board_marvell_def.h>
 #include <gic_common.h>
 #include <interrupt_props.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #ifndef __ASSEMBLY__
 #include <stdio.h>
 #endif /* __ASSEMBLY__ */

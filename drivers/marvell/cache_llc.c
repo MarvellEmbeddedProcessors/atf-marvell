@@ -1,23 +1,30 @@
 /*
- * Copyright (C) 2015 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
+/* LLC driver is the Last Level Cache (L3C) driver
+ * for Marvell SoCs in AP806, AP807, and AP810
+ */
+
+#include <arch_helpers.h>
 #include <assert.h>
 #include <cache_llc.h>
 #include <ccu.h>
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define CCU_HTC_CR(ap_index)		(MVEBU_CCU_BASE(ap_index) + 0x200)
 #define CCU_SET_POC_OFFSET		5
 
+extern void ca72_l2_enable_unique_clean(void);
+
 void llc_cache_sync(int ap_index)
 {
-	mmio_write_32(LLC_CACHE_SYNC(ap_index), 0);
-	/* Atumic write no need to wait */
+	mmio_write_32(LLC_SYNC(ap_index), 0);
+	/* Atomic write, no need to wait */
 }
 
 void llc_flush_all(int ap_index)
@@ -42,23 +49,23 @@ void llc_disable(int ap_index)
 {
 	llc_flush_all(ap_index);
 	mmio_write_32(LLC_CTRL(ap_index), 0);
-	__asm__ volatile("dsb st");
+	dsbishst();
 }
 
 void llc_enable(int ap_index, int excl_mode)
 {
 	uint32_t val;
 
-	__asm__ volatile("dsb sy");
+	dsbsy();
 	llc_inv_all(ap_index);
-	__asm__ volatile("dsb sy");
+	dsbsy();
 
 	val = LLC_CTRL_EN;
 	if (excl_mode)
 		val |= LLC_EXCLUSIVE_EN;
 
 	mmio_write_32(LLC_CTRL(ap_index), val);
-	__asm__ volatile("dsb sy");
+	dsbsy();
 }
 
 int llc_is_exclusive(int ap_index)
@@ -67,19 +74,11 @@ int llc_is_exclusive(int ap_index)
 
 	reg = mmio_read_32(LLC_CTRL(ap_index));
 
-	if ((reg & (LLC_CTRL_EN | LLC_EXCLUSIVE_EN)) == (LLC_CTRL_EN | LLC_EXCLUSIVE_EN))
+	if ((reg & (LLC_CTRL_EN | LLC_EXCLUSIVE_EN)) ==
+		   (LLC_CTRL_EN | LLC_EXCLUSIVE_EN))
 		return 1;
+
 	return 0;
-}
-
-void llc_save(int ap_index)
-{
-	/* TBD */
-}
-
-void llc_resume(int ap_index)
-{
-	/* TBD */
 }
 
 void llc_runtime_enable(int ap_index)
@@ -93,15 +92,12 @@ void llc_runtime_enable(int ap_index)
 	INFO("Enabling LLC\n");
 
 	/*
-	 * Enable L2 UniqueClean evictions
+	 * Enable L2 UniqueClean evictions with data
 	 *  Note: this configuration assumes that LLC is configured
 	 *	  in exclusive mode.
 	 *	  Later on in the code this assumption will be validated
 	 */
-	__asm__ volatile ("mrs %0, s3_1_c15_c0_0" : "=r" (reg));
-	reg |=  (1 << 14);
-	__asm__ volatile ("msr s3_1_c15_c0_0, %0" : : "r" (reg));
-
+	ca72_l2_enable_unique_clean();
 	llc_enable(ap_index, 1);
 
 	/* Set point of coherency to DDR.

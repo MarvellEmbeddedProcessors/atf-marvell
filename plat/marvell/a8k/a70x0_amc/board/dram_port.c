@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #include <arch_helpers.h>
 #include <debug.h>
 #include <mv_ddr_if.h>
@@ -14,9 +15,8 @@
  * based on information received from SPD or bootloader
  * configuration located on non volatile storage
  */
-void plat_dram_update_topology(void)
+void plat_marvell_dram_update_topology(void)
 {
-	INFO("Gathering DRAM information\n");
 }
 
 /*
@@ -47,12 +47,12 @@ static struct mv_ddr_topology_map board_topology_map = {
 	MV_DDR_CFG_DEFAULT,		/* ddr configuration data source */
 	{ {0} },			/* raw spd data */
 	{0},				/* timing parameters */
-	{					/* electrical configuration */
-		{				/* memory electrical configuration */
+	{				/* electrical configuration */
+		{			/* memory electrical configuration */
 			MV_DDR_RTT_NOM_PARK_RZQ_DISABLE,	/* rtt_nom */
 			{
-				MV_DDR_RTT_NOM_PARK_RZQ_DIV4,	/* rtt_park 1cs */
-				MV_DDR_RTT_NOM_PARK_RZQ_DIV1	/* rtt_park 2cs */
+				MV_DDR_RTT_NOM_PARK_RZQ_DIV4, /* rtt_park 1cs */
+				MV_DDR_RTT_NOM_PARK_RZQ_DIV1  /* rtt_park 2cs */
 			},
 			{
 				MV_DDR_RTT_WR_DYN_ODT_OFF,	/* rtt_wr 1cs */
@@ -60,7 +60,7 @@ static struct mv_ddr_topology_map board_topology_map = {
 			},
 			MV_DDR_DIC_RZQ_DIV7	/* dic */
 		},
-		{				/* phy electrical configuration */
+		{			/* phy electrical configuration */
 			MV_DDR_OHM_30,	/* data_drv_p */
 			MV_DDR_OHM_30,	/* data_drv_n */
 			MV_DDR_OHM_30,	/* ctrl_drv_p */
@@ -74,10 +74,10 @@ static struct mv_ddr_topology_map board_topology_map = {
 				MV_DDR_OHM_120	/* odt_n 2cs */
 			},
 		},
-		{				/* mac electrical configuration */
-			MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_pattern */
+		{			/* mac electrical configuration */
+			MV_DDR_ODT_CFG_NORMAL,		/* odtcfg_pattern */
 			MV_DDR_ODT_CFG_ALWAYS_ON,	/* odtcfg_write */
-			MV_DDR_ODT_CFG_NORMAL,	/* odtcfg_read */
+			MV_DDR_ODT_CFG_NORMAL,		/* odtcfg_read */
 		},
 	}
 };

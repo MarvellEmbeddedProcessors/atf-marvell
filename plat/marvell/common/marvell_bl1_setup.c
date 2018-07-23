@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
+
 #include <bl1.h>
 #include <bl1/bl1_private.h>
 #include <bl_common.h>

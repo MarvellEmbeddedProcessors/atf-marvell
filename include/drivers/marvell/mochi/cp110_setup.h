@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-#ifndef __PLAT_CP110_H__
-#define __PLAT_CP110_H__
+
+/* CP110 Marvell SoC driver */
+
+#ifndef __CP110_SETUP_H__
+#define __CP110_SETUP_H__
 
 #include <mmio.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #define MVEBU_DEVICE_ID_REG		(MVEBU_CP_DFX_OFFSET + 0x40)
 #define MVEBU_DEVICE_ID_OFFSET		(0)
@@ -47,4 +50,4 @@ static inline uint32_t cp110_rev_id_get(uintptr_t base)
 void cp110_init(uintptr_t cp110_base, uint32_t stream_id);
 void cp110_ble_init(uintptr_t cp110_base);
 
-#endif /* __PLAT_CP110_H__ */
+#endif /* __CP110_SETUP_H__ */

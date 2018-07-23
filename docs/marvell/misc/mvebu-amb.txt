@@ -1,6 +1,8 @@
 AMB - AXI MBUS address decoding
 -------------------------------
 
+AXI to M-bridge decoding unit driver for Marvell Armada 8K and 8K+ SoCs.
+
 - The Runit offers a second level of address windows lookup. It is used to map transaction towards
 the CD BootROM, SPI0, SPI1 and Device bus (NOR).
 - The Runit contains eight configurable windows. Each window defines a contiguous,

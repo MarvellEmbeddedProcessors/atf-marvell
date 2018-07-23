@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
@@ -11,7 +11,7 @@
 #include <board_marvell_def.h>
 #include <gic_common.h>
 #include <interrupt_props.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 #ifndef __ASSEMBLY__
 #include <stdio.h>
 #endif /* __ASSEMBLY__ */
@@ -137,8 +137,8 @@
 			GIC_INTR_CFG_LEVEL)
 
 #define PLAT_MARVELL_G1S_IRQ_PROPS(grp) \
-	INTR_PROP_DESC(MARVELL_IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY, grp, \
-			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(MARVELL_IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY, \
+			grp, GIC_INTR_CFG_LEVEL), \
 	INTR_PROP_DESC(MARVELL_IRQ_SEC_SGI_1, GIC_HIGHEST_SEC_PRIORITY, grp, \
 			GIC_INTR_CFG_LEVEL), \
 	INTR_PROP_DESC(MARVELL_IRQ_SEC_SGI_2, GIC_HIGHEST_SEC_PRIORITY, grp, \
@@ -191,8 +191,11 @@
 /* System timer related constants */
 #define PLAT_MARVELL_NSTIMER_FRAME_ID		1
 
-/* Mailbox base address (note the lower memory space are reserved for BLE data) */
-#define PLAT_MARVELL_MAILBOX_BASE		(MARVELL_TRUSTED_SRAM_BASE + 0x400)
+/* Mailbox base address (note the lower memory space
+ * is reserved for BLE data)
+ */
+#define PLAT_MARVELL_MAILBOX_BASE		(MARVELL_TRUSTED_SRAM_BASE \
+							+ 0x400)
 #define PLAT_MARVELL_MAILBOX_SIZE		0x100
 #define PLAT_MARVELL_MAILBOX_MAGIC_NUM		0x6D72766C	/* mrvl */
 

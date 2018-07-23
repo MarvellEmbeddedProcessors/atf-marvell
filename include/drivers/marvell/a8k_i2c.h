@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
+/* This driver provides I2C support for Marvell A8K and compatible SoCs */
+
 #ifndef _A8K_I2C_H_
 #define _A8K_I2C_H_
 

@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
- 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -48,7 +48,8 @@
 #define AES_BLOCK_SZ		16
 #define RSA_SIGN_BYTE_LEN	256
 #define MAX_RSA_DER_BYTE_LEN	524
-#define CP_CTRL_EL_ARRAY_SZ	32	/* Number of address pairs in control array */
+/* Number of address pairs in control array */
+#define CP_CTRL_EL_ARRAY_SZ	32
 
 #define VERSION_STRING		"Marvell(C) doimage utility version 3.2"
 
@@ -61,12 +62,12 @@
 #define MAIN_HDR_MAGIC		0xB105B002
 
 /* PROLOG alignment considerations:
-**  128B: To allow supporting XMODEM protocol.
-**  8KB: To align the boot image to the largest NAND page size, and simplify
-**  the read operations from NAND.
-**  We choose the largest page size, in order to use a single image for all
-**  NAND page sizes.
-*/
+ *  128B: To allow supporting XMODEM protocol.
+ *  8KB: To align the boot image to the largest NAND page size, and simplify
+ *  the read operations from NAND.
+ *  We choose the largest page size, in order to use a single image for all
+ *  NAND page sizes.
+ */
 #define PROLOG_ALIGNMENT	(8 << 10)
 
 /* UART argument bitfield */
@@ -163,8 +164,8 @@ typedef struct _options {
 
 void usage_err(char *msg)
 {
-	printf("Error: %s\n", msg);
-	printf("run 'doimage -h' to get usage information\n");
+	fprintf(stderr, "Error: %s\n", msg);
+	fprintf(stderr, "run 'doimage -h' to get usage information\n");
 	exit(-1);
 }
 
@@ -176,34 +177,40 @@ void usage(void)
 
 	printf("Arguments\n");
 	printf("  input_file   name of boot image file.\n");
-	printf("               if -p is used, name of bootrom image file to parse.\n");
+	printf("               if -p is used, name of the bootrom image file");
+	printf("               to parse.\n");
 	printf("  output_file  name of output bootrom image file\n");
 
 	printf("\nOptions\n");
 	printf("  -s        target SOC name. supports a8020,a7020\n");
-	printf("            different SOCs may have different boot image format so\n");
-	printf("            it's mandatory to know the target SOC\n");
+	printf("            different SOCs may have different boot image\n");
+	printf("            format so it's mandatory to know the target SOC\n");
 	printf("  -i        boot I/F name. supports nand, spi, nor\n");
-	printf("            This affects certain parameters coded in the image header\n");
+	printf("            This affects certain parameters coded in the\n");
+	printf("            image header\n");
 	printf("  -l        boot image load address. default is 0x0\n");
 	printf("  -e        boot image entry address. default is 0x0\n");
 	printf("  -b        binary extension image file.\n");
-	printf("            This image is executed before the boot image. this is typically\n");
-	printf("            used to initiliaze the memory controller.\n");
+	printf("            This image is executed before the boot image.\n");
+	printf("            This is typically used to initialize the memory ");
+	printf("            controller.\n");
 	printf("            Currently supports only a single file.\n");
 #ifdef CONFIG_MVEBU_SECURE_BOOT
-	printf("  -c        Make trusted boot image using parameters from the configuration file.\n");
+	printf("  -c        Make trusted boot image using parameters\n");
+	printf("            from the configuration file.\n");
 #endif
 	printf("  -p        Parse and display a pre-built boot image\n");
 #ifdef CONFIG_MVEBU_SECURE_BOOT
-	printf("  -k        Key index for RSA signatures verification when parsing the boot image\n");
+	printf("  -k        Key index for RSA signatures verification\n");
+	printf("            when parsing the boot image\n");
 #endif
 	printf("  -m        Disable prints of bootrom and binary extension\n");
-	printf("  -u        UART baudrate used for bootrom prints. Must be multiple of 1200\n");
-	printf("  -h        Dispalys this help message\n");
+	printf("  -u        UART baudrate used for bootrom prints.\n");
+	printf("            Must be multiple of 1200\n");
+	printf("  -h        Show this help message\n");
 	printf(" IO-ROM NFC-NAND boot parameters:\n");
-	printf("  -n        NAND device block size (in KB) [Default is 64KB].\n");
-	printf("  -t        NAND cell technology (SLC or MLC) [Default is SLC].\n");
+	printf("  -n        NAND device block size in KB [Default is 64KB].\n");
+	printf("  -t        NAND cell technology (SLC [Default] or MLC)\n");
 
 	exit(-1);
 }
@@ -245,20 +252,20 @@ uint32_t checksum32(uint32_t *start, int len)
 }
 
 /*******************************************************************************
-*    create_rsa_signature (memory buffer content)
-*          Create RSASSA-PSS/SHA-256 signature for memory buffer
-*          using RSA Private Key
-*    INPUT:
-*          pk_ctx     Private Key context
-*          input      memory buffer
-*          ilen       buffer length
-*          pers       personalization string for seeding the RNG.
-*                     For instance a private key file name.
-*    OUTPUT:
-*          signature  RSA-2048 signature
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    create_rsa_signature (memory buffer content)
+ *          Create RSASSA-PSS/SHA-256 signature for memory buffer
+ *          using RSA Private Key
+ *    INPUT:
+ *          pk_ctx     Private Key context
+ *          input      memory buffer
+ *          ilen       buffer length
+ *          pers       personalization string for seeding the RNG.
+ *                     For instance a private key file name.
+ *    OUTPUT:
+ *          signature  RSA-2048 signature
+ *    RETURN:
+ *          0 on success
+ */
 #ifdef CONFIG_MVEBU_SECURE_BOOT
 int create_rsa_signature(mbedtls_pk_context	*pk_ctx,
 			 const unsigned char	*input,
@@ -272,7 +279,9 @@ int create_rsa_signature(mbedtls_pk_context	*pk_ctx,
 	unsigned char			buf[MBEDTLS_MPI_MAX_SIZE];
 	int				rval;
 
-	/* Not sure this is required, but it's safer to start with empty buffers */
+	/* Not sure this is required,
+	 * but it's safer to start with empty buffers
+	 */
 	memset(hash, 0, sizeof(hash));
 	memset(buf, 0, sizeof(buf));
 
@@ -287,19 +296,25 @@ int create_rsa_signature(mbedtls_pk_context	*pk_ctx,
 		goto sign_exit;
 	}
 
-	/* The PK context should be already initalized.
+	/* The PK context should be already initialized.
 	 * Set the padding type for this PK context
 	 */
-	mbedtls_rsa_set_padding(mbedtls_pk_rsa(*pk_ctx), MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+	mbedtls_rsa_set_padding(mbedtls_pk_rsa(*pk_ctx),
+				MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
 
 	/* First compute the SHA256 hash for the input blob */
 	mbedtls_sha256(input, ilen, hash, 0);
 
 	/* Then calculate the hash signature */
-	rval = mbedtls_rsa_rsassa_pss_sign(mbedtls_pk_rsa(*pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg,
-				   MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256, 0, hash, buf);
+	rval = mbedtls_rsa_rsassa_pss_sign(mbedtls_pk_rsa(*pk_ctx),
+					   mbedtls_ctr_drbg_random,
+					   &ctr_drbg,
+					   MBEDTLS_RSA_PRIVATE,
+					   MBEDTLS_MD_SHA256, 0, hash, buf);
 	if (rval != 0) {
-		fprintf(stderr,  "Failed to create RSA signature for %s. Error %d\n", pers, rval);
+		fprintf(stderr,
+			"Failed to create RSA signature for %s. Error %d\n",
+			pers, rval);
 		goto sign_exit;
 	}
 	memcpy(signature, buf, 256);
@@ -312,21 +327,21 @@ sign_exit:
 } /* end of create_rsa_signature */
 
 /*******************************************************************************
-*    verify_rsa_signature (memory buffer content)
-*          Verify RSASSA-PSS/SHA-256 signature for memory buffer
-*          using RSA Public Key
-*    INPUT:
-*          pub_key    Public Key buffer
-*          ilen       Public Key buffer length
-*          input      memory buffer
-*          ilen       buffer length
-*          pers       personalization string for seeding the RNG.
-*          signature  RSA-2048 signature
-*    OUTPUT:
-*          none
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    verify_rsa_signature (memory buffer content)
+ *          Verify RSASSA-PSS/SHA-256 signature for memory buffer
+ *          using RSA Public Key
+ *    INPUT:
+ *          pub_key    Public Key buffer
+ *          ilen       Public Key buffer length
+ *          input      memory buffer
+ *          ilen       buffer length
+ *          pers       personalization string for seeding the RNG.
+ *          signature  RSA-2048 signature
+ *    OUTPUT:
+ *          none
+ *    RETURN:
+ *          0 on success
+ */
 int verify_rsa_signature(const unsigned char	*pub_key,
 			 size_t			klen,
 			 const unsigned char	*input,
@@ -340,7 +355,9 @@ int verify_rsa_signature(const unsigned char	*pub_key,
 	unsigned char			hash[32];
 	int				rval;
 
-	/* Not sure this is required, but it's safer to start with empty buffer */
+	/* Not sure this is required,
+	 * but it's safer to start with empty buffer
+	 */
 	memset(hash, 0, sizeof(hash));
 
 	mbedtls_pk_init(&pk_ctx);
@@ -356,20 +373,28 @@ int verify_rsa_signature(const unsigned char	*pub_key,
 	}
 
 	/* Check ability to read the public key */
-	rval = mbedtls_pk_parse_public_key(&pk_ctx, pub_key, MAX_RSA_DER_BYTE_LEN);
+	rval = mbedtls_pk_parse_public_key(&pk_ctx, pub_key,
+					   MAX_RSA_DER_BYTE_LEN);
 	if (rval != 0) {
-		fprintf(stderr, " Failed in pk_parse_public_key (%#x)!\n", rval);
+		fprintf(stderr, " Failed in pk_parse_public_key (%#x)!\n",
+			rval);
 		goto verify_exit;
 	}
 
 	/* Set the padding type for the new PK context */
-	mbedtls_rsa_set_padding(mbedtls_pk_rsa(pk_ctx), MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+	mbedtls_rsa_set_padding(mbedtls_pk_rsa(pk_ctx),
+				MBEDTLS_RSA_PKCS_V21,
+				MBEDTLS_MD_SHA256);
 
 	/* Compute the SHA256 hash for the input buffer */
 	mbedtls_sha256(input, ilen, hash, 0);
 
-	rval = mbedtls_rsa_rsassa_pss_verify(mbedtls_pk_rsa(pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg,
-				     MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 0, hash, signature);
+	rval = mbedtls_rsa_rsassa_pss_verify(mbedtls_pk_rsa(pk_ctx),
+					     mbedtls_ctr_drbg_random,
+					     &ctr_drbg,
+					     MBEDTLS_RSA_PUBLIC,
+					     MBEDTLS_MD_SHA256, 0,
+					     hash, signature);
 	if (rval != 0)
 		fprintf(stderr, "Failed to verify signature (%d)!\n", rval);
 
@@ -382,32 +407,33 @@ verify_exit:
 } /* end of verify_rsa_signature */
 
 /*******************************************************************************
-*    image_encrypt
-*           Encrypt image buffer using AES-256-CBC scheme.
-*           The resulting image is saved into opts.sec_opts->encrypted_image
-*           and the adjusted image size into opts.sec_opts->enc_image_sz
-*           First AES_BLOCK_SZ bytes of the output image contain IV
-*    INPUT:
-*          buf        Source buffer to encrypt
-*          blen       Source buffer length
-*    OUTPUT:
-*          none
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    image_encrypt
+ *           Encrypt image buffer using AES-256-CBC scheme.
+ *           The resulting image is saved into opts.sec_opts->encrypted_image
+ *           and the adjusted image size into opts.sec_opts->enc_image_sz
+ *           First AES_BLOCK_SZ bytes of the output image contain IV
+ *    INPUT:
+ *          buf        Source buffer to encrypt
+ *          blen       Source buffer length
+ *    OUTPUT:
+ *          none
+ *    RETURN:
+ *          0 on success
+ */
 int image_encrypt(uint8_t *buf, uint32_t blen)
 {
-	struct timeval	tv;
+	struct timeval		tv;
 	char			*ptmp = (char *)&tv;
-	unsigned char	digest[32];
-	unsigned char	IV[AES_BLOCK_SZ];
-	int				i, k;
-	mbedtls_aes_context		aes_ctx;
-	int				rval = -1;
+	unsigned char		digest[32];
+	unsigned char		IV[AES_BLOCK_SZ];
+	int			i, k;
+	mbedtls_aes_context	aes_ctx;
+	int			rval = -1;
 	uint8_t			*test_img = 0;
 
 	if (AES_BLOCK_SZ > 32) {
-		fprintf(stderr, "Unsupported AES block size %d\n", AES_BLOCK_SZ);
+		fprintf(stderr, "Unsupported AES block size %d\n",
+			AES_BLOCK_SZ);
 		return rval;
 	}
 
@@ -415,28 +441,35 @@ int image_encrypt(uint8_t *buf, uint32_t blen)
 	memset(IV, 0, AES_BLOCK_SZ);
 	memset(digest, 0, 32);
 
-	/* Generate initialization vector and init the AES engine */
-	/* Use file name XOR current time and finaly SHA-256 [0...AES_BLOCK_SZ-1] */
+	/* Generate initialization vector and init the AES engine
+	 * Use file name XOR current time and finally SHA-256
+	 * [0...AES_BLOCK_SZ-1]
+	 */
 	k = strlen(opts.sec_opts->aes_key_file);
 	if (k > AES_BLOCK_SZ)
 		k = AES_BLOCK_SZ;
 	memcpy(IV, opts.sec_opts->aes_key_file, k);
 	gettimeofday(&tv, 0);
 
-	for (i = 0, k = 0; i < AES_BLOCK_SZ; i++, k = (k+1) % sizeof(struct timeval))
+	for (i = 0, k = 0; i < AES_BLOCK_SZ; i++,
+	     k = (k+1) % sizeof(struct timeval))
 		IV[i] ^= ptmp[k];
 
-	/* compute SHA-256 digest of the results and use it as the init vector (IV) */
+	/* compute SHA-256 digest of the results
+	 * and use it as the init vector (IV)
+	 */
 	mbedtls_sha256(IV, AES_BLOCK_SZ, digest, 0);
 	memcpy(IV, digest, AES_BLOCK_SZ);
-	mbedtls_aes_setkey_enc(&aes_ctx, opts.sec_opts->aes_key, AES_KEY_BIT_LEN);
+	mbedtls_aes_setkey_enc(&aes_ctx, opts.sec_opts->aes_key,
+			       AES_KEY_BIT_LEN);
 
 	/* The output image has to include extra space for IV
 	 * and to be aligned to the AES block size.
 	 * The input image buffer has to be already aligned to AES_BLOCK_SZ
 	 * and padded with zeroes
 	 */
-	opts.sec_opts->enc_image_sz = (blen + 2 * AES_BLOCK_SZ - 1) & ~(AES_BLOCK_SZ - 1);
+	opts.sec_opts->enc_image_sz = (blen + 2 * AES_BLOCK_SZ - 1) &
+				      ~(AES_BLOCK_SZ - 1);
 	opts.sec_opts->encrypted_image = calloc(opts.sec_opts->enc_image_sz, 1);
 	if (opts.sec_opts->encrypted_image == 0) {
 		fprintf(stderr, "Failed to allocate encrypted image!\n");
@@ -454,7 +487,8 @@ int image_encrypt(uint8_t *buf, uint32_t blen)
 			     opts.sec_opts->enc_image_sz - AES_BLOCK_SZ,
 			     IV, buf, opts.sec_opts->encrypted_image);
 	if (rval != 0) {
-		fprintf(stderr, "Failed to encrypt the image! Error %d\n", rval);
+		fprintf(stderr, "Failed to encrypt the image! Error %d\n",
+			rval);
 		goto encrypt_exit;
 	}
 
@@ -462,7 +496,8 @@ int image_encrypt(uint8_t *buf, uint32_t blen)
 
 	/* Try to decrypt the image and compare it with the original data */
 	mbedtls_aes_init(&aes_ctx);
-	mbedtls_aes_setkey_dec(&aes_ctx, opts.sec_opts->aes_key, AES_KEY_BIT_LEN);
+	mbedtls_aes_setkey_dec(&aes_ctx, opts.sec_opts->aes_key,
+			       AES_KEY_BIT_LEN);
 
 	test_img = calloc(opts.sec_opts->enc_image_sz - AES_BLOCK_SZ, 1);
 	if (test_img == 0) {
@@ -478,13 +513,15 @@ int image_encrypt(uint8_t *buf, uint32_t blen)
 			     opts.sec_opts->enc_image_sz - AES_BLOCK_SZ,
 			     IV, opts.sec_opts->encrypted_image, test_img);
 	if (rval != 0) {
-		fprintf(stderr, "Failed to decrypt the image! Error %d\n", rval);
+		fprintf(stderr, "Failed to decrypt the image! Error %d\n",
+			rval);
 		goto encrypt_exit;
 	}
 
 	for (i = 0; i < blen; i++) {
 		if (buf[i] != test_img[i]) {
-			fprintf(stderr, "Failed to compare the image after decryption! Byte count %d\n", i);
+			fprintf(stderr, "Failed to compare the image after");
+			fprintf(stderr, " decryption! Byte count is %d\n", i);
 			rval = -1;
 			goto encrypt_exit;
 		}
@@ -500,16 +537,16 @@ encrypt_exit:
 } /* end of image_encrypt */
 
 /*******************************************************************************
-*    verify_secure_header_signatures
-*          Verify CSK array, header and image signatures and print results
-*    INPUT:
-*          main_hdr       Main header
-*          sec_ext        Secure extention
-*    OUTPUT:
-*          none
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    verify_secure_header_signatures
+ *          Verify CSK array, header and image signatures and print results
+ *    INPUT:
+ *          main_hdr       Main header
+ *          sec_ext        Secure extension
+ *    OUTPUT:
+ *          none
+ *    RETURN:
+ *          0 on success
+ */
 int verify_secure_header_signatures(header_t *main_hdr, sec_entry_t *sec_ext)
 {
 	uint8_t	*image = (uint8_t *)main_hdr + main_hdr->prolog_size;
@@ -523,8 +560,10 @@ int verify_secure_header_signatures(header_t *main_hdr, sec_entry_t *sec_ext)
 	fprintf(stdout, "\nCheck RSA Signatures\n");
 	fprintf(stdout, "#########################\n");
 	fprintf(stdout, "CSK Block Signature: ");
-	if (verify_rsa_signature(sec_ext->kak_key, MAX_RSA_DER_BYTE_LEN,
-				 &sec_ext->csk_keys[0][0], sizeof(sec_ext->csk_keys),
+	if (verify_rsa_signature(sec_ext->kak_key,
+				 MAX_RSA_DER_BYTE_LEN,
+				 &sec_ext->csk_keys[0][0],
+				 sizeof(sec_ext->csk_keys),
 				 "CSK Block Signature: ",
 				 sec_ext->csk_sign) != 0) {
 		fprintf(stdout, "ERROR\n");
@@ -534,7 +573,8 @@ int verify_secure_header_signatures(header_t *main_hdr, sec_entry_t *sec_ext)
 
 	if (opts.key_index != -1) {
 		fprintf(stdout, "Image Signature:     ");
-		if (verify_rsa_signature(sec_ext->csk_keys[opts.key_index], MAX_RSA_DER_BYTE_LEN,
+		if (verify_rsa_signature(sec_ext->csk_keys[opts.key_index],
+					 MAX_RSA_DER_BYTE_LEN,
 					 image, main_hdr->boot_image_size,
 					 "Image Signature: ",
 					 sec_ext->image_sign) != 0) {
@@ -544,16 +584,20 @@ int verify_secure_header_signatures(header_t *main_hdr, sec_entry_t *sec_ext)
 		fprintf(stdout, "OK\n");
 
 		fprintf(stdout, "Header Signature:    ");
-		if (verify_rsa_signature(sec_ext->csk_keys[opts.key_index], MAX_RSA_DER_BYTE_LEN,
-					 (uint8_t *)main_hdr, main_hdr->prolog_size,
+		if (verify_rsa_signature(sec_ext->csk_keys[opts.key_index],
+					 MAX_RSA_DER_BYTE_LEN,
+					 (uint8_t *)main_hdr,
+					 main_hdr->prolog_size,
 					 "Header Signature: ",
 					 signature) != 0) {
 			fprintf(stdout, "ERROR\n");
 			goto ver_error;
 		}
 		fprintf(stdout, "OK\n");
-	} else
-		fprintf(stdout, "SKIP Image and Header Signatures check (undefined key index)\n");
+	} else {
+		fprintf(stdout, "SKIP Image and Header Signatures");
+		fprintf(stdout, " check (undefined key index)\n");
+	}
 
 	rval = 0;
 
@@ -563,25 +607,29 @@ ver_error:
 }
 
 /*******************************************************************************
-*    verify_and_copy_file_name_entry
-*    INPUT:
-*          element_name
-*          element
-*    OUTPUT:
-*          copy_to
-*    RETURN:
-*          0 on success
-*******************************************************************************/
-int verify_and_copy_file_name_entry(const char *element_name, const char *element, char *copy_to)
+ *    verify_and_copy_file_name_entry
+ *    INPUT:
+ *          element_name
+ *          element
+ *    OUTPUT:
+ *          copy_to
+ *    RETURN:
+ *          0 on success
+ */
+int verify_and_copy_file_name_entry(const char *element_name,
+				    const char *element, char *copy_to)
 {
 	int element_length = strlen(element);
 
 	if (element_length >= MAX_FILENAME) {
-		fprintf(stderr, "The file name %s for %s is too long (%d). Maximum allowed %d characters!\n",
-			element, element_name, element_length, MAX_FILENAME);
+		fprintf(stderr, "The file name %s for %s is too long (%d). ",
+			element, element_name, element_length);
+		fprintf(stderr, "Maximum allowed %d characters!\n",
+			MAX_FILENAME);
 		return -1;
 	} else if (element_length == 0) {
-		fprintf(stderr, "The file name for %s is empty!\n", element_name);
+		fprintf(stderr, "The file name for %s is empty!\n",
+			element_name);
 		return -1;
 	}
 	memcpy(copy_to, element, element_length);
@@ -590,16 +638,16 @@ int verify_and_copy_file_name_entry(const char *element_name, const char *elemen
 }
 
 /*******************************************************************************
-*    parse_sec_config_file
-*          Read the secure boot configuration from a file
-*          into internal structures
-*    INPUT:
-*          filename      File name
-*    OUTPUT:
-*          none
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    parse_sec_config_file
+ *          Read the secure boot configuration from a file
+ *          into internal structures
+ *    INPUT:
+ *          filename      File name
+ *    OUTPUT:
+ *          none
+ *    RETURN:
+ *          0 on success
+ */
 int parse_sec_config_file(char *filename)
 {
 	config_t		sec_cfg;
@@ -612,29 +660,37 @@ int parse_sec_config_file(char *filename)
 	config_init(&sec_cfg);
 
 	if (config_read_file(&sec_cfg, filename) != CONFIG_TRUE) {
-		fprintf(stderr, "Failed to read data from config file %s\n\t%s at line %d\n",
-			filename, config_error_text(&sec_cfg), config_error_line(&sec_cfg));
+		fprintf(stderr, "Failed to read data from config file ");
+		fprintf(stderr, "%s\n\t%s at line %d\n",
+			filename, config_error_text(&sec_cfg),
+			config_error_line(&sec_cfg));
 		goto exit_parse;
 	}
 
 	sec_opt = (sec_options *)calloc(sizeof(sec_options), 1);
 	if (sec_opt == 0) {
-		fprintf(stderr, "Cannot allocate memory for secure boot options!\n");
+		fprintf(stderr,
+			"Cannot allocate memory for secure boot options!\n");
 		goto exit_parse;
 	}
 
 	/* KAK file name */
-	if (config_lookup_string(&sec_cfg, "kak_key_file", &cfg_string) != CONFIG_TRUE) {
+	if (config_lookup_string(&sec_cfg, "kak_key_file",
+				 &cfg_string) != CONFIG_TRUE) {
 		fprintf(stderr, "The \"kak_key_file\" undefined!\n");
 		goto exit_parse;
 	}
-	if (verify_and_copy_file_name_entry("kak_key_file", cfg_string, sec_opt->kak_key_file))
+	if (verify_and_copy_file_name_entry("kak_key_file",
+					    cfg_string, sec_opt->kak_key_file))
 		goto exit_parse;
 
 
 	/* AES file name - can be empty/undefined */
-	if (config_lookup_string(&sec_cfg, "aes_key_file", &cfg_string) == CONFIG_TRUE) {
-		if (verify_and_copy_file_name_entry("aes_key_file", cfg_string, sec_opt->aes_key_file))
+	if (config_lookup_string(&sec_cfg, "aes_key_file",
+				 &cfg_string) == CONFIG_TRUE) {
+		if (verify_and_copy_file_name_entry("aes_key_file",
+						    cfg_string,
+						    sec_opt->aes_key_file))
 			goto exit_parse;
 	}
 
@@ -646,8 +702,8 @@ int parse_sec_config_file(char *filename)
 	}
 	array_sz = config_setting_length(csk_array);
 	if (array_sz > CSK_ARR_SZ) {
-		fprintf(stderr, "The \"csk_key_file\" array is too big! "
-			"Only first %d elements will be used\n",
+		fprintf(stderr, "The \"csk_key_file\" array is too big! ");
+		fprintf(stderr, "Only first %d elements will be used\n",
 			CSK_ARR_SZ);
 		array_sz = CSK_ARR_SZ;
 	} else if (array_sz == 0) {
@@ -658,49 +714,62 @@ int parse_sec_config_file(char *filename)
 	for (element = 0; element < array_sz; element++) {
 		cfg_string = config_setting_get_string_elem(csk_array, element);
 		if (verify_and_copy_file_name_entry(
-				"csk_key_file", cfg_string, sec_opt->csk_key_file[element])) {
-			fprintf(stderr, "Bad csk_key_file[%d] entry!\n", element);
+				"csk_key_file", cfg_string,
+				sec_opt->csk_key_file[element])) {
+			fprintf(stderr, "Bad csk_key_file[%d] entry!\n",
+				element);
 			goto exit_parse;
 		}
 	}
 
 	/* JTAG options */
-	if (config_lookup_bool(&sec_cfg, "jtag.enable", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"jtag.enable\" element. Using default - FALSE\n");
+	if (config_lookup_bool(&sec_cfg, "jtag.enable",
+			       &cfg_int32) != CONFIG_TRUE) {
+		fprintf(stderr, "Error obtaining \"jtag.enable\" element. ");
+		fprintf(stderr, "Using default - FALSE\n");
 		cfg_int32 = 0;
 	}
 	sec_opt->jtag_enable = cfg_int32;
 
-	if (config_lookup_int(&sec_cfg, "jtag.delay", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"jtag.delay\" element. Using default - 0us\n");
+	if (config_lookup_int(&sec_cfg, "jtag.delay",
+			      &cfg_int32) != CONFIG_TRUE) {
+		fprintf(stderr, "Error obtaining \"jtag.delay\" element. ");
+		fprintf(stderr, "Using default - 0us\n");
 		cfg_int32 = 0;
 	}
 	sec_opt->jtag_delay = cfg_int32;
 
 	/* eFUSE option */
-	if (config_lookup_bool(&sec_cfg, "efuse_disable", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"efuse_disable\" element. Using default - TRUE\n");
+	if (config_lookup_bool(&sec_cfg, "efuse_disable",
+			       &cfg_int32) != CONFIG_TRUE) {
+		fprintf(stderr, "Error obtaining \"efuse_disable\" element. ");
+		fprintf(stderr, "Using default - TRUE\n");
 		cfg_int32 = 1;
 	}
 	sec_opt->efuse_disable = cfg_int32;
 
 	/* Box ID option */
 	if (config_lookup_int(&sec_cfg, "box_id", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"box_id\" element. Using default - 0x0\n");
+		fprintf(stderr, "Error obtaining \"box_id\" element. ");
+		fprintf(stderr, "Using default - 0x0\n");
 		cfg_int32 = 0;
 	}
 	sec_opt->box_id = cfg_int32;
 
 	/* Flash ID option */
-	if (config_lookup_int(&sec_cfg, "flash_id", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"flash_id\" element. Using default - 0x0\n");
+	if (config_lookup_int(&sec_cfg, "flash_id",
+			      &cfg_int32) != CONFIG_TRUE) {
+		fprintf(stderr, "Error obtaining \"flash_id\" element. ");
+		fprintf(stderr, "Using default - 0x0\n");
 		cfg_int32 = 0;
 	}
 	sec_opt->flash_id = cfg_int32;
 
 	/* CSK index option */
-	if (config_lookup_int(&sec_cfg, "csk_key_index", &cfg_int32) != CONFIG_TRUE) {
-		fprintf(stderr, "Error obtaining \"flash_id\" element. Using default - 0x0\n");
+	if (config_lookup_int(&sec_cfg, "csk_key_index",
+			      &cfg_int32) != CONFIG_TRUE) {
+		fprintf(stderr, "Error obtaining \"flash_id\" element. "
+		fprintf(stderr, "Using default - 0x0\n");
 		cfg_int32 = 0;
 	}
 	sec_opt->csk_index = cfg_int32;
@@ -717,8 +786,11 @@ int parse_sec_config_file(char *filename)
 	}
 
 	for (element = 0; element < CP_CTRL_EL_ARRAY_SZ; element++) {
-		sec_opt->cp_ctrl_arr[element] = config_setting_get_int_elem(control_array, element * 2);
-		sec_opt->cp_efuse_arr[element] = config_setting_get_int_elem(control_array, element * 2 + 1);
+		sec_opt->cp_ctrl_arr[element] =
+			config_setting_get_int_elem(control_array, element * 2);
+		sec_opt->cp_efuse_arr[element] =
+			config_setting_get_int_elem(control_array,
+						    element * 2 + 1);
 	}
 
 	opts.sec_opts = sec_opt;
@@ -742,7 +814,8 @@ int format_sec_ext(char *filename, FILE *out_fd)
 
 	/* First, parse the configuration file */
 	if (parse_sec_config_file(filename)) {
-		printf("failed parsing configuration file %s\n", filename);
+		fprintf(stderr,
+			"failed parsing configuration file %s\n", filename);
 		return 1;
 	}
 
@@ -762,19 +835,23 @@ int format_sec_ext(char *filename, FILE *out_fd)
 					opts.sec_opts->kak_key_file :
 					opts.sec_opts->csk_key_file[index];
 		uint8_t		*out_der_key = (index == CSK_ARR_SZ) ?
-					sec_ext.kak_key : sec_ext.csk_keys[index];
+					sec_ext.kak_key :
+					sec_ext.csk_keys[index];
 		size_t		output_len;
 		unsigned char	output_buf[DER_BUF_SZ];
 		unsigned char	*der_buf_start;
 
 		/* Handle invalid/reserved file names */
-		if (strncmp(CSK_ARR_EMPTY_FILE, fname, strlen(CSK_ARR_EMPTY_FILE)) == 0) {
+		if (strncmp(CSK_ARR_EMPTY_FILE, fname,
+			    strlen(CSK_ARR_EMPTY_FILE)) == 0) {
 			if (opts.sec_opts->csk_index == index) {
-				fprintf(stderr, "CSK file name with index %d cannot be %s\n",
+				fprintf(stderr,
+					"CSK file with index %d cannot be %s\n",
 					index, CSK_ARR_EMPTY_FILE);
 				return 1;
 			} else if (index == CSK_ARR_SZ) {
-				fprintf(stderr, "KAK file name cannot be %s\n", CSK_ARR_EMPTY_FILE);
+				fprintf(stderr, "KAK file name cannot be %s\n",
+					CSK_ARR_EMPTY_FILE);
 				return 1;
 			}
 			/* this key will be empty in CSK array */
@@ -782,36 +859,50 @@ int format_sec_ext(char *filename, FILE *out_fd)
 		}
 
 		mbedtls_pk_init(pk_ctx);
-		/* Read the private RSA key into the context and verify it (no password) */
+		/* Read the private RSA key into the context
+		 * and verify it (no password)
+		 */
 		if (mbedtls_pk_parse_keyfile(pk_ctx, fname, "") != 0) {
-			fprintf(stderr, "Cannot read RSA private key file %s\n", fname);
+			fprintf(stderr,
+				"Cannot read RSA private key file %s\n", fname);
 			return 1;
 		}
 
-		/* Create a public key out of private one and store it in DER format */
-		output_len = mbedtls_pk_write_pubkey_der(pk_ctx, output_buf, DER_BUF_SZ);
+		/* Create a public key out of private one
+		 * and store it in DER format
+		 */
+		output_len = mbedtls_pk_write_pubkey_der(pk_ctx,
+							 output_buf,
+							 DER_BUF_SZ);
 		if (output_len < 0) {
-			fprintf(stderr, "Failed to create DER coded PUB key (%s)\n", fname);
+			fprintf(stderr,
+				"Failed to create DER coded PUB key (%s)\n",
+				fname);
 			return 1;
 		}
 		/* Data in the output buffer is aligned to the buffer end */
 		der_buf_start = output_buf + sizeof(output_buf) - output_len;
-		/* In the header DER data is aligned to the start of appropriate field */
+		/* In the header DER data is aligned
+		 * to the start of appropriate field
+		 */
 		memcpy(out_der_key, der_buf_start, output_len);
 
 	} /* for every private key file */
 
 	/* The CSK block signature can be created here */
 	if (create_rsa_signature(&opts.sec_opts->kak_pk,
-				 &sec_ext.csk_keys[0][0], sizeof(sec_ext.csk_keys),
-				 opts.sec_opts->csk_key_file[opts.sec_opts->csk_index],
+				 &sec_ext.csk_keys[0][0],
+				 sizeof(sec_ext.csk_keys),
+				 opts.sec_opts->csk_key_file[
+					 opts.sec_opts->csk_index],
 				 sec_ext.csk_sign) != 0) {
 		fprintf(stderr, "Failed to sign CSK keys block!\n");
 		return 1;
 	}
 	/* Check that everything is correct */
 	if (verify_rsa_signature(sec_ext.kak_key, MAX_RSA_DER_BYTE_LEN,
-				 &sec_ext.csk_keys[0][0], sizeof(sec_ext.csk_keys),
+				 &sec_ext.csk_keys[0][0],
+				 sizeof(sec_ext.csk_keys),
 				 opts.sec_opts->kak_key_file,
 				 sec_ext.csk_sign) != 0) {
 		fprintf(stderr, "Failed to verify CSK keys block signature!\n");
@@ -824,15 +915,21 @@ int format_sec_ext(char *filename, FILE *out_fd)
 
 		in_fd = fopen(opts.sec_opts->aes_key_file, "rb");
 		if (in_fd == NULL) {
-			fprintf(stderr, "Failed to open AES key file %s\n", opts.sec_opts->aes_key_file);
+			fprintf(stderr, "Failed to open AES key file %s\n",
+				opts.sec_opts->aes_key_file);
 			return 1;
 		}
 
 		/* Read the AES key in ASCII format byte by byte */
 		for (index = 0; index < AES_KEY_BYTE_LEN; index++) {
-			if (fscanf(in_fd, "%02hhx", opts.sec_opts->aes_key + index) != 1) {
-				fprintf(stderr, "Failed to read AES key byte %d from file %s\n",
-					index, opts.sec_opts->aes_key_file);
+			if (fscanf(in_fd, "%02hhx",
+			    opts.sec_opts->aes_key + index) != 1) {
+				fprintf(stderr,
+					"Failed to read AES key byte %d ",
+					index);
+				fprintf(stderr,
+					"from file %s\n",
+					opts.sec_opts->aes_key_file);
 				fclose(in_fd);
 				return 1;
 			}
@@ -850,23 +947,29 @@ int format_sec_ext(char *filename, FILE *out_fd)
 	sec_ext.jtag_delay	= opts.sec_opts->jtag_delay;
 	sec_ext.jtag_en		= opts.sec_opts->jtag_enable;
 
-	memcpy(sec_ext.cp_ctrl_arr, opts.sec_opts->cp_ctrl_arr, sizeof(uint32_t) * CP_CTRL_EL_ARRAY_SZ);
-	memcpy(sec_ext.cp_efuse_arr, opts.sec_opts->cp_efuse_arr, sizeof(uint32_t) * CP_CTRL_EL_ARRAY_SZ);
+	memcpy(sec_ext.cp_ctrl_arr,
+	       opts.sec_opts->cp_ctrl_arr,
+	       sizeof(uint32_t) * CP_CTRL_EL_ARRAY_SZ);
+	memcpy(sec_ext.cp_efuse_arr,
+	       opts.sec_opts->cp_efuse_arr,
+	       sizeof(uint32_t) * CP_CTRL_EL_ARRAY_SZ);
 
-	/* Write the resulting extention to file
+	/* Write the resulting extension to file
 	 * (image and header signature fields are still empty)
 	 */
 
-	/* Write extention header */
+	/* Write extension header */
 	written = fwrite(&header, sizeof(ext_header_t), 1, out_fd);
 	if (written != 1) {
-		fprintf(stderr, "Failed to write SEC extension header to the file\n");
+		fprintf(stderr,
+			"Failed to write SEC extension header to the file\n");
 		return 1;
 	}
-	/* Write extention body */
+	/* Write extension body */
 	written = fwrite(&sec_ext, sizeof(sec_entry_t), 1, out_fd);
 	if (written != 1) {
-		fprintf(stderr, "Failed to write SEC extension body to the file\n");
+		fprintf(stderr,
+			"Failed to write SEC extension body to the file\n");
 		return 1;
 	}
 
@@ -874,21 +977,21 @@ int format_sec_ext(char *filename, FILE *out_fd)
 }
 
 /*******************************************************************************
-*    finalize_secure_ext
-*          Make final changes to secure extension - calculate image and header
-*          signatures and encrypt the image if needed.
-*          The main header checksum and image size fileds are updated accordingly
-*    INPUT:
-*          header       Main header
-*          prolog_buf   the entire prolog buffer
-*          prolog_size  prolog buffer length
-*          image_buf    buffer containing the input binary image
-*          image_size   image buffer size.
-*    OUTPUT:
-*          none
-*    RETURN:
-*          0 on success
-*******************************************************************************/
+ *    finalize_secure_ext
+ *          Make final changes to secure extension - calculate image and header
+ *          signatures and encrypt the image if needed.
+ *          The main header checksum and image size fields updated accordingly
+ *    INPUT:
+ *          header       Main header
+ *          prolog_buf   the entire prolog buffer
+ *          prolog_size  prolog buffer length
+ *          image_buf    buffer containing the input binary image
+ *          image_size   image buffer size.
+ *    OUTPUT:
+ *          none
+ *    RETURN:
+ *          0 on success
+ */
 int finalize_secure_ext(header_t *header,
 			uint8_t *prolog_buf, uint32_t prolog_size,
 			uint8_t *image_buf, int image_size)
@@ -900,16 +1003,18 @@ int finalize_secure_ext(header_t *header,
 	sec_entry_t	*sec_ext = 0;
 
 	/* Find the Trusted Boot Header between available extensions */
-	for (cur_ext = 0, offset = sizeof(header_t); cur_ext < header->ext_count; cur_ext++) {
+	for (cur_ext = 0, offset = sizeof(header_t);
+	     cur_ext < header->ext_count; cur_ext++) {
 		ext_header_t *ext_hdr = (ext_header_t *)(prolog_buf + offset);
 
 		if (ext_hdr->type == EXT_TYPE_SECURITY) {
-			sec_ext = (sec_entry_t *)(prolog_buf + offset + sizeof(ext_header_t) + ext_hdr->offset);
+			sec_ext = (sec_entry_t *)(prolog_buf + offset +
+				   sizeof(ext_header_t) + ext_hdr->offset);
 			break;
 		}
 
 		offset += sizeof(ext_header_t);
-		/* If offset is Zero, the extention follows its header */
+		/* If offset is Zero, the extension follows its header */
 		if (ext_hdr->offset == 0)
 			offset += ext_hdr->size;
 	}
@@ -929,47 +1034,58 @@ int finalize_secure_ext(header_t *header,
 		}
 
 		/* Image size and checksum should be updated after encryption.
-		 * This way the image could be verified by BootROM before decryption.
+		 * This way the image could be verified by the BootROM
+		 * before decryption.
 		 */
 		final_image = opts.sec_opts->encrypted_image;
 		final_image_sz = opts.sec_opts->enc_image_sz;
 
 		header->boot_image_size = final_image_sz;
-		header->boot_image_checksum = checksum32((uint32_t *)final_image, final_image_sz);
+		header->boot_image_checksum =
+			checksum32((uint32_t *)final_image, final_image_sz);
 	} /* AES encryption */
 
 	/* Create the image signature first, since it will be later
 	 * signed along with the header signature
 	 */
-	if (create_rsa_signature(&opts.sec_opts->csk_pk[opts.sec_opts->csk_index],
+	if (create_rsa_signature(&opts.sec_opts->csk_pk[
+					opts.sec_opts->csk_index],
 				 final_image, final_image_sz,
-				 opts.sec_opts->csk_key_file[opts.sec_opts->csk_index],
+				 opts.sec_opts->csk_key_file[
+					opts.sec_opts->csk_index],
 				 sec_ext->image_sign) != 0) {
 		fprintf(stderr, "Failed to sign image!\n");
 		return -1;
 	}
 	/* Check that the image signature is correct */
-	if (verify_rsa_signature(sec_ext->csk_keys[opts.sec_opts->csk_index], MAX_RSA_DER_BYTE_LEN,
+	if (verify_rsa_signature(sec_ext->csk_keys[opts.sec_opts->csk_index],
+				 MAX_RSA_DER_BYTE_LEN,
 				 final_image, final_image_sz,
-				 opts.sec_opts->csk_key_file[opts.sec_opts->csk_index],
+				 opts.sec_opts->csk_key_file[
+					 opts.sec_opts->csk_index],
 				 sec_ext->image_sign) != 0) {
 		fprintf(stderr, "Failed to verify image signature!\n");
 		return -1;
 	}
 
 	/* Sign the headers and all the extensions block
-	   when the header signature field is empty */
-	if (create_rsa_signature(&opts.sec_opts->csk_pk[opts.sec_opts->csk_index],
+	 * when the header signature field is empty
+	 */
+	if (create_rsa_signature(&opts.sec_opts->csk_pk[
+					 opts.sec_opts->csk_index],
 				 prolog_buf, prolog_size,
-				 opts.sec_opts->csk_key_file[opts.sec_opts->csk_index],
+				 opts.sec_opts->csk_key_file[
+					 opts.sec_opts->csk_index],
 				 hdr_sign) != 0) {
 		fprintf(stderr, "Failed to sign header!\n");
 		return -1;
 	}
 	/* Check that the header signature is correct */
-	if (verify_rsa_signature(sec_ext->csk_keys[opts.sec_opts->csk_index], MAX_RSA_DER_BYTE_LEN,
+	if (verify_rsa_signature(sec_ext->csk_keys[opts.sec_opts->csk_index],
+				 MAX_RSA_DER_BYTE_LEN,
 				 prolog_buf, prolog_size,
-				 opts.sec_opts->csk_key_file[opts.sec_opts->csk_index],
+				 opts.sec_opts->csk_key_file[
+					 opts.sec_opts->csk_index],
 				 hdr_sign) != 0) {
 		fprintf(stderr, "Failed to verify header signature!\n");
 		return -1;
@@ -989,9 +1105,11 @@ int finalize_secure_ext(header_t *header,
 #define FMT_BIN		2
 #define FMT_NONE	3
 
-void do_print_field(unsigned int value, char *name, int start, int size, int format)
+void do_print_field(unsigned int value, char *name,
+		    int start, int size, int format)
 {
-	printf("[0x%05x : 0x%05x]  %-26s", start, start + size - 1, name);
+	fprintf(stdout, "[0x%05x : 0x%05x]  %-26s",
+		start, start + size - 1, name);
 
 	switch (format) {
 	case FMT_HEX:
@@ -1006,8 +1124,9 @@ void do_print_field(unsigned int value, char *name, int start, int size, int for
 	}
 }
 
-#define print_field(st, type, field, hex, base) do_print_field((int)st->field, #field, \
-		    base + offsetof(type, field), sizeof(st->field), hex)
+#define print_field(st, type, field, hex, base) \
+			do_print_field((int)st->field, #field, \
+			base + offsetof(type, field), sizeof(st->field), hex)
 
 int print_header(uint8_t *buf, int base)
 {
@@ -1015,7 +1134,7 @@ int print_header(uint8_t *buf, int base)
 
 	main_hdr = (header_t *)buf;
 
-	printf("########### Header ##############\n");
+	fprintf(stdout, "########### Header ##############\n");
 	print_field(main_hdr, header_t, magic, FMT_HEX, base);
 	print_field(main_hdr, header_t, prolog_size, FMT_DEC, base);
 	print_field(main_hdr, header_t, prolog_checksum, FMT_HEX, base);
@@ -1068,21 +1187,26 @@ void print_sec_ext(ext_header_t *ext_hdr, int base)
 	print_field(sec_entry, sec_entry_t, encrypt_en, FMT_DEC, base);
 	print_field(sec_entry, sec_entry_t, efuse_dis, FMT_DEC, base);
 	new_base += 6 * sizeof(uint32_t);
-	do_print_field(0, "header signature", new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
+	do_print_field(0, "header signature",
+		       new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
 	new_base += RSA_SIGN_BYTE_LEN;
-	do_print_field(0, "image signature", new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
+	do_print_field(0, "image signature",
+		       new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
 	new_base += RSA_SIGN_BYTE_LEN;
-	do_print_field(0, "CSK keys", new_base, CSK_ARR_SZ * MAX_RSA_DER_BYTE_LEN, FMT_NONE);
+	do_print_field(0, "CSK keys", new_base,
+		       CSK_ARR_SZ * MAX_RSA_DER_BYTE_LEN, FMT_NONE);
 	new_base += CSK_ARR_SZ * MAX_RSA_DER_BYTE_LEN;
-	do_print_field(0, "CSK block signature", new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
+	do_print_field(0, "CSK block signature",
+		       new_base, RSA_SIGN_BYTE_LEN, FMT_NONE);
 	new_base += RSA_SIGN_BYTE_LEN;
-	do_print_field(0, "control", new_base, CP_CTRL_EL_ARRAY_SZ * 2, FMT_NONE);
+	do_print_field(0, "control", new_base,
+		       CP_CTRL_EL_ARRAY_SZ * 2, FMT_NONE);
 
 }
 
 void print_bin_ext(ext_header_t *ext_hdr, int base)
 {
-	printf("\n########### Binary extension ###########\n");
+	fprintf(stdout, "\n########### Binary extension ###########\n");
 	base = print_ext_hdr(ext_hdr, base);
 	do_print_field(0, "binary image", base, ext_hdr->size, FMT_NONE);
 }
@@ -1100,7 +1224,6 @@ int print_extension(void *buf, int base, int count, int ext_size)
 			print_sec_ext(ext_hdr, base);
 
 		curr_size = sizeof(ext_header_t) + ext_hdr->size;
-
 		base += curr_size;
 		pad  -= curr_size;
 		ext_hdr = (ext_header_t *)((uintptr_t)ext_hdr + curr_size);
@@ -1120,34 +1243,43 @@ int parse_image(uint8_t *buf, int size)
 	uint32_t checksum, prolog_checksum;
 
 
-	printf("################### Prolog Start ######################\n\n");
+	fprintf(stdout,
+		"################### Prolog Start ######################\n\n");
 	main_hdr = (header_t *)buf;
 	base += print_header(buf, base);
 
 	if (main_hdr->ext_count)
-		base += print_extension(buf + base, base, main_hdr->ext_count,
-					main_hdr->prolog_size - sizeof(header_t));
+		base += print_extension(buf + base, base,
+					main_hdr->ext_count,
+					main_hdr->prolog_size -
+					sizeof(header_t));
 
 	if (base < main_hdr->prolog_size) {
-		printf("\n########### Padding ##############\n");
-		do_print_field(0, "prolog padding", base, main_hdr->prolog_size - base, FMT_HEX);
+		fprintf(stdout, "\n########### Padding ##############\n");
+		do_print_field(0, "prolog padding",
+			       base, main_hdr->prolog_size - base, FMT_HEX);
 		base = main_hdr->prolog_size;
 	}
-	printf("\n################### Prolog End ######################\n");
+	fprintf(stdout,
+		"\n################### Prolog End ######################\n");
 
-	printf("\n################### Boot image ######################\n");
+	fprintf(stdout,
+		"\n################### Boot image ######################\n");
 
 	do_print_field(0, "boot image", base, size - base - 4, FMT_NONE);
 
-	printf("################### Image end ########################\n");
+	fprintf(stdout,
+		"################### Image end ########################\n");
 
 	/* Check sanity for certain values */
 	printf("\nChecking values:\n");
 
 	if (main_hdr->magic == MAIN_HDR_MAGIC) {
-		printf("Headers magic:    OK!\n");
+		fprintf(stdout, "Headers magic:    OK!\n");
 	} else {
-		printf("\n****** ERROR: HEADER MAGIC 0x%08x != 0x%08x\n", main_hdr->magic, MAIN_HDR_MAGIC);
+		fprintf(stderr,
+			"\n****** ERROR: HEADER MAGIC 0x%08x != 0x%08x\n",
+			main_hdr->magic, MAIN_HDR_MAGIC);
 		goto error;
 	}
 
@@ -1158,20 +1290,23 @@ int parse_image(uint8_t *buf, int size)
 	checksum = checksum32((uint32_t *)buf, main_hdr->prolog_size);
 
 	if (checksum == prolog_checksum) {
-		printf("Headers checksum: OK!\n");
+		fprintf(stdout, "Headers checksum: OK!\n");
 	} else {
-		printf("\n****** ERROR: BAD HEADER CHECKSUM 0x%08x != 0x%08x ********\n",
-		       checksum, prolog_checksum);
+		fprintf(stderr,
+			"\n***** ERROR: BAD HEADER CHECKSUM 0x%08x != 0x%08x\n",
+			checksum, prolog_checksum);
 		goto error;
 	}
 
 	/* boot image checksum */
-	checksum = checksum32((uint32_t *)(buf + main_hdr->prolog_size), main_hdr->boot_image_size);
+	checksum = checksum32((uint32_t *)(buf + main_hdr->prolog_size),
+			      main_hdr->boot_image_size);
 	if (checksum == main_hdr->boot_image_checksum) {
-		printf("Image checksum:   OK!\n");
+		fprintf(stdout, "Image checksum:   OK!\n");
 	} else {
-		printf("\n****** ERROR: BAD IMAGE CHECKSUM 0x%08x != 0x%08x ********\n",
-		       checksum, main_hdr->boot_image_checksum);
+		fprintf(stderr,
+			"\n****** ERROR: BAD IMAGE CHECKSUM 0x%08x != 0x%08x\n",
+			checksum, main_hdr->boot_image_checksum);
 		goto error;
 	}
 
@@ -1185,25 +1320,35 @@ int parse_image(uint8_t *buf, int size)
 
 		while (ext_num--) {
 			if (ext_hdr->type == EXT_TYPE_SECURITY) {
-				sec_entry_t  *sec_entry = (sec_entry_t *)(ext_hdr + 1);
+				sec_entry_t  *sec_entry =
+						(sec_entry_t *)(ext_hdr + 1);
 
-				ret = verify_secure_header_signatures(main_hdr, sec_entry);
+				ret = verify_secure_header_signatures(
+							main_hdr, sec_entry);
 				if (ret != 0) {
-					fprintf(stderr, "\n****** FAILED TO VERIFY RSA SIGNATURES ********\n");
+					fprintf(stderr,
+						"\n****** FAILED TO VERIFY ");
+					fprintf(stderr,
+						"RSA SIGNATURES ********\n");
 					goto error;
 				}
 
-				mbedtls_sha256(sec_entry->kak_key, MAX_RSA_DER_BYTE_LEN, hash, 0);
-				fprintf(stdout, ">>>>>>>>>>> KAK KEY HASH >>>>>>>>>>>\n");
+				mbedtls_sha256(sec_entry->kak_key,
+					       MAX_RSA_DER_BYTE_LEN, hash, 0);
+				fprintf(stdout,
+					">>>>>>>>>> KAK KEY HASH >>>>>>>>>>\n");
 				fprintf(stdout, "SHA256: ");
 				for (i = 0; i < 32; i++)
 					fprintf(stdout, "%02X", hash[i]);
 
-				fprintf(stdout, "\n<<<<<<<<<<< KAK KEY HASH <<<<<<<<<<<\n");
+				fprintf(stdout,
+					"\n<<<<<<<<< KAK KEY HASH <<<<<<<<<\n");
 
 				break;
 			}
-			ext_hdr = (ext_header_t *)((uint8_t *)(ext_hdr + 1) + ext_hdr->size);
+			ext_hdr =
+				(ext_header_t *)((uint8_t *)(ext_hdr + 1) +
+				 ext_hdr->size);
 		}
 	}
 #endif
@@ -1223,13 +1368,14 @@ int format_bin_ext(char *filename, FILE *out_fd)
 
 	in_fd = fopen(filename, "rb");
 	if (in_fd == NULL) {
-		printf("failed to open bin extension file %s\n", filename);
+		fprintf(stderr, "failed to open bin extension file %s\n",
+			filename);
 		return 1;
 	}
 
 	size = get_file_size(filename);
 	if (size <= 0) {
-		printf("bin extension file size is bad\n");
+		fprintf(stderr, "bin extension file size is bad\n");
 		return 1;
 	}
 
@@ -1245,7 +1391,7 @@ int format_bin_ext(char *filename, FILE *out_fd)
 	/* Write header */
 	written = fwrite(&header, sizeof(ext_header_t), 1, out_fd);
 	if (written != 1) {
-		printf("failed writing header to extension file\n");
+		fprintf(stderr, "failed writing header to extension file\n");
 		return 1;
 	}
 
@@ -1277,7 +1423,8 @@ int format_extensions(char *ext_filename)
 
 	out_fd = fopen(ext_filename, "wb");
 	if (out_fd == NULL) {
-		printf("failed to open extension output file %s", ext_filename);
+		fprintf(stderr, "failed to open extension output file %s",
+			ext_filename);
 		return 1;
 	}
 
@@ -1321,7 +1468,8 @@ void update_uart(header_t *header)
  *
  * ****************************************/
 
-int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_size, FILE *out_fd)
+int write_prolog(int ext_cnt, char *ext_filename,
+		 uint8_t *image_buf, int image_size, FILE *out_fd)
 {
 	header_t		*header;
 	int main_hdr_size = sizeof(header_t);
@@ -1335,12 +1483,13 @@ int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_
 	if (ext_cnt)
 		prolog_size +=  get_file_size(ext_filename);
 
-	prolog_size = ((prolog_size + PROLOG_ALIGNMENT) & (~(PROLOG_ALIGNMENT-1)));
+	prolog_size = ((prolog_size + PROLOG_ALIGNMENT) &
+		     (~(PROLOG_ALIGNMENT-1)));
 
 	/* Allocate a zeroed buffer to zero the padding bytes */
 	buf = calloc(prolog_size, 1);
 	if (buf == NULL) {
-		printf("Error: failed allocating checksum buffer\n");
+		fprintf(stderr, "Error: failed allocating checksum buffer\n");
 		return 1;
 	}
 
@@ -1353,7 +1502,8 @@ int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_
 	header->ext_count   = ext_cnt;
 	header->aux_flags   = 0;
 	header->boot_image_size = (image_size + 3) & (~0x3);
-	header->boot_image_checksum = checksum32((uint32_t *)image_buf, image_size);
+	header->boot_image_checksum = checksum32((uint32_t *)image_buf,
+						 image_size);
 
 	update_uart(header);
 
@@ -1361,13 +1511,16 @@ int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_
 	if (ext_cnt) {
 		ext_fd = fopen(ext_filename, "rb");
 		if (ext_fd == NULL) {
-			printf("Error: failed to open extensions file\n");
+			fprintf(stderr,
+				"Error: failed to open extensions file\n");
 			goto error;
 		}
 
-		read = fread(&buf[main_hdr_size],  get_file_size(ext_filename), 1, ext_fd);
+		read = fread(&buf[main_hdr_size],
+			     get_file_size(ext_filename), 1, ext_fd);
 		if (read != 1) {
-			printf("Error: failed to open extensions file\n");
+			fprintf(stderr,
+				"Error: failed to open extensions file\n");
 			goto error;
 		}
 
@@ -1375,9 +1528,11 @@ int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_
 		/* Secure boot mode? */
 		if (opts.sec_opts != 0) {
 			ret = finalize_secure_ext(header, (uint8_t *)buf,
-						  prolog_size, image_buf, image_size);
+						  prolog_size, image_buf,
+						  image_size);
 			if (ret != 0) {
-				printf("Error: failed to handle secure extension!\n");
+				fprintf(stderr, "Error: failed to handle ");
+				fprintf(stderr, "secure extension!\n");
 				goto error;
 			}
 		} /* secure boot mode */
@@ -1390,7 +1545,8 @@ int write_prolog(int ext_cnt, char *ext_filename, uint8_t *image_buf, int image_
 	/* Now spill everything to output file */
 	written = fwrite(buf, prolog_size, 1, out_fd);
 	if (written != 1) {
-		printf("Error: failed to write prolog to output file\n");
+		fprintf(stderr,
+			"Error: failed to write prolog to output file\n");
 		goto error;
 	}
 
@@ -1411,7 +1567,7 @@ int write_boot_image(uint8_t *buf, uint32_t image_size, FILE *out_fd)
 
 	written = fwrite(buf, aligned_size, 1, out_fd);
 	if (written != 1) {
-		printf("Error: Failed to write boot image\n");
+		fprintf(stderr, "Error: Failed to write boot image\n");
 		goto error;
 	}
 
@@ -1522,22 +1678,25 @@ int main(int argc, char *argv[])
 
 	/* Read the input file to buffer */
 	image_size = get_file_size(in_file);
-	image_buf = calloc((image_size + AES_BLOCK_SZ - 1) & ~(AES_BLOCK_SZ - 1), 1);
+	image_buf = calloc((image_size + AES_BLOCK_SZ - 1) &
+			   ~(AES_BLOCK_SZ - 1), 1);
 	if (image_buf == NULL) {
-		printf("Error: failed allocating input buffer\n");
+		fprintf(stderr, "Error: failed allocating input buffer\n");
 		return 1;
 	}
 
 	read = fread(image_buf, image_size, 1, in_fd);
 	if (read != 1) {
-		printf("Error: failed to read input file\n");
+		fprintf(stderr, "Error: failed to read input file\n");
 		goto main_exit;
 	}
 
 	/* Parse the input image and leave */
 	if (parse) {
 		if (opts.key_index >= CSK_ARR_SZ) {
-			fprintf(stderr, "Wrong key index value. Supported values 0 - %d\n", CSK_ARR_SZ - 1);
+			fprintf(stderr,
+				"Wrong key IDX value. Valid values 0 - %d\n",
+				CSK_ARR_SZ - 1);
 			goto main_exit;
 		}
 		ret = parse_image(image_buf, image_size);
@@ -1553,7 +1712,8 @@ int main(int argc, char *argv[])
 
 	out_fd = fopen(out_file, "wb");
 	if (out_fd == NULL) {
-		printf("Error: Failed to open output file %s\n", out_file);
+		fprintf(stderr,
+			"Error: Failed to open output file %s\n", out_file);
 		goto main_exit;
 	}
 
@@ -1562,11 +1722,13 @@ int main(int argc, char *argv[])
 		goto main_exit;
 
 #ifdef CONFIG_MVEBU_SECURE_BOOT
-	if (opts.sec_opts && (opts.sec_opts->encrypted_image != 0) && (opts.sec_opts->enc_image_sz != 0))
-		ret = write_boot_image(opts.sec_opts->encrypted_image, opts.sec_opts->enc_image_sz, out_fd);
-	else
+	if (opts.sec_opts && (opts.sec_opts->encrypted_image != 0) &&
+	    (opts.sec_opts->enc_image_sz != 0)) {
+		ret = write_boot_image(opts.sec_opts->encrypted_image,
+				       opts.sec_opts->enc_image_sz, out_fd);
+	} else
 #endif
-	ret = write_boot_image(image_buf, image_size, out_fd);
+		ret = write_boot_image(image_buf, image_size, out_fd);
 	if (ret)
 		goto main_exit;
 

@@ -5,13 +5,15 @@
  * https://spdx.org/licenses
  */
 
+/* IOW unit device driver for Marvell CP110 and CP115 SoCs */
+
+#include <armada_common.h>
 #include <arch_helpers.h>
 #include <debug.h>
 #include <iob.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -48,15 +50,18 @@ static void iob_win_check(struct addr_map_win *win, uint32_t win_num)
 	/* check if address is aligned to the size */
 	if (IS_NOT_ALIGN(win->base_addr, IOB_WIN_ALIGNMENT)) {
 		win->base_addr = ALIGN_UP(win->base_addr, IOB_WIN_ALIGNMENT);
-		ERROR("Window %d: base address unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Align up the base address to 0x%llx\n", win->base_addr);
+		ERROR("Window %d: base address unaligned to 0x%x\n",
+		      win_num, IOB_WIN_ALIGNMENT);
+		tf_printf("Align up the base address to 0x%llx\n",
+			  win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, IOB_WIN_ALIGNMENT)) {
 		win->win_size = ALIGN_UP(win->win_size, IOB_WIN_ALIGNMENT);
-		ERROR("Window %d: window size unaligned to 0x%x\n", win_num, IOB_WIN_ALIGNMENT);
-		printf("Aligning size to 0x%llx\n", win->win_size);
+		ERROR("Window %d: window size unaligned to 0x%x\n", win_num,
+		      IOB_WIN_ALIGNMENT);
+		tf_printf("Aligning size to 0x%llx\n", win->win_size);
 	}
 }
 
@@ -74,7 +79,8 @@ static void iob_enable_win(struct addr_map_win *win, uint32_t win_id)
 	mmio_write_32(IOB_WIN_AHR_OFFSET(win_id), ahr);
 
 	iob_win_reg = WIN_ENABLE_BIT;
-	iob_win_reg |= (win->target_id & IOB_TARGET_ID_MASK) << IOB_TARGET_ID_OFFSET;
+	iob_win_reg |= (win->target_id & IOB_TARGET_ID_MASK)
+		       << IOB_TARGET_ID_OFFSET;
 	mmio_write_32(IOB_WIN_CR_OFFSET(win_id), iob_win_reg);
 
 }
@@ -85,16 +91,18 @@ static void dump_iob(void)
 	uint32_t win_id, win_cr, alr, ahr;
 	uint8_t target_id;
 	uint64_t start, end;
-	char *iob_target_name[IOB_MAX_TID] = {"CFG  ", "MCI0 ", "PEX1 ", "PEX2 ",
-					      "PEX0 ", "NAND ", "RUNIT", "MCI1 "};
+	char *iob_target_name[IOB_MAX_TID] = {
+		"CFG  ", "MCI0 ", "PEX1 ", "PEX2 ",
+		"PEX0 ", "NAND ", "RUNIT", "MCI1 " };
 
 	/* Dump all IOB windows */
-	printf("bank  id target  start              end\n");
-	printf("----------------------------------------------------\n");
+	tf_printf("bank  id target  start              end\n");
+	tf_printf("----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_IOB_MAX_WINS; win_id++) {
 		win_cr = mmio_read_32(IOB_WIN_CR_OFFSET(win_id));
 		if (win_cr & WIN_ENABLE_BIT) {
-			target_id = (win_cr >> IOB_TARGET_ID_OFFSET) & IOB_TARGET_ID_MASK;
+			target_id = (win_cr >> IOB_TARGET_ID_OFFSET) &
+				     IOB_TARGET_ID_MASK;
 			alr = mmio_read_32(IOB_WIN_ALR_OFFSET(win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			if (win_id != 0) {
@@ -102,31 +110,33 @@ static void dump_iob(void)
 				end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
 			} else {
 				/* Window #0 size is hardcoded to 16MB, as it's
-				** reserved for CP configuration space. */
+				 * reserved for CP configuration space.
+				 */
 				end = start + (16 << 20);
 			}
-			printf("iob   %02d %s   0x%016llx 0x%016llx\n"
-					, win_id, iob_target_name[target_id], start, end);
+			tf_printf("iob   %02d %s   0x%016llx 0x%016llx\n",
+				  win_id, iob_target_name[target_id],
+				  start, end);
 		}
 	}
-
-	return;
 }
 #endif
 
-void iob_cfg_space_update(int ap_idx, int cp_idx, uintptr_t base, uintptr_t new_base)
+void iob_cfg_space_update(int ap_idx, int cp_idx, uintptr_t base,
+			  uintptr_t new_base)
 {
 	debug_enter();
 
 	iob_base = base + MVEBU_IOB_OFFSET;
 
-	NOTICE("Change the base address of AP%d-CP%d to %lx\n", ap_idx, cp_idx, new_base);
+	NOTICE("Change the base address of AP%d-CP%d to %lx\n",
+	       ap_idx, cp_idx, new_base);
 	mmio_write_32(IOB_WIN_ALR_OFFSET(0), new_base >> ADDRESS_SHIFT);
 
 	iob_base = new_base + MVEBU_IOB_OFFSET;
 
 	/* Make sure the address was configured by the CPU before
-	 * any possibe access to the CP.
+	 * any possible access to the CP.
 	 */
 	dsb();
 
@@ -150,12 +160,14 @@ int init_iob(uintptr_t base)
 		INFO("no windows configurations found\n");
 		return 0;
 	} else if (win_count > (MVEBU_IOB_MAX_WINS - 1)) {
-		ERROR("IOB memory map array greater than max available windows, set win_count to max %d\n",
-				MVEBU_IOB_MAX_WINS);
+		ERROR("IOB mem map array > than max available windows (%d)\n",
+		      MVEBU_IOB_MAX_WINS);
 		win_count = MVEBU_IOB_MAX_WINS;
 	}
 
-	/* disable all IOB windows, start from win_id = 1 because can't disable internal register window */
+	/* disable all IOB windows, start from win_id = 1
+	 * because can't disable internal register window
+	 */
 	for (win_id = 1; win_id < MVEBU_IOB_MAX_WINS; win_id++) {
 		win_reg = mmio_read_32(IOB_WIN_CR_OFFSET(win_id));
 		win_reg &= ~WIN_ENABLE_BIT;

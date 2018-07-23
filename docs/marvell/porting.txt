@@ -1,13 +1,13 @@
-ATF Porting Guide
+TF-A Porting Guide
 =================
 
-This section describes how to port ATF to a customer board, assuming that the SoC being used is already supported
-in ATF.
+This section describes how to port TF-A to a customer board, assuming that the SoC being used is already supported
+in TF-A.
 
 
 Source Code Structure
 ---------------------
-- The cusomer platform specific code shall reside under "plat/marvell/<soc family>/<soc>_cust"
+- The customer platform specific code shall reside under "plat/marvell/<soc family>/<soc>_cust"
 	(e.g. 'plat/marvell/a8k/a7040_cust').
 - The platform name for build purposes is called "<soc>_cust" (e.g. a7040_cust).
 - The build system will reuse all files from within the soc directory, and take only the porting
@@ -47,7 +47,7 @@ Armada-70x0/Armada-80x0 Porting
 		In A7040-DB specific implementation (plat/marvell/a8k/a70x0/board/marvell_plat_config.c),
 		the image skip is implemented using GPIO: mpp 33 (SW5).
 
-		Before reseting the board make sure there is a valid image on the next flash address:
+		Before resetting the board make sure there is a valid image on the next flash address:
 			-tftp [valid address] flash-image.bin
 			-sf update [valid address] 0x2000000 [size]
 
@@ -56,10 +56,10 @@ Armada-70x0/Armada-80x0 Porting
 
   - DDR Porting (dram_port.c):
 	- This file defines the dram topology and parameters of the target board.
-	- The DDR code is part of the BLE component, which is an extension of ARM Trusted Firmware (ATF).
-	- The DDR driver called mv_ddr is released separately apart from ATF sources.
+	- The DDR code is part of the BLE component, which is an extension of ARM Trusted Firmware (TF-A).
+	- The DDR driver called mv_ddr is released separately apart from TF-A sources.
 	- The BLE and consequently, the DDR init code is executed at the early stage of the boot process.
-	- Each supported platform of the ATF has its own DDR porting file called dram_port.c located at
+	- Each supported platform of the TF-A has its own DDR porting file called dram_port.c located at
 	  ``atf/plat/marvell/a8k/<platform>/board`` directory.
 	- Please refer to '<path_to_mv_ddr_sources>/doc/porting_guide.txt' for detailed porting description.
 	- The build target directory is "build/<platform>/release/ble".

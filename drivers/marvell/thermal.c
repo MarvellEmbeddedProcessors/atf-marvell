@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2017 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+/* Driver for thermal unit located in Marvell ARMADA 8K and compatible SoCs */
 
 #include <debug.h>
 #include <thermal.h>

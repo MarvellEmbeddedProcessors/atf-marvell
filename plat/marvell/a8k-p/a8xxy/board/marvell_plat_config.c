@@ -4,9 +4,10 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
+
+#include <armada_common.h>
 #include <ap810_setup.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 /* This array describe how CPx connect to APx, via which MCI interface
  * For AP0: CP0 connected via MCI3
@@ -85,11 +86,11 @@ int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *siz
 	if (ap_count < 3) {
 		switch (ap) {
 		case 0:
-			*size = sizeof(gwin_memory_map2_ap0)/sizeof(gwin_memory_map2_ap0[0]);
+			*size = ARRAY_SIZE(gwin_memory_map2_ap0);
 			*win = gwin_memory_map2_ap0;
 			return 0;
 		case 1:
-			*size = sizeof(gwin_memory_map2_ap1)/sizeof(gwin_memory_map2_ap1[0]);
+			*size = ARRAY_SIZE(gwin_memory_map2_ap1);
 			*win = gwin_memory_map2_ap1;
 			return 0;
 		default:
@@ -98,19 +99,19 @@ int marvell_get_gwin_memory_map(int ap, struct addr_map_win **win, uint32_t *siz
 	} else {
 		switch (ap) {
 		case 0:
-			*size = sizeof(gwin_memory_map4_ap0)/sizeof(gwin_memory_map4_ap0[0]);
+			*size = ARRAY_SIZE(gwin_memory_map4_ap0);
 			*win = gwin_memory_map4_ap0;
 			return 0;
 		case 1:
-			*size = sizeof(gwin_memory_map4_ap1)/sizeof(gwin_memory_map4_ap1[0]);
+			*size = ARRAY_SIZE(gwin_memory_map4_ap1);
 			*win = gwin_memory_map4_ap1;
 			return 0;
 		case 2:
-			*size = sizeof(gwin_memory_map4_ap2)/sizeof(gwin_memory_map4_ap2[0]);
+			*size = ARRAY_SIZE(gwin_memory_map4_ap2);
 			*win = gwin_memory_map4_ap2;
 			return 0;
 		case 3:
-			*size = sizeof(gwin_memory_map4_ap3)/sizeof(gwin_memory_map4_ap3[0]);
+			*size = ARRAY_SIZE(gwin_memory_map4_ap3);
 			*win = gwin_memory_map4_ap3;
 			return 0;
 		default:
@@ -177,11 +178,11 @@ int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size
 	if (ap_count < 3) {
 		switch (ap) {
 		case 0:
-			*size = sizeof(ccu_memory_map2_ap0)/sizeof(ccu_memory_map2_ap0[0]);
+			*size = ARRAY_SIZE(ccu_memory_map2_ap0);
 			*win = ccu_memory_map2_ap0;
 			return 0;
 		case 1:
-			*size = sizeof(ccu_memory_map2_ap1)/sizeof(ccu_memory_map2_ap1[0]);
+			*size = ARRAY_SIZE(ccu_memory_map2_ap1);
 			*win = ccu_memory_map2_ap1;
 			return 0;
 		default:
@@ -190,19 +191,19 @@ int marvell_get_ccu_memory_map(int ap, struct addr_map_win **win, uint32_t *size
 	} else {
 		switch (ap) {
 		case 0:
-			*size = sizeof(ccu_memory_map_ap0)/sizeof(ccu_memory_map_ap0[0]);
+			*size = ARRAY_SIZE(ccu_memory_map_ap0);
 			*win = ccu_memory_map_ap0;
 			return 0;
 		case 1:
-			*size = sizeof(ccu_memory_map_ap1)/sizeof(ccu_memory_map_ap1[0]);
+			*size = ARRAY_SIZE(ccu_memory_map_ap1);
 			*win = ccu_memory_map_ap1;
 			return 0;
 		case 2:
-			*size = sizeof(ccu_memory_map_ap2)/sizeof(ccu_memory_map_ap2[0]);
+			*size = ARRAY_SIZE(ccu_memory_map_ap2);
 			*win = ccu_memory_map_ap2;
 			return 0;
 		case 3:
-			*size = sizeof(ccu_memory_map_ap3)/sizeof(ccu_memory_map_ap3[0]);
+			*size = ARRAY_SIZE(ccu_memory_map_ap3);
 			*win = ccu_memory_map_ap3;
 			return 0;
 		default:
@@ -241,18 +242,19 @@ uint32_t marvell_get_io_win_gcr_target(int ap_index)
 	return STM_TID;
 }
 
-int marvell_get_io_win_memory_map(int ap, struct addr_map_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(int ap, struct addr_map_win **win,
+				  uint32_t *size)
 {
 	int ap_count = ap_get_count();
 
 	if (ap_count < 3) {
 		switch (ap) {
 		case 0:
-			*size = sizeof(io_win_memory_map2_ap0)/sizeof(io_win_memory_map2_ap0[0]);
+			*size = ARRAY_SIZE(io_win_memory_map2_ap0);
 			*win = io_win_memory_map2_ap0;
 			return 0;
 		case 1:
-			*size = sizeof(io_win_memory_map2_ap1)/sizeof(io_win_memory_map2_ap1[0]);
+			*size = ARRAY_SIZE(io_win_memory_map2_ap1);
 			*win = io_win_memory_map2_ap1;
 			return 0;
 		default:
@@ -488,28 +490,29 @@ struct addr_map_win *iob_map[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUN
 
 uint32_t iob_map_size[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUNT] = {
 	/* AP0 */
-	{ sizeof(iob_memory_map_ap0_cp0)/sizeof(iob_memory_map_ap0_cp0[0]),
-	  sizeof(iob_memory_map_ap0_cp1)/sizeof(iob_memory_map_ap0_cp1[0]),
-	  sizeof(iob_memory_map_ap0_cp2)/sizeof(iob_memory_map_ap0_cp2[0]),
-	  sizeof(iob_memory_map_ap0_cp3)/sizeof(iob_memory_map_ap0_cp3[0]) },
+	{ ARRAY_SIZE(iob_memory_map_ap0_cp0),
+	  ARRAY_SIZE(iob_memory_map_ap0_cp1),
+	  ARRAY_SIZE(iob_memory_map_ap0_cp2),
+	  ARRAY_SIZE(iob_memory_map_ap0_cp3) },
 	/* AP1 */
-	{ sizeof(iob_memory_map_ap1_cp0)/sizeof(iob_memory_map_ap1_cp0[0]),
-	  sizeof(iob_memory_map_ap1_cp1)/sizeof(iob_memory_map_ap1_cp1[0]),
-	  sizeof(iob_memory_map_ap1_cp2)/sizeof(iob_memory_map_ap1_cp2[0]),
-	  sizeof(iob_memory_map_ap1_cp3)/sizeof(iob_memory_map_ap1_cp3[0]) },
+	{ ARRAY_SIZE(iob_memory_map_ap1_cp0),
+	  ARRAY_SIZE(iob_memory_map_ap1_cp1),
+	  ARRAY_SIZE(iob_memory_map_ap1_cp2),
+	  ARRAY_SIZE(iob_memory_map_ap1_cp3) },
 	/* AP2 */
-	{ sizeof(iob_memory_map_ap2_cp0)/sizeof(iob_memory_map_ap2_cp0[0]),
-	  sizeof(iob_memory_map_ap2_cp1)/sizeof(iob_memory_map_ap2_cp1[0]),
-	  sizeof(iob_memory_map_ap2_cp2)/sizeof(iob_memory_map_ap2_cp2[0]),
-	  sizeof(iob_memory_map_ap2_cp3)/sizeof(iob_memory_map_ap2_cp3[0]) },
+	{ ARRAY_SIZE(iob_memory_map_ap2_cp0),
+	  ARRAY_SIZE(iob_memory_map_ap2_cp1),
+	  ARRAY_SIZE(iob_memory_map_ap2_cp2),
+	  ARRAY_SIZE(iob_memory_map_ap2_cp3) },
 	/* AP3 */
-	{ sizeof(iob_memory_map_ap3_cp0)/sizeof(iob_memory_map_ap3_cp0[0]),
-	  sizeof(iob_memory_map_ap3_cp1)/sizeof(iob_memory_map_ap3_cp1[0]),
-	  sizeof(iob_memory_map_ap3_cp2)/sizeof(iob_memory_map_ap3_cp2[0]),
-	  sizeof(iob_memory_map_ap3_cp3)/sizeof(iob_memory_map_ap3_cp3[0]) }
+	{ ARRAY_SIZE(iob_memory_map_ap3_cp0),
+	  ARRAY_SIZE(iob_memory_map_ap3_cp1),
+	  ARRAY_SIZE(iob_memory_map_ap3_cp2),
+	  ARRAY_SIZE(iob_memory_map_ap3_cp3) }
 };
 
-int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size,
+			       uintptr_t base)
 {
 	int  ap, cp;
 
@@ -532,7 +535,8 @@ int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintpt
  * AMB Configuration
  *****************************************************************************
  */
-struct addr_map_win *amb_map[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUNT] = {
+struct addr_map_win *amb_map[PLAT_MARVELL_NORTHB_COUNT]
+			    [PLAT_MARVELL_SOUTHB_COUNT] = {
 	/* AP0 */
 	{ NULL, NULL, NULL, NULL },
 	/* AP1 */
@@ -554,7 +558,8 @@ uint32_t amb_map_size[PLAT_MARVELL_NORTHB_COUNT][PLAT_MARVELL_SOUTHB_COUNT] = {
 	{ 0, 0, 0, 0 },
 };
 
-int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size,
+			       uintptr_t base)
 {
 	int  ap, cp;
 

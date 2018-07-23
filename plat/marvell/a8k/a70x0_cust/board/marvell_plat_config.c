@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
-#include <plat_config.h>
+
+#include <armada_common.h>
+#include <mvebu_def.h>
+
 /*
  * If bootrom is currently at BLE there's no need to include the memory
  * maps structure at this point
  */
-#include <plat_def.h>
 #ifndef IMAGE_BLE
 
 /*****************************************************************************
@@ -20,13 +22,14 @@ struct addr_map_win amb_memory_map[] = {
 	{0xf900,	0x1000000,	AMB_DEV_CS0_ID}, /* Device Bus window */
 };
 
-int marvell_get_amb_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_amb_memory_map(struct addr_map_win **win,
+			       uint32_t *size, uintptr_t base)
 {
 	*win = amb_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(amb_memory_map)/sizeof(amb_memory_map[0]);
+		*size = ARRAY_SIZE(amb_memory_map);
 
 	return 0;
 }
@@ -50,13 +53,14 @@ uint32_t marvell_get_io_win_gcr_target(int ap_index)
 	return PIDI_TID;
 }
 
-int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win, uint32_t *size)
+int marvell_get_io_win_memory_map(int ap_index, struct addr_map_win **win,
+				  uint32_t *size)
 {
 	*win = io_win_memory_map;
 	if (*win == NULL)
 		*size = 0;
 	else
-		*size = sizeof(io_win_memory_map)/sizeof(io_win_memory_map[0]);
+		*size = ARRAY_SIZE(io_win_memory_map);
 
 	return 0;
 }
@@ -75,10 +79,11 @@ struct addr_map_win iob_memory_map[] = {
 	{0x00000000f6000000,	0x1000000,	PEX0_TID},
 };
 
-int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size, uintptr_t base)
+int marvell_get_iob_memory_map(struct addr_map_win **win, uint32_t *size,
+			       uintptr_t base)
 {
 	*win = iob_memory_map;
-	*size = sizeof(iob_memory_map)/sizeof(iob_memory_map[0]);
+	*size = ARRAY_SIZE(iob_memory_map);
 
 	return 0;
 }
@@ -101,10 +106,11 @@ uint32_t marvell_get_ccu_gcr_target(int ap)
 	return DRAM_0_TID;
 }
 
-int marvell_get_ccu_memory_map(int ap_index, struct addr_map_win **win, uint32_t *size)
+int marvell_get_ccu_memory_map(int ap_index, struct addr_map_win **win,
+			       uint32_t *size)
 {
 	*win = ccu_memory_map;
-	*size = sizeof(ccu_memory_map)/sizeof(ccu_memory_map[0]);
+	*size = ARRAY_SIZE(ccu_memory_map);
 
 	return 0;
 }

@@ -8,8 +8,8 @@
 #include <debug.h>
 #include <eawg.h>
 #include <mmio.h>
+#include <mvebu_def.h>
 #include <stdio.h>
-#include <plat_def.h>
 
 #define EAWG_BASE_REGS(ap)		MVEBU_AR_RFU_BASE(ap) + 0x6000
 #define EAWG_WRITE_ADDR_REG(ap)		(EAWG_BASE_REGS(ap) + 0x0)

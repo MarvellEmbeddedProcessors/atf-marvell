@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2016 - 2018 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
  * https://spdx.org/licenses
  */
 
+/* IO Window unit device driver for Marvell AP807, AP807 and AP810 SoCs */
+
+#include <armada_common.h>
 #include <debug.h>
 #include <io_win.h>
 #include <mmio.h>
 #include <mvebu.h>
-#include <plat_config.h>
-#include <plat_def.h>
+#include <mvebu_def.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO
 #define DEBUG_ADDR_MAP
@@ -25,9 +27,12 @@
 #define IO_WIN_ALIGNMENT_64K		(0x10000)
 
 /* AP registers */
-#define IO_WIN_ALR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x0 + (0x10 * win))
-#define IO_WIN_AHR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x8 + (0x10 * win))
-#define IO_WIN_CR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0xC + (0x10 * win))
+#define IO_WIN_ALR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x0 + \
+						(0x10 * win))
+#define IO_WIN_AHR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0x8 + \
+						(0x10 * win))
+#define IO_WIN_CR_OFFSET(ap, win)	(MVEBU_IO_WIN_BASE(ap) + 0xC + \
+						(0x10 * win))
 
 /* For storage of CR, ALR, AHR abd GCR */
 static uint32_t io_win_regs_save[MVEBU_IO_WIN_MAX_WINS * 3 + 1];
@@ -38,17 +43,20 @@ static void io_win_check(struct addr_map_win *win)
 	/* check if address is aligned to 1M */
 	if (IS_NOT_ALIGN(win->base_addr, IO_WIN_ALIGNMENT_1M)) {
 		win->base_addr = ALIGN_UP(win->base_addr, IO_WIN_ALIGNMENT_1M);
-		NOTICE("%s: Align up the base address to 0x%llx\n", __func__, win->base_addr);
+		NOTICE("%s: Align up the base address to 0x%llx\n",
+		       __func__, win->base_addr);
 	}
 
 	/* size parameter validity check */
 	if (IS_NOT_ALIGN(win->win_size, IO_WIN_ALIGNMENT_1M)) {
 		win->win_size = ALIGN_UP(win->win_size, IO_WIN_ALIGNMENT_1M);
-		NOTICE("%s: Aligning size to 0x%llx\n", __func__, win->win_size);
+		NOTICE("%s: Aligning size to 0x%llx\n",
+		       __func__, win->win_size);
 	}
 }
 
-static void io_win_enable_window(int ap_index, struct addr_map_win *win, uint32_t win_num)
+static void io_win_enable_window(int ap_index, struct addr_map_win *win,
+				 uint32_t win_num)
 {
 	uint32_t alr, ahr;
 	uint64_t end_addr;
@@ -124,6 +132,7 @@ void iow_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 	for (int i = 0; i < size; i++) {
 		uint64_t base;
 		uint32_t target;
+
 		win_id = MVEBU_IO_WIN_MAX_WINS - i - 1;
 
 		target = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
@@ -132,7 +141,8 @@ void iow_temp_win_remove(int ap_index, struct addr_map_win *win, int size)
 		base <<= ADDRESS_SHIFT;
 
 		if ((win->target_id != target) || (win->base_addr != base)) {
-			ERROR("%s: Trying to remove bad window-%d!\n", __func__, win_id);
+			ERROR("%s: Trying to remove bad window-%d!\n",
+			      __func__, win_id);
 			continue;
 		}
 		io_win_disable_window(ap_index, win_id);
@@ -148,26 +158,29 @@ static void dump_io_win(int ap_index)
 	uint64_t start, end;
 
 	/* Dump all IO windows */
-	printf("\tbank  target     start              end\n");
-	printf("\t----------------------------------------------------\n");
+	tf_printf("\tbank  target     start              end\n");
+	tf_printf("\t----------------------------------------------------\n");
 	for (win_id = 0; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++) {
 		alr = mmio_read_32(IO_WIN_ALR_OFFSET(ap_index, win_id));
 		if (alr & WIN_ENABLE_BIT) {
 			alr &= ~WIN_ENABLE_BIT;
 			ahr = mmio_read_32(IO_WIN_AHR_OFFSET(ap_index, win_id));
-			trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(ap_index, win_id));
+			trgt_id = mmio_read_32(IO_WIN_CR_OFFSET(ap_index,
+								win_id));
 			start = ((uint64_t)alr << ADDRESS_SHIFT);
 			end = (((uint64_t)ahr + 0x10) << ADDRESS_SHIFT);
-			printf("\tio-win %d     0x%016llx 0x%016llx\n", trgt_id, start, end);
+			tf_printf("\tio-win %d     0x%016llx 0x%016llx\n",
+				  trgt_id, start, end);
 		}
 	}
-	printf("\tio-win gcr is %x\n", mmio_read_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET));
-
-	return;
+	tf_printf("\tio-win gcr is %x\n",
+		  mmio_read_32(MVEBU_IO_WIN_BASE(ap_index) +
+		MVEBU_IO_WIN_GCR_OFFSET));
 }
 #endif
 
-static void iow_save_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+static void iow_save_win_range(int ap_id, int win_first, int win_last,
+			       uint32_t *buffer)
 {
 	int win_id, idx;
 
@@ -181,7 +194,8 @@ static void iow_save_win_range(int ap_id, int win_first, int win_last, uint32_t 
 				   MVEBU_IO_WIN_GCR_OFFSET);
 }
 
-static void iow_restore_win_range(int ap_id, int win_first, int win_last, uint32_t *buffer)
+static void iow_restore_win_range(int ap_id, int win_first, int win_last,
+				  uint32_t *buffer)
 {
 	int win_id, idx;
 
@@ -197,12 +211,14 @@ static void iow_restore_win_range(int ap_id, int win_first, int win_last, uint32
 
 void iow_save_win_all(int ap_id)
 {
-	iow_save_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1, io_win_regs_save);
+	iow_save_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1,
+			   io_win_regs_save);
 }
 
 void iow_restore_win_all(int ap_id)
 {
-	iow_restore_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1, io_win_regs_save);
+	iow_restore_win_range(ap_id, 0, MVEBU_IO_WIN_MAX_WINS - 1,
+			      io_win_regs_save);
 }
 
 int init_io_win(int ap_index)
@@ -219,19 +235,23 @@ int init_io_win(int ap_index)
 		INFO("no windows configurations found\n");
 
 	if (win_count > MVEBU_IO_WIN_MAX_WINS) {
-		INFO("number of windows is bigger than %d\n", MVEBU_IO_WIN_MAX_WINS);
+		INFO("number of windows is bigger than %d\n",
+		     MVEBU_IO_WIN_MAX_WINS);
 		return 0;
 	}
 
 	/* Get the default target id to set the GCR */
 	win_reg = marvell_get_io_win_gcr_target(ap_index);
-	mmio_write_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET, win_reg);
+	mmio_write_32(MVEBU_IO_WIN_BASE(ap_index) + MVEBU_IO_WIN_GCR_OFFSET,
+		      win_reg);
 
 	/* disable all IO windows */
 	for (win_id = 1; win_id < MVEBU_IO_WIN_MAX_WINS; win_id++)
 		io_win_disable_window(ap_index, win_id);
 
-	/* enable relevant windows, starting from win_id=1 because index 0 dedicated for BootRom */
+	/* enable relevant windows, starting from win_id = 1 because
+	 * index 0 dedicated for BootROM
+	 */
 	for (win_id = 1; win_id <= win_count; win_id++, win++) {
 		io_win_check(win);
 		io_win_enable_window(ap_index, win, win_id);

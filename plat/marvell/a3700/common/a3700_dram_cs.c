@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Marvell International Ltd.
+ * Copyright (C) 2018 Marvell International Ltd.
  *
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
@@ -76,13 +76,18 @@ static struct dram_cs_addr_len_to_size dram_cs_addr_len_to_size_map[] = {
 	{0x1A,	TB_2_MB(4)	}
 };
 
-static int marvell_dram_cs_get_size_by_addr_len(uint32_t addr_len_value, uint32_t *size_mbytes)
+static int marvell_dram_cs_get_size_by_addr_len(uint32_t addr_len_value,
+						uint32_t *size_mbytes)
 {
 	int i;
 
-	for (i = 0; i < sizeof(dram_cs_addr_len_to_size_map)/sizeof(struct dram_cs_addr_len_to_size); i++) {
-		if (dram_cs_addr_len_to_size_map[i].addr_len_value == addr_len_value) {
-			*size_mbytes = dram_cs_addr_len_to_size_map[i].size_mbytes;
+	for (i = 0; i < sizeof(dram_cs_addr_len_to_size_map)/
+	     sizeof(struct dram_cs_addr_len_to_size); i++) {
+
+		if (dram_cs_addr_len_to_size_map[i].addr_len_value ==
+		    addr_len_value) {
+			*size_mbytes =
+				dram_cs_addr_len_to_size_map[i].size_mbytes;
 			return 0;
 		}
 	}
@@ -121,9 +126,11 @@ int marvell_get_dram_cs_base_size(uint32_t cs_num,
 	if (!(cs_mmap_reg & MVEBU_CS_MMAP_ENABLE))
 		return -ENODEV;
 
-	*base_low = (cs_mmap_reg & MVEBU_CS_MMAP_START_ADDR_LOW_MASK) >> MVEBU_CS_MMAP_START_ADDR_LOW_OFFS;
+	*base_low = (cs_mmap_reg & MVEBU_CS_MMAP_START_ADDR_LOW_MASK) >>
+		     MVEBU_CS_MMAP_START_ADDR_LOW_OFFS;
 	*base_high = mmio_read_32(MVEBU_CS_MMAP_HIGH(cs_num));
-	area_len = (cs_mmap_reg & MVEBU_CS_MMAP_AREA_LEN_MASK) >> MVEBU_CS_MMAP_AREA_LEN_OFFS;
+	area_len = (cs_mmap_reg & MVEBU_CS_MMAP_AREA_LEN_MASK) >>
+		    MVEBU_CS_MMAP_AREA_LEN_OFFS;
 	if (marvell_dram_cs_get_size_by_addr_len(area_len, size_mbytes))
 		return -EFAULT;
 

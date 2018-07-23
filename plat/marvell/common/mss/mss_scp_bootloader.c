@@ -1,35 +1,8 @@
 /*
- * ***************************************************************************
- * Copyright (C) 2016 Marvell International Ltd.
- * ***************************************************************************
+ * Copyright (C) 2018 Marvell International Ltd.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of Marvell nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ***************************************************************************
+ * SPDX-License-Identifier:     BSD-3-Clause
+ * https://spdx.org/licenses
  */
 
 #include <assert.h>
@@ -76,14 +49,14 @@ static int mss_check_image_ready(volatile struct mss_pm_ctrl_block *mss_pm_crtl)
 	int timeout = MSS_HANDSHAKE_TIMEOUT;
 
 	/* Wait for SCP to signal it's ready */
-	while ((mss_pm_crtl->handshake != MSS_ACKNOWLEDGEMENT) &&
+	while ((mss_pm_crtl->handshake != MSS_ACKNOWLEDGMENT) &&
 						(timeout-- > 0))
 		mdelay(1);
 
-	if (mss_pm_crtl->handshake != MSS_ACKNOWLEDGEMENT)
+	if (mss_pm_crtl->handshake != MSS_ACKNOWLEDGMENT)
 		return -1;
 
-	mss_pm_crtl->handshake = HOST_ACKNOWLEDGEMENT;
+	mss_pm_crtl->handshake = HOST_ACKNOWLEDGMENT;
 
 	return 0;
 }
@@ -98,7 +71,7 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t mss_regs)
 		return 1;
 	}
 
-	NOTICE("Loading MSS image from address 0x%x Size 0x%x to MSS at 0x%lx\n",
+	NOTICE("Loading MSS image from addr. 0x%x Size 0x%x to MSS at 0x%lx\n",
 	       src_addr, size, mss_regs);
 	/* load image to MSS RAM using DMA */
 	loop_num = (size / DMA_SIZE) + (((size & (DMA_SIZE - 1)) == 0) ? 0 : 1);
@@ -153,7 +126,8 @@ static int mss_image_load(uint32_t src_addr, uint32_t size, uintptr_t mss_regs)
  * firmware for AP is dedicated for PM and therefore some additional PM
  * initialization is required
  */
-static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t ap_idx)
+static int mss_ap_load_image(uintptr_t single_img,
+			     uint32_t image_size, uint32_t ap_idx)
 {
 	volatile struct mss_pm_ctrl_block *mss_pm_crtl;
 	int ret;
@@ -188,7 +162,8 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t
 	/* TODO: add checksum to image */
 	VERBOSE("Send info about the SCP_BL2 image to be transferred to SCP\n");
 
-	ret = mss_image_load(single_img, image_size, bl2_plat_get_ap_mss_regs(ap_idx));
+	ret = mss_image_load(single_img, image_size,
+			     bl2_plat_get_ap_mss_regs(ap_idx));
 	if (ret != 0) {
 		ERROR("SCP Image load failed\n");
 		return -1;
@@ -203,7 +178,8 @@ static int mss_ap_load_image(uintptr_t single_img, uint32_t image_size, uint32_t
 }
 
 /* Load CM3 image (single_img) to CM3 pointed by cm3_type */
-static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t image_size)
+static int load_img_to_cm3(enum cm3_t cm3_type,
+			   uintptr_t single_img, uint32_t image_size)
 {
 	int ret, ap_idx, cp_index;
 	uint32_t ap_count = bl2_plat_get_ap_count();
@@ -230,14 +206,20 @@ static int load_img_to_cm3(enum cm3_t cm3_type, uintptr_t single_img, uint32_t i
 		 */
 		cp_index = cm3_type - 1;
 		for (ap_idx = 0; ap_idx < ap_count; ap_idx++) {
-			/* Check if we should load this image according to number of CPs */
+			/* Check if we should load this image
+			 * according to number of CPs
+			 */
 			if (bl2_plat_get_cp_count(ap_idx) <= cp_index) {
-				NOTICE("Skipping MSS CP%d related image\n", cp_index);
+				NOTICE("Skipping MSS CP%d related image\n",
+				       cp_index);
 				break;
 			}
 
-			NOTICE("Load image to CP%d MSS AP%d\n", cp_index, ap_idx);
-			ret = mss_image_load(single_img, image_size, bl2_plat_get_cp_mss_regs(ap_idx, cp_index));
+			NOTICE("Load image to CP%d MSS AP%d\n",
+			       cp_index, ap_idx);
+			ret = mss_image_load(single_img, image_size,
+					     bl2_plat_get_cp_mss_regs(
+						     ap_idx, cp_index));
 			if (ret != 0) {
 				ERROR("SCP Image load failed\n");
 				return -1;

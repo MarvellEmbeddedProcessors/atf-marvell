@@ -26,7 +26,7 @@ static void plat_enable_affinity(void)
 	__asm__ volatile("isb");
 }
 
-void psci_arch_init(int ap_index)
+void marvell_psci_arch_init(int ap_index)
 {
 #if LLC_ENABLE
 	/* check if LLC is in exclusive mode
