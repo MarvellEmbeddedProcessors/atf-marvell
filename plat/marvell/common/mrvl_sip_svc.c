@@ -76,7 +76,7 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 	}
 
 	switch (smc_fid) {
-
+#if PALLADIUM == 0
 	/* Comphy related FID's */
 	case MV_SIP_COMPHY_POWER_ON:
 		/* x1:  comphy_base, x2: comphy_index, x3: comphy_mode */
@@ -98,7 +98,7 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 		/* x1:  comphy_base, x2: comphy_index, x3: mode, x4: command */
 		ret = mvebu_cp110_comphy_digital_reset(x1, x2, x3, x4);
 		SMC_RET1(handle, ret);
-
+#endif
 	/* Miscellaneous FID's' */
 	case MV_SIP_DRAM_SIZE:
 		/* x1:  ap_base_addr */

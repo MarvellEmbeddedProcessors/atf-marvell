@@ -92,8 +92,11 @@ MARVELL_BL1_DRV		:= 	$(MARVELL_DRV_BASE)/ccu.c		\
 MARVELL_BL31_DRV	:=	$(MARVELL_DRV_BASE)/amb_adec.c		\
 				$(MARVELL_DRV_BASE)/cache_llc.c 	\
 				$(MARVELL_DRV_BASE)/icu.c		\
-				$(MARVELL_DRV_BASE)/iob.c		\
-				$(MARVELL_DRV_BASE)/comphy/phy-comphy-cp110.c
+				$(MARVELL_DRV_BASE)/iob.c
+
+ifeq (${PALLADIUM}, 0)
+MARVELL_BL31_DRV	+=	$(MARVELL_DRV_BASE)/comphy/phy-comphy-cp110.c
+endif
 
 MARVELL_MOCHI_DRV	:=	$(MARVELL_DRV_BASE)/mochi/ap810_setup.c \
 				$(MARVELL_DRV_BASE)/mochi/cp110_setup.c
