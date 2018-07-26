@@ -94,7 +94,7 @@ MARVELL_BL31_DRV	:=	$(MARVELL_DRV_BASE)/amb_adec.c		\
 				$(MARVELL_DRV_BASE)/icu.c		\
 				$(MARVELL_DRV_BASE)/iob.c
 
-ifeq (${PALLADIUM}, 0)
+ifneq (${PALLADIUM},1)
 MARVELL_BL31_DRV	+=	$(MARVELL_DRV_BASE)/comphy/phy-comphy-cp110.c
 endif
 
