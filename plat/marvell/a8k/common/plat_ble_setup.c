@@ -5,6 +5,7 @@
  * https://spdx.org/licenses
  */
 
+#include <a8k_i2c.h>
 #include <ap_setup.h>
 #include <armada_common.h>
 #include <aro.h>
@@ -40,6 +41,7 @@
 #define SAR_CLOCK_FREQ_MODE(v)		(((v) & SAR_CLOCK_FREQ_MODE_MASK) >> \
 					SAR_CLOCK_FREQ_MODE_OFFSET)
 
+#define AVS_I2C_EEPROM_ADDR		0x57	/* EEPROM */
 #define AVS_EN_CTRL_REG			(MVEBU_AP_GEN_MGMT_BASE + 0x130)
 #define AVS_ENABLE_OFFSET		(0)
 #define AVS_SOFT_RESET_OFFSET		(2)
@@ -71,7 +73,9 @@
 					 (0x24 << AVS_LOW_VDD_LIMIT_OFFSET) | \
 					 (0x1 << AVS_SOFT_RESET_OFFSET) | \
 					 (0x1 << AVS_ENABLE_OFFSET))
-/* VDD limit is 0.82V for all A3900 devices 0- AVS offsets are not the same as in A70x0 */
+/* VDD limit is 0.82V for all A3900 devices
+ * AVS offsets are not the same as in A70x0
+ */
 #define AVS_A3900_CLK_VALUE		((0x80 << 24) | \
 					 (0x2c2 << 13) | \
 					 (0x2c2 << 3) | \
@@ -241,6 +245,57 @@ static void ble_plat_avs_config(void)
 	}
 }
 
+/******************************************************************************
+ * Update or override current AVS work point value using data stored in EEPROM
+ * This is only required by QA/validation flows and activated by SVC_TEST flag.
+ *
+ * The function is expected to be called twice.
+ *
+ * First time with AVS value of 0 for testing if the EEPROM requests completely
+ * override the AVS value and bypass the eFuse test
+ *
+ * Second time - with non-zero AVS value obtained from eFuses as an input.
+ * In this case the EEPROM may contain AVS correction value (either positive
+ * or negative) that is added to the input AVS value and returned back for
+ * further processing.
+ ******************************************************************************
+ */
+static uint32_t avs_update_from_eeprom(uint32_t avs_workpoint)
+{
+	uint32_t new_wp = avs_workpoint;
+#ifdef SVC_TEST
+	static uint8_t  avs_step[2] = {0};
+
+	if (avs_workpoint == 0) {
+		/* Read EEPROM only the fist time */
+		i2c_read(AVS_I2C_EEPROM_ADDR, 0x120, 2, avs_step, 2);
+		NOTICE("== SVC test build. EEPROM holds values 0x%x and 0x%x\n",
+			avs_step[0], avs_step[1]);
+
+		/* Override the AVS value? */
+		if ((avs_step[1] != 0) && (avs_step[1] < 0x33)) {
+			new_wp = avs_step[1];
+			NOTICE("Override AVS by EEPROM value 0x%x\n", new_wp);
+		} else {
+			NOTICE("Ignore BAD AVS Override value => 0x%x\n",
+				avs_step[1]);
+		}
+	} else {
+		/* Get correction steps from the EEPROM */
+		if ((avs_step[0] != 0) && (avs_step[0] != 0xff)) {
+			NOTICE("AVS request to step %s by 0x%x from old 0x%x\n",
+				avs_step[0] & 0x80 ? "DOWN" : "UP",
+				avs_step[0] & 0x7f, new_wp);
+			if (avs_step[0] & 0x80)
+				new_wp -= avs_step[0] & 0x7f;
+			else
+				new_wp += avs_step[0] & 0x7f;
+		}
+	}
+#endif
+	return new_wp;
+}
+
 /****************************************************************************
  * SVC flow - v0.10
  * The feature is intended to configure AVS value according to eFuse values
@@ -260,6 +315,20 @@ static void ble_plat_svc_config(void)
 	uint32_t device_id, single_cluster;
 	uint16_t  svc[4], perr[4], i, sw_ver;
 	unsigned int ap_type;
+
+	/* Check if the AVS override is requested */
+	avs_workpoint = avs_update_from_eeprom(0);
+	if (avs_workpoint)
+		goto set_aws_wp;
+
+	/* Due to a bug in A3900 device_id skip SVC config
+	 * TODO: add SVC config once it is decided for a3900
+	 */
+	if (ble_get_ap_type() == CHIP_ID_AP807) {
+		NOTICE("SVC: SVC is not supported on AP807\n");
+		ble_plat_avs_config();
+		return;
+	}
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
@@ -447,6 +516,10 @@ static void ble_plat_svc_config(void)
 	if (ap_type != CHIP_ID_AP807)
 		avs_workpoint &= 0x7F;
 
+	/* Update WP from EEPROM if needed */
+	avs_workpoint = avs_update_from_eeprom(avs_workpoint);
+
+set_aws_wp:
 	reg_val  = mmio_read_32(AVS_EN_CTRL_REG);
 	NOTICE("SVC: AVS work point changed from 0x%x to 0x%x\n",
 		(reg_val & AVS_VDD_LOW_LIMIT_MASK) >> AVS_LOW_VDD_LIMIT_OFFSET,
