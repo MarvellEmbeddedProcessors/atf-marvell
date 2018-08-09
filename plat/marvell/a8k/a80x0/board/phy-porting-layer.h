@@ -21,8 +21,8 @@ static const struct xfi_params xfi_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_NR
 				.g1_dfe_res = 0x2, .g1_amp = 0x1c, .g1_emph = 0xe,
 				.g1_emph_en = 0x1, .g1_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x1, .g1_tx_emph = 0x0,
-				.g1_rx_selmuff = 0x2, .g1_rx_selmufi = 0x3,
-				.g1_rx_selmupf = 0x1, .g1_rx_selmupi = 0x6,
+				.g1_rx_selmuff = 0x1, .g1_rx_selmufi = 0x0,
+				.g1_rx_selmupf = 0x2, .g1_rx_selmupi = 0x2,
 				.valid = 0x1 }, /* Comphy2 */
 			{ 0 }, /* Comphy3 */
 			{ 0 }, /* Comphy4 */
@@ -37,8 +37,8 @@ static const struct xfi_params xfi_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_NR
 				.g1_dfe_res = 0x2, .g1_amp = 0x1c, .g1_emph = 0xe,
 				.g1_emph_en = 0x1, .g1_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x1, .g1_tx_emph = 0x0,
-				.g1_rx_selmuff = 0x2, .g1_rx_selmufi = 0x3,
-				.g1_rx_selmupf = 0x1, .g1_rx_selmupi = 0x6,
+				.g1_rx_selmuff = 0x1, .g1_rx_selmufi = 0x0,
+				.g1_rx_selmupf = 0x2, .g1_rx_selmupi = 0x2,
 				.valid = 0x1 }, /* Comphy2 */
 			{ 0 }, /* Comphy3 */
 			{ 0 }, /* Comphy4 */
