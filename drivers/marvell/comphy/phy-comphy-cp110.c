@@ -1131,8 +1131,44 @@ static int mvebu_cp110_comphy_xfi_power_on(uint64_t comphy_base,
 		data |= 0x4 << HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_OFFSET;
 		mask |= HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_MASK;
 		data |= 0x1 << HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_OFFSET;
+		reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
+	} else {
+		mask |= HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_MASK;
+		data |= xfi_static_values->g1_ffe_cap_sel <<
+			HPIPE_G1_SETTINGS_3_G1_FFE_CAP_SEL_OFFSET;
+		mask |= HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_MASK;
+		data |= xfi_static_values->g1_ffe_res_sel <<
+			HPIPE_G1_SETTINGS_3_G1_FFE_RES_SEL_OFFSET;
+		mask |= HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_MASK;
+		data |= 0x1 << HPIPE_G1_SETTINGS_3_G1_FFE_SETTING_FORCE_OFFSET;
+		reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
+
+		/* Use the value from CAL_OS_PH_EXT */
+		mask = HPIPE_CAL_RXCLKALIGN_90_EXT_EN_MASK;
+		data = 1 << HPIPE_CAL_RXCLKALIGN_90_EXT_EN_OFFSET;
+		reg_set(hpipe_addr +
+			HPIPE_RX_CLK_ALIGN90_AND_TX_IDLE_CALIB_CTRL_REG,
+			data, mask);
+
+		/* Update align90 */
+		mask = HPIPE_CAL_OS_PH_EXT_MASK;
+		data = xfi_static_values->align90 << HPIPE_CAL_OS_PH_EXT_OFFSET;
+		reg_set(hpipe_addr +
+			HPIPE_RX_CLK_ALIGN90_AND_TX_IDLE_CALIB_CTRL_REG,
+			data, mask);
+
+		/* Force DFE resolution (use gen table value) */
+		mask = HPIPE_DFE_RES_FORCE_MASK;
+		data = 0x0 << HPIPE_DFE_RES_FORCE_OFFSET;
+		reg_set(hpipe_addr + HPIPE_DFE_REG0, data, mask);
+
+		/* 0x111-G1 DFE_Setting_4 */
+		mask = HPIPE_G1_SETTINGS_4_G1_DFE_RES_MASK;
+		data = xfi_static_values->g1_dfe_res <<
+			HPIPE_G1_SETTINGS_4_G1_DFE_RES_OFFSET;
+		reg_set(hpipe_addr + HPIPE_G1_SETTINGS_4_REG, data, mask);
 	}
-	reg_set(hpipe_addr + HPIPE_G1_SETTINGS_3_REG, data, mask);
+
 	/* Connfigure RX training timer */
 	mask = HPIPE_RX_TRAIN_TIMER_MASK;
 	data = 0x13 << HPIPE_RX_TRAIN_TIMER_OFFSET;
