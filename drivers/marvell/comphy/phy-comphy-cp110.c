@@ -17,83 +17,13 @@
 #include "mvebu.h"
 #include "comphy-cp110.h"
 #include "phy-comphy-cp110.h"
+#include "phy-comphy-common.h"
 
 #if __has_include("phy-porting-layer.h")
 #include "phy-porting-layer.h"
 #else
 #include "phy-default-porting-layer.h"
 #endif
-
-/* #define DEBUG_COMPHY */
-#ifdef DEBUG_COMPHY
-#define debug(format...) printf(format)
-#else
-#define debug(format, arg...)
-#endif
-
-/* A lane is described by 4 fields:
- *      - bit 1~0 represent comphy polarity invert
- *      - bit 7~2 represent comphy speed
- *      - bit 11~8 represent unit index
- *      - bit 16~12 represent mode
- *      - bit 17 represent comphy indication of clock source
- *      - bit 19-18 represents pcie width (in case of pcie comphy config.)
- *      - bit 31~20 reserved
- */
-
-#define COMPHY_INVERT_OFFSET	0
-#define COMPHY_INVERT_LEN	2
-#define COMPHY_INVERT_MASK	COMPHY_MASK(COMPHY_INVERT_OFFSET, \
-						COMPHY_INVERT_LEN)
-#define COMPHY_SPEED_OFFSET	(COMPHY_INVERT_OFFSET + COMPHY_INVERT_LEN)
-#define COMPHY_SPEED_LEN	6
-#define COMPHY_SPEED_MASK	COMPHY_MASK(COMPHY_SPEED_OFFSET, \
-						COMPHY_SPEED_LEN)
-#define COMPHY_UNIT_ID_OFFSET	(COMPHY_SPEED_OFFSET + COMPHY_SPEED_LEN)
-#define COMPHY_UNIT_ID_LEN	4
-#define COMPHY_UNIT_ID_MASK	COMPHY_MASK(COMPHY_UNIT_ID_OFFSET, \
-						COMPHY_UNIT_ID_LEN)
-#define COMPHY_MODE_OFFSET	(COMPHY_UNIT_ID_OFFSET + COMPHY_UNIT_ID_LEN)
-#define COMPHY_MODE_LEN		5
-#define COMPHY_MODE_MASK	COMPHY_MASK(COMPHY_MODE_OFFSET, COMPHY_MODE_LEN)
-#define COMPHY_CLK_SRC_OFFSET	(COMPHY_MODE_OFFSET + COMPHY_MODE_LEN)
-#define COMPHY_CLK_SRC_LEN	1
-#define COMPHY_CLK_SRC_MASK	COMPHY_MASK(COMPHY_CLK_SRC_OFFSET, \
-						COMPHY_CLK_SRC_LEN)
-#define COMPHY_PCI_WIDTH_OFFSET	(COMPHY_CLK_SRC_OFFSET + COMPHY_CLK_SRC_LEN)
-#define COMPHY_PCI_WIDTH_LEN	3
-#define COMPHY_PCI_WIDTH_MASK	COMPHY_MASK(COMPHY_PCI_WIDTH_OFFSET, \
-						COMPHY_PCI_WIDTH_LEN)
-
-#define COMPHY_MASK(offset, len)	(((1 << (len)) - 1) << (offset))
-
-/* Macro which extracts mode from lane description */
-#define COMPHY_GET_MODE(x)		(((x) & COMPHY_MODE_MASK) >> \
-						COMPHY_MODE_OFFSET)
-/* Macro which extracts unit index from lane description */
-#define COMPHY_GET_ID(x)		(((x) & COMPHY_UNIT_ID_MASK) >> \
-						COMPHY_UNIT_ID_OFFSET)
-/* Macro which extracts speed from lane description */
-#define COMPHY_GET_SPEED(x)		(((x) & COMPHY_SPEED_MASK) >> \
-						COMPHY_SPEED_OFFSET)
-/* Macro which extracts clock source indication from lane description */
-#define COMPHY_GET_CLK_SRC(x)		(((x) & COMPHY_CLK_SRC_MASK) >> \
-						COMPHY_CLK_SRC_OFFSET)
-/* Macro which extracts pcie width indication from lane description */
-#define COMPHY_GET_PCIE_WIDTH(x)	(((x) & COMPHY_PCI_WIDTH_MASK) >> \
-						COMPHY_PCI_WIDTH_OFFSET)
-
-#define COMPHY_SATA_MODE	0x1
-#define COMPHY_SGMII_MODE	0x2	/* SGMII 1G */
-#define COMPHY_HS_SGMII_MODE	0x3	/* SGMII 2.5G */
-#define COMPHY_USB3H_MODE	0x4
-#define COMPHY_USB3D_MODE	0x5
-#define COMPHY_PCIE_MODE	0x6
-#define COMPHY_RXAUI_MODE	0x7
-#define COMPHY_XFI_MODE		0x8
-#define COMPHY_SFI_MODE		0x9
-#define COMPHY_USB3_MODE	0xa
-#define COMPHY_AP_MODE		0xb
 
 /* COMPHY speed macro */
 #define COMPHY_SPEED_1_25G		0 /* SGMII 1G */
@@ -137,21 +67,6 @@
  */
 spinlock_t cp110_mac_reset_lock;
 
-enum reg_width_type {
-	REG_16BIT = 0,
-	REG_32BIT,
-};
-
-enum {
-	COMPHY_LANE0 = 0,
-	COMPHY_LANE1,
-	COMPHY_LANE2,
-	COMPHY_LANE3,
-	COMPHY_LANE4,
-	COMPHY_LANE5,
-	COMPHY_LANE_MAX,
-};
-
 /* These values come from the PCI Express Spec */
 enum pcie_link_width {
 	PCIE_LNK_WIDTH_RESRV	= 0x00,
@@ -182,38 +97,6 @@ static void mvebu_cp110_get_ap_and_cp_nr(uint8_t *ap_nr, uint8_t *cp_nr, uint64_
 	debug("cp_base 0x%llx, ap_io_base 0x%lx, cp_offset 0x%lx\n",
 	       comphy_base, (unsigned long)MVEBU_AP_IO_BASE(*ap_nr),
 	       (unsigned long)MVEBU_CP_OFFSET);
-}
-
-static inline uint32_t polling_with_timeout(uintptr_t addr,
-					    uint32_t val,
-					    uint32_t mask,
-					    uint32_t usec_timeout,
-					    enum reg_width_type type)
-{
-	uint32_t data;
-
-	do {
-		udelay(1);
-		if (type == REG_16BIT)
-			data = mmio_read_16(addr) & mask;
-		else
-			data = mmio_read_32(addr) & mask;
-	} while (data != val  && --usec_timeout > 0);
-
-	if (usec_timeout == 0)
-		return data;
-
-	return 0;
-}
-
-static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
-{
-	debug("<atf>: WR to addr = %#010lx, data = %#010x (mask = %#010x) - ",
-	      addr, data, mask);
-	debug("old value = %#010x ==> ", mmio_read_32(addr));
-	mmio_clrsetbits_32(addr, mask, data);
-
-	debug("new val %#010x\n", mmio_read_32(addr));
 }
 
 /* Clear PIPE selector - avoid collision with previous configuration */
