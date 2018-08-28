@@ -54,13 +54,13 @@ static const struct sata_params sata_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_
 		{
 			{ 0 }, /* Comphy0 */
 			{ .g1_amp = 0x8, .g2_amp = 0xa, .g3_amp = 0x1e,
-				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0x6,
+				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0xe,
 				.g1_emph_en = 0x1, .g2_emph_en = 0x1, .g3_emph_en = 0x1,
 				.g1_tx_amp_adj = 0x1, .g2_tx_amp_adj = 0x1, .g3_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x0, .g2_tx_emph_en = 0x0, .g3_tx_emph_en = 0x0,
 				.g1_tx_emph = 0x1, .g2_tx_emph = 0x1, .g3_tx_emph = 0x1,
 				.g3_dfe_res = 0x1, .g3_ffe_res_sel = 0x4, .g3_ffe_cap_sel = 0xf,
-				.allign_90 = 0x1c,
+				.allign_90 = 0x61,
 				.g1_rx_selmuff = 0x3, .g2_rx_selmuff = 0x3, .g3_rx_selmuff = 0x3,
 				.g1_rx_selmufi = 0x0, .g2_rx_selmufi = 0x0, .g3_rx_selmufi = 0x3,
 				.g1_rx_selmupf = 0x1, .g2_rx_selmupf = 0x1, .g3_rx_selmupf = 0x2,
@@ -69,13 +69,13 @@ static const struct sata_params sata_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_
 			}, /* Comphy1 */
 			{ 0 }, /* Comphy2 */
 			{ .g1_amp = 0x8, .g2_amp = 0xa, .g3_amp = 0x1e,
-				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0x6,
+				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0xe,
 				.g1_emph_en = 0x1, .g2_emph_en = 0x1, .g3_emph_en = 0x1,
 				.g1_tx_amp_adj = 0x1, .g2_tx_amp_adj = 0x1, .g3_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x0, .g2_tx_emph_en = 0x0, .g3_tx_emph_en = 0x0,
 				.g1_tx_emph = 0x1, .g2_tx_emph = 0x1, .g3_tx_emph = 0x1,
 				.g3_dfe_res = 0x1, .g3_ffe_res_sel = 0x4, .g3_ffe_cap_sel = 0xf,
-				.allign_90 = 0x1c,
+				.allign_90 = 0x61,
 				.g1_rx_selmuff = 0x3, .g2_rx_selmuff = 0x3, .g3_rx_selmuff = 0x3,
 				.g1_rx_selmufi = 0x0, .g2_rx_selmufi = 0x0, .g3_rx_selmufi = 0x3,
 				.g1_rx_selmupf = 0x1, .g2_rx_selmupf = 0x1, .g3_rx_selmupf = 0x2,
@@ -90,13 +90,13 @@ static const struct sata_params sata_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_
 		{
 			{ 0 }, /* Comphy0 */
 			{ .g1_amp = 0x8, .g2_amp = 0xa, .g3_amp = 0x1e,
-				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0x6,
+				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0xe,
 				.g1_emph_en = 0x1, .g2_emph_en = 0x1, .g3_emph_en = 0x1,
 				.g1_tx_amp_adj = 0x1, .g2_tx_amp_adj = 0x1, .g3_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x0, .g2_tx_emph_en = 0x0, .g3_tx_emph_en = 0x0,
 				.g1_tx_emph = 0x1, .g2_tx_emph = 0x1, .g3_tx_emph = 0x1,
 				.g3_dfe_res = 0x1, .g3_ffe_res_sel = 0x4, .g3_ffe_cap_sel = 0xf,
-				.allign_90 = 0x1c,
+				.allign_90 = 0x61,
 				.g1_rx_selmuff = 0x3, .g2_rx_selmuff = 0x3, .g3_rx_selmuff = 0x3,
 				.g1_rx_selmufi = 0x0, .g2_rx_selmufi = 0x0, .g3_rx_selmufi = 0x3,
 				.g1_rx_selmupf = 0x1, .g2_rx_selmupf = 0x1, .g3_rx_selmupf = 0x2,
@@ -105,13 +105,13 @@ static const struct sata_params sata_static_values_tab[AP_NUM][CP_NUM][MAX_LANE_
 			}, /* Comphy1 */
 			{ 0 }, /* Comphy2 */
 			{ .g1_amp = 0x8, .g2_amp = 0xa, .g3_amp = 0x1e,
-				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0x6,
+				.g1_emph = 0x1, .g2_emph = 0x2, .g3_emph = 0xe,
 				.g1_emph_en = 0x1, .g2_emph_en = 0x1, .g3_emph_en = 0x1,
 				.g1_tx_amp_adj = 0x1, .g2_tx_amp_adj = 0x1, .g3_tx_amp_adj = 0x1,
 				.g1_tx_emph_en = 0x0, .g2_tx_emph_en = 0x0, .g3_tx_emph_en = 0x0,
 				.g1_tx_emph = 0x1, .g2_tx_emph = 0x1, .g3_tx_emph = 0x1,
 				.g3_dfe_res = 0x1, .g3_ffe_res_sel = 0x4, .g3_ffe_cap_sel = 0xf,
-				.allign_90 = 0x1c,
+				.allign_90 = 0x61,
 				.g1_rx_selmuff = 0x3, .g2_rx_selmuff = 0x3, .g3_rx_selmuff = 0x3,
 				.g1_rx_selmufi = 0x0, .g2_rx_selmufi = 0x0, .g3_rx_selmufi = 0x3,
 				.g1_rx_selmupf = 0x1, .g2_rx_selmupf = 0x1, .g3_rx_selmupf = 0x2,
