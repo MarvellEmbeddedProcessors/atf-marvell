@@ -447,12 +447,6 @@ static int mvebu_cp110_comphy_sata_power_on(uint64_t comphy_base,
 
 	mvebu_cp110_get_ap_and_cp_nr(&ap_nr, &cp_nr, comphy_base);
 
-	if (rx_trainng_done[ap_nr][cp_nr][comphy_index]) {
-		debug("Skipping %s for comphy[%d][%d][%d], due to rx training\n",
-		       __func__, ap_nr, cp_nr, comphy_index);
-		return 0;
-	}
-
 	const struct sata_params *sata_static_values =
 			     &sata_static_values_tab[ap_nr][cp_nr][comphy_index];
 
