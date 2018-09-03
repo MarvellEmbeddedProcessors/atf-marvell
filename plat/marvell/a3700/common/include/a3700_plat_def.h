@@ -111,4 +111,11 @@
  */
 #define MVEBU_AVS_REG_BASE			(MVEBU_REGS_BASE + 0x11500)
 
+
+/*****************************************************************************
+ * AVS registers related constants
+ *****************************************************************************
+ */
+#define MVEBU_COMPHY_REG_BASE			(MVEBU_REGS_BASE + 0x18300)
+
 #endif /* __MVEBU_A3700_DEF_H__ */

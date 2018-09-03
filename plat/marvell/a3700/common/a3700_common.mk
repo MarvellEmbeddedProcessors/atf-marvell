@@ -91,6 +91,7 @@ PLAT_INCLUDES		:=	-I$(PLAT_FAMILY_BASE)/$(PLAT)		\
 				-I$(PLAT_COMMON_BASE)/include		\
 				-I$(PLAT_INCLUDE_BASE)/common		\
 				-I$(MARVELL_DRV_BASE)/uart		\
+				-I$(MARVELL_DRV_BASE)			\
 				-I$/drivers/arm/gic/common/		\
 				$(ATF_INCLUDES)
 
@@ -104,6 +105,8 @@ BL1_SOURCES		+=	$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 
 BL31_PORTING_SOURCES	:=	$(PLAT_FAMILY_BASE)/$(PLAT)/board/pm_src.c
 
+MARVELL_DRV		:=	$(MARVELL_DRV_BASE)/comphy/phy-comphy-3700.c
+
 BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 				$(PLAT_COMMON_BASE)/plat_pm.c		\
@@ -116,7 +119,8 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				plat/marvell/common/marvell_gicv3.c	\
 				$(MARVELL_GIC_SOURCES)			\
 				drivers/arm/cci/cci.c			\
-				$(BL31_PORTING_SOURCES)
+				$(BL31_PORTING_SOURCES)			\
+				$(MARVELL_DRV)
 
 # Disable the PSCI platform compatibility layer (allows porting from Old Platform APIs
 # to the new APIs).

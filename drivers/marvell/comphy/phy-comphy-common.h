@@ -69,6 +69,11 @@
 #define COMPHY_GET_PCIE_WIDTH(x)	(((x) & COMPHY_PCI_WIDTH_MASK) >> \
 						COMPHY_PCI_WIDTH_OFFSET)
 
+/* Macro which extracts the polarity invert from lane description */
+#define COMPHY_GET_POLARITY_INVERT(x)	(((x) & COMPHY_INVERT_MASK) >> \
+						COMPHY_INVERT_OFFSET)
+
+
 #define COMPHY_SATA_MODE	0x1
 #define COMPHY_SGMII_MODE	0x2	/* SGMII 1G */
 #define COMPHY_HS_SGMII_MODE	0x3	/* SGMII 2.5G */
@@ -80,6 +85,15 @@
 #define COMPHY_SFI_MODE		0x9
 #define COMPHY_USB3_MODE	0xa
 #define COMPHY_AP_MODE		0xb
+
+#define	COMPHY_UNUSED		0xFFFFFFFF
+
+/* Polarity invert macro */
+#define COMPHY_POLARITY_NO_INVERT	0
+#define COMPHY_POLARITY_TXD_INVERT	1
+#define COMPHY_POLARITY_RXD_INVERT	2
+#define COMPHY_POLARITY_ALL_INVERT	(COMPHY_POLARITY_TXD_INVERT | \
+					 COMPHY_POLARITY_RXD_INVERT)
 
 enum reg_width_type {
 	REG_16BIT = 0,
@@ -126,4 +140,17 @@ static inline void reg_set(uintptr_t addr, uint32_t data, uint32_t mask)
 
 	debug("new val 0x%x\n", mmio_read_32(addr));
 }
+
+static inline void __unused reg_set16(uintptr_t addr, uint16_t data,
+				      uint16_t mask)
+{
+
+	debug("<atf>: WR to addr = 0x%lx, data = 0x%x (mask = 0x%x) - ",
+	      addr, data, mask);
+	debug("old value = 0x%x ==> ", mmio_read_16(addr));
+	mmio_clrsetbits_16(addr, mask, data);
+
+	debug("new val 0x%x\n", mmio_read_16(addr));
+}
+
 #endif /* _PHY_COMPHY_COMMON_H */
