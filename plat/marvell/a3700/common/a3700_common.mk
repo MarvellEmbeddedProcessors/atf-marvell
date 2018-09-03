@@ -120,6 +120,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				$(MARVELL_GIC_SOURCES)			\
 				drivers/arm/cci/cci.c			\
 				$(BL31_PORTING_SOURCES)			\
+				$(PLAT_COMMON_BASE)/a3700_sip_svc.c	\
 				$(MARVELL_DRV)
 
 # Disable the PSCI platform compatibility layer (allows porting from Old Platform APIs
