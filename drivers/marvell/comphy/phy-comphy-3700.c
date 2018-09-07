@@ -844,6 +844,7 @@ int mvebu_3700_comphy_power_on(uint8_t comphy_index, uint32_t comphy_mode)
 							comphy_mode);
 		break;
 	case (COMPHY_USB3_MODE):
+	case (COMPHY_USB3H_MODE):
 		ret = mvebu_a3700_comphy_usb3_power_on(comphy_index,
 						       comphy_mode);
 		break;
@@ -906,6 +907,7 @@ int mvebu_3700_comphy_power_off(uint8_t comphy_index, uint32_t comphy_mode)
 
 	switch (mode) {
 	case (COMPHY_USB3_MODE):
+	case (COMPHY_USB3H_MODE):
 		err = mvebu_a3700_comphy_usb3_power_off();
 		break;
 	case (COMPHY_SATA_MODE):
