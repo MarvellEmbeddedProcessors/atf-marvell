@@ -4,9 +4,10 @@
  * SPDX-License-Identifier:	BSD-3-Clause
  * https://spdx.org/licenses
  */
-#include <a3700_dram_cs.h>
 #include <dram_win.h>
+#include <marvell_plat_priv.h>
 #include <mmio.h>
+#include <mvebu.h>
 #include <plat_marvell.h>
 #include <string.h>
 
@@ -209,15 +210,9 @@ static void cpu_win_set(uint32_t win_id, struct cpu_win_configuration *win_cfg)
 
 void cpu_wins_init(void)
 {
-	uint32_t cfg_idx, win_id, cs_id;
-	uint32_t base_low, base_high, size_mbytes, total_mbytes = 0;
+	uint32_t cfg_idx, win_id;
 
-	for (cs_id = 0; cs_id < MVEBU_MAX_CS_MMAP_NUM; cs_id++)
-		if (!marvell_get_dram_cs_base_size(cs_id, &base_low,
-						   &base_high, &size_mbytes))
-			total_mbytes += size_mbytes;
-
-	if (total_mbytes <= 2048)
+	if (mvebu_get_dram_size(MVEBU_REGS_BASE) <= _2GB_)
 		cfg_idx = CPU_WIN_CONFIG_DRAM_NOT_OVER_2GB;
 	else
 		cfg_idx = CPU_WIN_CONFIG_DRAM_4GB;

@@ -34,5 +34,6 @@
 
 #define _1MB_				(1024ULL*1024ULL)
 #define _1GB_				(_1MB_*1024ULL)
+#define _2GB_				(2 * _1GB_)
 
 #endif	/* MVEBU_H */

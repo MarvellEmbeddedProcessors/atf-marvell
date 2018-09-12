@@ -111,12 +111,10 @@ MARVELL_DRV		:=	$(MARVELL_DRV_BASE)/comphy/phy-comphy-3700.c
 BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				$(PLAT_COMMON_BASE)/aarch64/plat_helpers.S \
 				$(PLAT_COMMON_BASE)/plat_pm.c		\
-				$(PLAT_COMMON_BASE)/a3700_dram_cs.c	\
 				$(PLAT_COMMON_BASE)/dram_win.c		\
 				$(PLAT_COMMON_BASE)/io_addr_dec.c	\
 				$(PLAT_COMMON_BASE)/marvell_plat_config.c     \
 				$(PLAT_FAMILY_BASE)/$(PLAT)/plat_bl31_setup.c \
-				$(MARVELL_COMMON_BASE)/sys_info.c	\
 				$(MARVELL_COMMON_BASE)/marvell_ddr_info.c	\
 				$(MARVELL_COMMON_BASE)/marvell_gicv3.c	\
 				$(MARVELL_GIC_SOURCES)			\

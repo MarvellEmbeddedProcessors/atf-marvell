@@ -5,32 +5,12 @@
  * https://spdx.org/licenses
  */
 
-#include <a3700_dram_cs.h>
 #include <armada_common.h>
 #include <dram_win.h>
 #include <io_addr_dec.h>
 #include <mmio.h>
 #include <marvell_plat_priv.h>
 #include <plat_marvell.h>
-#include <sys_info.h>
-
-/* This function passes DRAM cpu decode window information in ATF to sys info */
-static void pass_dram_sys_info(struct dram_win_map *win_map)
-{
-	uint32_t win_id;
-	struct dram_win *win;
-
-	for (win_id = 0; win_id < DRAM_WIN_MAP_NUM_MAX; win_id++) {
-		win = win_map->dram_windows + win_id;
-		if (win_id < win_map->dram_win_num) {
-			set_info(CPU_DEC_WIN0_BASE + win_id, win->base_addr);
-			set_info(CPU_DEC_WIN0_SIZE + win_id, win->win_size);
-		} else {
-			set_info(CPU_DEC_WIN0_SIZE + win_id, 0);
-		}
-
-	}
-}
 
 /* This routine does MPP initialization */
 static void marvell_bl31_mpp_init(void)
@@ -74,11 +54,6 @@ void bl31_plat_arch_setup(void)
 	 * CPU-DRAM decode windows (only the enabled ones)
 	 */
 	dram_win_map_build(&dram_wins_map);
-
-	/* Pass DRAM cpu decode window information
-	 * so that u-boot could get it later
-	 */
-	pass_dram_sys_info(&dram_wins_map);
 
 	/* Get IO address decoder windows */
 	if (marvell_get_io_dec_win_conf(&io_dec_map, &dec_win_num)) {
