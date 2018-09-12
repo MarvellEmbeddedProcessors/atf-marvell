@@ -17,6 +17,9 @@
 #define MV_SIP_COMPHY_POWER_OFF	0x82000002
 #define MV_SIP_COMPHY_PLL_LOCK	0x82000003
 
+/* Miscellaneous FID's' */
+#define MV_SIP_DRAM_SIZE	0x82000010
+
 /* This macro is used to identify COMPHY related calls from SMC function ID */
 #define is_comphy_fid(fid)	\
 	((fid) >= MV_SIP_COMPHY_POWER_ON && (fid) <= MV_SIP_COMPHY_PLL_LOCK)
@@ -58,6 +61,12 @@ uintptr_t mrvl_sip_smc_handler(uint32_t smc_fid,
 		ret = mvebu_3700_comphy_is_pll_locked(x1, x2);
 		SMC_RET1(handle, ret);
 #endif
+	/* Miscellaneous FID's' */
+	case MV_SIP_DRAM_SIZE:
+		/* x1:  ap_base_addr */
+		ret = mvebu_get_dram_size(MVEBU_REGS_BASE);
+		SMC_RET1(handle, ret);
+
 	default:
 		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);
 		SMC_RET1(handle, SMC_UNK);

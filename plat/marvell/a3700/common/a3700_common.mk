@@ -117,6 +117,7 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				$(PLAT_COMMON_BASE)/marvell_plat_config.c     \
 				$(PLAT_FAMILY_BASE)/$(PLAT)/plat_bl31_setup.c \
 				$(MARVELL_COMMON_BASE)/sys_info.c	\
+				$(MARVELL_COMMON_BASE)/marvell_ddr_info.c	\
 				$(MARVELL_COMMON_BASE)/marvell_gicv3.c	\
 				$(MARVELL_GIC_SOURCES)			\
 				drivers/arm/cci/cci.c			\
