@@ -2291,6 +2291,7 @@ int mvebu_cp110_comphy_power_on(uint64_t comphy_base, uint8_t comphy_index, uint
 		err = mvebu_cp110_comphy_rxaui_power_on(comphy_base,
 							comphy_index,
 							comphy_mode);
+		break;
 	case (COMPHY_USB3H_MODE):
 	case (COMPHY_USB3D_MODE):
 		err = mvebu_cp110_comphy_usb3_power_on(comphy_base,
