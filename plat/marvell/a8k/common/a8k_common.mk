@@ -15,6 +15,9 @@ MARVELL_COMMON_BASE	:= plat/marvell/common
 
 $(eval $(call add_define,PLAT_FAMILY))
 
+SVC_TEST		:= 0
+$(eval $(call add_define,SVC_TEST))
+
 ERRATA_A72_859971	:= 1
 
 # Enable MSS support for a8k family

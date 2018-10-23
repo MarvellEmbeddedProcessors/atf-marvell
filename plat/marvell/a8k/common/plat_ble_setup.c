@@ -263,8 +263,10 @@ static void ble_plat_avs_config(void)
 static uint32_t avs_update_from_eeprom(uint32_t avs_workpoint)
 {
 	uint32_t new_wp = avs_workpoint;
-#ifdef SVC_TEST
+#if SVC_TEST
 	static uint8_t  avs_step[2] = {0};
+
+	i2c_init((void *)MVEBU_CP0_I2C_BASE);
 
 	if (avs_workpoint == 0) {
 		/* Read EEPROM only the fist time */
@@ -320,15 +322,6 @@ static void ble_plat_svc_config(void)
 	avs_workpoint = avs_update_from_eeprom(0);
 	if (avs_workpoint)
 		goto set_aws_wp;
-
-	/* Due to a bug in A3900 device_id skip SVC config
-	 * TODO: add SVC config once it is decided for a3900
-	 */
-	if (ble_get_ap_type() == CHIP_ID_AP807) {
-		NOTICE("SVC: SVC is not supported on AP807\n");
-		ble_plat_avs_config();
-		return;
-	}
 
 	/* Set access to LD0 */
 	reg_val = mmio_read_32(MVEBU_AP_EFUSE_SRV_CTRL_REG);
