@@ -1,1 +1,1 @@
-SUBVERSION = devel-18.09.0
+SUBVERSION = devel-18.11.0
