@@ -275,14 +275,55 @@ static uint32_t avs_update_from_eeprom(uint32_t avs_workpoint)
 {
 	uint32_t new_wp = avs_workpoint;
 #if SVC_TEST
-	static uint8_t  avs_step[2] = {0};
+	/* ---------------------------------------------------------------------
+	 * EEPROM  |  Data description (avs_step)
+	 * address |
+	 * ---------------------------------------------------------------------
+	 * 0x120   | AVS workpoint correction value
+	 *         | if not 0 and not 0xff, correct the AVS taken from eFuse
+	 *         | by the number of steps indicated by bit[6:0]
+	 *         | bit[7] defines correction direction.
+	 *         | If bit[7]=1, add the value from bit[6:0] to AVS workpoint,
+	 *         | othervise substruct this value from AVS workpoint.
+	 * ---------------------------------------------------------------------
+	 * 0x121   | AVS workpoint override value
+	 *         | Override the AVS workpoint with the value stored in this
+	 *         | byte. When running on AP806, the AVS workpoint is 7 bits
+	 *         | wide and override value is valid when bit[6:0] holds
+	 *         | value greater than zero and smaller than 0x33.
+	 *         | When running on AP807, the AVS workpoint is 10 bits wide.
+	 *         | Additional 2 MSB bits are supplied by EEPROM byte 0x122.
+	 *         | AVS override value is valid when byte @ 0x121 and bit[1:0]
+	 *         | of byte @ 0x122 combined have non-zero value.
+	 * ---------------------------------------------------------------------
+	 * 0x122   | Extended AVS workpoint override value
+	 *         | Valid only for AP807 platforms and must be less than 0x4
+	 * ---------------------------------------------------------------------
+	 */
+	static uint8_t  avs_step[3] = {0};
 	uintptr_t reg;
 	uint32_t val;
+	unsigned int ap_type = ble_get_ap_type();
+
+	/* Always happens on second call to this function */
+	if (avs_workpoint != 0) {
+		/* Get correction steps from the EEPROM */
+		if ((avs_step[0] != 0) && (avs_step[0] != 0xff)) {
+			NOTICE("AVS request to step %s by 0x%x from old 0x%x\n",
+				avs_step[0] & 0x80 ? "DOWN" : "UP",
+				avs_step[0] & 0x7f, new_wp);
+			if (avs_step[0] & 0x80)
+				new_wp -= avs_step[0] & 0x7f;
+			else
+				new_wp += avs_step[0] & 0x7f;
+		}
+
+		return new_wp;
+	}
 
 	/* AVS values are located in EEPROM
 	 * at CP0 i2c bus #0, device 0x57 offset 0x120
-	 * The SDA and SCK pins of CP0 i2c-1:
-	 * MPP[38:37], i2c function is 0x2.
+	 * The SDA and SCK pins of CP0 i2c-0: MPP[38:37], i2c function 0x2.
 	 */
 	reg = MVEBU_CP_MPP_REGS(0, 4);
 	val = mmio_read_32(reg);
@@ -295,33 +336,29 @@ static uint32_t avs_update_from_eeprom(uint32_t avs_workpoint)
 	/* Init CP0 i2c-0 */
 	i2c_init((void *)(MVEBU_CP0_I2C_BASE));
 
-	if (avs_workpoint == 0) {
-		/* Read EEPROM only once at the fist call! */
-		i2c_read(AVS_I2C_EEPROM_ADDR, 0x120, 2, avs_step, 2);
-		NOTICE("== SVC test build. EEPROM holds values 0x%x and 0x%x\n",
-			avs_step[0], avs_step[1]);
+	/* Read EEPROM only once at the fist call! */
+	i2c_read(AVS_I2C_EEPROM_ADDR, 0x120, 2, avs_step, 3);
+	NOTICE("== SVC test build ==\n");
+	NOTICE("EEPROM holds values 0x%x, 0x%x and 0x%x\n",
+		avs_step[0], avs_step[1], avs_step[2]);
 
-		/* Override the AVS value? */
-		if ((avs_step[1] != 0) && (avs_step[1] < 0x33)) {
-			new_wp = avs_step[1];
-			NOTICE("Override AVS by EEPROM value 0x%x\n", new_wp);
-		} else {
-			NOTICE("Ignore BAD AVS Override value => 0x%x\n",
-				avs_step[1]);
-		}
-	} else {
-		/* Get correction steps from the EEPROM */
-		if ((avs_step[0] != 0) && (avs_step[0] != 0xff)) {
-			NOTICE("AVS request to step %s by 0x%x from old 0x%x\n",
-				avs_step[0] & 0x80 ? "DOWN" : "UP",
-				avs_step[0] & 0x7f, new_wp);
-			if (avs_step[0] & 0x80)
-				new_wp -= avs_step[0] & 0x7f;
-			else
-				new_wp += avs_step[0] & 0x7f;
-		}
+	/* Override the AVS value? */
+	if ((ap_type != CHIP_ID_AP807) && (avs_step[1] < 0x33)) {
+		/* AP806 - AVS is 7 bits */
+		new_wp = avs_step[1];
+
+	} else if (ap_type == CHIP_ID_AP807 && (avs_step[2] < 0x4)) {
+		/* AP807 - AVS is 10 bits */
+		new_wp = avs_step[2];
+		new_wp <<= 8;
+		new_wp |= avs_step[1];
 	}
-#endif
+
+	if (new_wp == 0)
+		NOTICE("Ignore BAD AVS Override value in EEPROM!\n");
+	else
+		NOTICE("Override AVS by EEPROM value 0x%x\n", new_wp);
+#endif /* SVC_TEST */
 	return new_wp;
 }
 
