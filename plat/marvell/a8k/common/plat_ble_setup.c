@@ -147,6 +147,13 @@
 
 #define EFUSE_AP_LD0_CLUSTER_DOWN_OFFS	4
 
+#if SVC_TEST
+#define MVEBU_CP_MPP_CTRL37_OFFS	20
+#define MVEBU_CP_MPP_CTRL38_OFFS	24
+#define MVEBU_CP_MPP_I2C_FUNC		2
+#define MVEBU_MPP_CTRL_MASK		0xf
+#endif
+
 /* Return the AP revision of the chip */
 static unsigned int ble_get_ap_type(void)
 {
@@ -205,6 +212,7 @@ static void ble_plat_mmap_config(int restore)
  * Setup Adaptive Voltage Switching - this is required for some platforms
  ****************************************************************************
  */
+#if !SVC_TEST
 static void ble_plat_avs_config(void)
 {
 	uint32_t freq_mode, device_id;
@@ -247,7 +255,7 @@ static void ble_plat_avs_config(void)
 		mmio_write_32(AVS_EN_CTRL_REG, avs_val);
 	}
 }
-
+#endif
 /******************************************************************************
  * Update or override current AVS work point value using data stored in EEPROM
  * This is only required by QA/validation flows and activated by SVC_TEST flag.
@@ -268,11 +276,27 @@ static uint32_t avs_update_from_eeprom(uint32_t avs_workpoint)
 	uint32_t new_wp = avs_workpoint;
 #if SVC_TEST
 	static uint8_t  avs_step[2] = {0};
+	uintptr_t reg;
+	uint32_t val;
 
-	i2c_init((void *)MVEBU_CP0_I2C_BASE);
+	/* AVS values are located in EEPROM
+	 * at CP0 i2c bus #0, device 0x57 offset 0x120
+	 * The SDA and SCK pins of CP0 i2c-1:
+	 * MPP[38:37], i2c function is 0x2.
+	 */
+	reg = MVEBU_CP_MPP_REGS(0, 4);
+	val = mmio_read_32(reg);
+	val &= ~((MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL37_OFFS) |
+		 (MVEBU_MPP_CTRL_MASK << MVEBU_CP_MPP_CTRL38_OFFS));
+	val |= (MVEBU_CP_MPP_I2C_FUNC << MVEBU_CP_MPP_CTRL37_OFFS) |
+		(MVEBU_CP_MPP_I2C_FUNC << MVEBU_CP_MPP_CTRL38_OFFS);
+	mmio_write_32(reg, val);
+
+	/* Init CP0 i2c-0 */
+	i2c_init((void *)(MVEBU_CP0_I2C_BASE));
 
 	if (avs_workpoint == 0) {
-		/* Read EEPROM only the fist time */
+		/* Read EEPROM only once at the fist call! */
 		i2c_read(AVS_I2C_EEPROM_ADDR, 0x120, 2, avs_step, 2);
 		NOTICE("== SVC test build. EEPROM holds values 0x%x and 0x%x\n",
 			avs_step[0], avs_step[1]);
@@ -344,7 +368,12 @@ static void ble_plat_svc_config(void)
 	sw_ver = (efuse >> EFUSE_AP_LD0_SWREV_OFFS) & EFUSE_AP_LD0_SWREV_MASK;
 	if (sw_ver < 1) {
 		NOTICE("SVC: SW Revision 0x%x. SVC is not supported\n", sw_ver);
+#if SVC_TEST
+		NOTICE("SVC_TEST: AVS bypassed\n");
+
+#else
 		ble_plat_avs_config();
+#endif
 		return;
 	}
 
