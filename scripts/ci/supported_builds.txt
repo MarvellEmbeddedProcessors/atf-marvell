@@ -69,6 +69,8 @@ uboot_2018_a80x0_B
 uboot_2018_a80x0_C
 uboot_2018_a80x0_D
 uboot_2018_a80x0_E
+uboot_2018_a80x0_G
+uboot_2018_a80x0_H
 uboot_2018_a80x0_kr
 uboot_2018_a80x0_pm
 uboot_2018_a80x0_mcbin
@@ -105,6 +107,8 @@ uefi26_a80x0_mcbin
 uefi26_a37xx
 
 uefi27_a70x0
+uefi27_a70x0_efuse
 uefi27_a80x0
+uefi27_a80x0_efuse
 uefi27_a80x0_mcbin
 uefi27_a37xx
