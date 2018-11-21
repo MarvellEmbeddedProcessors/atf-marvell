@@ -2,14 +2,34 @@ TF-A Build Instructions
 ======================
 
 This section describes how to compile the ARM Trusted Firmware (TF-A) project for Marvell's platforms.
+The are 2 methods to compile u-boot:
 
-Build Instructions
-------------------
+1. Using prepared scripts
+
+2. Manual compilation
+
+Both methods will be described in this document.
+
+System preparations (for both methods)
+--------------------------------------
 (1) Set the cross compiler::
 
 		> export CROSS_COMPILE=/path/to/toolchain/aarch64-linux-gnu-
 
-(2) Set path for FIP images:
+(2) Set path for MV_DDR component::
+
+		> export MV_DDR_PATH=path/to/mv_ddr
+
+	For A7/8K, use this parameter to point to mv_ddr driver sources to allow BLE build.
+	For A37x0, it is used for ddr_tool build.
+
+	Usage example: MV_DDR_PATH=path/to/mv_ddr
+
+	The parameter is optional for A7/8K, when this parameter is not set, the mv_ddr
+	sources are expected to be located at: drivers/marvell/mv_ddr. However, the parameter
+	is necessary for A37x0.
+
+(3) Set path for FIP images:
 
 	Set U-Boot image path (relatively to TF-A root or absolute path)::
 
@@ -26,18 +46,51 @@ Build Instructions
 
 		> export SCP_BL2=path/to/mrvl_scp_bl2*.img
 
-(3) Armada-37x0 build requires WTP tools installation.
+(4) Armada-37x0 build requires WTP tools installation.
 
 	See below in the section "Tools Installation for Armada37x0 Builds".
 	Install ARM 32-bit cross compiler, which is required by building WTMI image for CM3::
 
 		> sudo apt-get install gcc-arm-linux-gnueabi
 
-(4) Clean previous build residuals (if any)::
+Build with scripts
+------------------
+The script is located in the u-boot tree **./scripts/ci/**
+
+Script usage::
+
+		> ./scripts/ci/compile.sh --help
+
+		Usage: compile [--no_configure] [--echo_only] BUILD_NAME
+		 or:   compile --list
+		 or:   compile --help
+
+		Compiles atf similar to the given CI build
+
+		-N, --no_configure   Skip configuration steps (make distclean)
+ 		-e, --echo_only      Print out the compilation sequence but do not execute it
+		 -l, --list           List all supported BUILD_NAME values and exit
+		 -h, --help           Display this help and exit
+
+		Prerequisites:
+		  CROSS_COMPILE       path to cross compiler
+		  BL33                path to u-boot or uefi binary
+		  MV_DDR_PATH         path to ddr source
+		  SCP_BL2             path to FreeRTOS binary (optional)
+		  WTMI_IMG            path to FreeRTOS binary for armada-3700 (optional)
+		  WTP                 path to a3700 utils source (optional)
+
+Examples::
+
+		MacchiatoBin build: ./scripts/ci/compile.sh uboot_2018_a80x0_mcbin
+
+Manual build procedure
+----------------------
+(1) Clean previous build residuals (if any)::
 
 		> make distclean
 
-(5) Build TF-A:
+(2) Build TF-A:
 
 	There are several build options:
 
@@ -65,14 +118,6 @@ Build Instructions
 	- BLE_PATH:
 		Points to BLE (Binary ROM extension) sources folder. Only required for A8K and A8K+ builds.
 		The parameter is optional, its default value is "ble".
-
-	- MV_DDR_PATH:
-		For A7/8K, use this parameter to point to mv_ddr driver sources to allow BLE build. For A37x0,
-		it is used for ddr_tool build.
-		Usage example: MV_DDR_PATH=path/to/mv_ddr
-		The parameter is optional for A7/8K, when this parameter is not set, the mv_ddr
-		sources are expected to be located at: drivers/marvell/mv_ddr. However, the parameter
-		is necessary for A37x0.
 
 	- DDR_TOPOLOGY: For Armada37x0 only, the DDR topology map index/name, default is 0.
 		Supported Options:
