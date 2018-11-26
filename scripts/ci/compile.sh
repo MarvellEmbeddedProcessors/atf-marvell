@@ -112,6 +112,8 @@ case $build_name in
 	*_a37xx_ddr4_v3_* ) build_flags="DDR_TYPE=DDR4 USE_COHERENT_MEM=0 LOG_LEVEL=20 DDR_TOPOLOGY=3"; ;;
 	*_a37xx_espressobin_ddr3_1cs_* ) build_flags="DDR_TYPE=DDR3 USE_COHERENT_MEM=0 LOG_LEVEL=20 DDR_TOPOLOGY=0"; ;;
 	*_a37xx_espressobin_ddr3_2cs_* ) build_flags="DDR_TYPE=DDR3 USE_COHERENT_MEM=0 LOG_LEVEL=20 DDR_TOPOLOGY=2"; ;;
+	*_a37xx_espressobin_ddr4_v7_1G_* ) build_flags="DDR_TYPE=DDR4 USE_COHERENT_MEM=0 LOG_LEVEL=20 DDR_TOPOLOGY=5"; ;;
+	*_a37xx_espressobin_ddr4_v7_2G_* ) build_flags="DDR_TYPE=DDR4 USE_COHERENT_MEM=0 LOG_LEVEL=20 DDR_TOPOLOGY=6"; ;;
 	* ) echo "Error: Could not configure build_flags. Unsupported build ${build_name}"; exit -1; ;;
 esac
 
