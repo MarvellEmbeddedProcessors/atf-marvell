@@ -18,8 +18,10 @@
 #pragma weak bl2_el3_plat_prepare_exit
 #pragma weak plat_error_handler
 #pragma weak bl2_plat_preload_setup
+#if LOAD_IMAGE_V2
 #pragma weak bl2_plat_handle_pre_image_load
 #pragma weak bl2_plat_handle_post_image_load
+#endif
 #pragma weak plat_try_next_boot_source
 
 void bl2_el3_plat_prepare_exit(void)
