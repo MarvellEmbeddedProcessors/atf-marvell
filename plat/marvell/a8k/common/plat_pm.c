@@ -761,6 +761,8 @@ __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 	 * At this stage any access to DRAM (procedure call) will
 	 * release it from the self-refresh mode
 	 */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wasm-operand-widths"
 	__asm__ volatile (
 		/* Align to a cache line */
 		"	.balign 64\n\t"
@@ -784,6 +786,7 @@ __dead2 a8k_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 		: : [srcmd] "r" (srcmd), [sdram_reg] "r" (sdram_reg),
 		    [gpio_addr] "r" (gpio_addr),  [gpio_data] "r" (gpio_data)
 		: "x1");
+#pragma clang diagnostic pop
 
 	panic();
 }

@@ -80,7 +80,10 @@ enum pcie_link_width {
 	PCIE_LNK_WIDTH_UNKNOWN  = 0xFF,
 };
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-braces"
 _Bool rx_trainng_done[AP_NUM][CP_NUM][MAX_LANE_NR] = {0};
+#pragma clang diagnostic pop
 
 static void mvebu_cp110_get_ap_and_cp_nr(uint8_t *ap_nr, uint8_t *cp_nr, uint64_t comphy_base)
 {

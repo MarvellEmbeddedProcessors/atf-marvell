@@ -47,7 +47,9 @@ static bl2_to_bl31_params_mem_t bl31_params_mem;
 #pragma weak bl2_plat_flush_bl31_params
 #pragma weak bl2_plat_set_bl31_ep_info
 #pragma weak bl2_plat_get_scp_bl2_meminfo
+#ifdef BL32_BASE
 #pragma weak bl2_plat_get_bl32_meminfo
+#endif
 #pragma weak bl2_plat_set_bl32_ep_info
 #pragma weak bl2_plat_get_bl33_meminfo
 #pragma weak bl2_plat_set_bl33_ep_info

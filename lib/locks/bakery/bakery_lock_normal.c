@@ -67,6 +67,7 @@ IMPORT_SYM(uintptr_t, __PERCPU_BAKERY_LOCK_SIZE__, PERCPU_BAKERY_LOCK_SIZE);
 					    dccivac((uintptr_t)addr)
 
 /* Helper function to check if the lock is acquired */
+__attribute__((unused))
 static inline int is_lock_acquired(const bakery_info_t *my_bakery_info,
 							int is_cached)
 {
